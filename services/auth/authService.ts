@@ -1,19 +1,65 @@
-interface IFormValues {
-  email: string;
-  password: string;
+import { apiFetch } from "../api";
+
+interface ILoginDto {
+  usuario: string;
+  senha: string;
 }
 
-export const Login = async (data: IFormValues) => {
-  try {
-    //TODO: Fazer a chamada para o serviço de autenticação
+interface ICriarVendedorDto {
+  nome: string;
+  usuario: string;
+  senha: string;
+  isAdmin: boolean;
+}
 
-    //TODO: Tratar a resposta do serviço de autenticação
-    if (false) {
-      throw new Error("Falha ao fazer login. Verifique suas credenciais.");
+export const Login = async (data: ILoginDto) => {
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+    if (!baseUrl) throw new Error("URL do servidor não definida");
+
+    const response = await fetch(`${baseUrl}/usuario/login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      // tenta extrair uma mensagem mais específica do backend
+      const errorData = await response.json().catch(() => null);
+      const message =
+        errorData?.message ||
+        "Falha ao fazer login. Verifique suas credenciais.";
+      throw new Error(message);
     }
 
-    //TODO: Adicionar lógica para armazenar o token de autenticação
+    const result = await response.json();
+
+    if (!result?.token) {
+      throw new Error("Falha ao autenticar. Token não recebido.");
+    }
+
+    // Armazena o token localmente
+    localStorage.setItem("token", result.token);
   } catch (error) {
-    throw error;
+    console.error("Erro ao fazer login:", error);
+    throw error instanceof Error
+      ? error
+      : new Error("Erro inesperado ao fazer login.");
+  }
+};
+
+export const CriarVendedor = async (data: ICriarVendedorDto) => {
+  try {
+    await apiFetch("/usuario/registrar", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  } catch (error) {
+    console.error("Erro ao criar vendedor:", error);
+    throw error instanceof Error
+      ? error
+      : new Error("Erro inesperado ao criar vendedor.");
   }
 };

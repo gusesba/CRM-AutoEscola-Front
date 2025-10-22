@@ -184,3 +184,7 @@
 .shake {
   animation: shake 0.5s;
 }
+
+.shadow-right {
+  box-shadow: 8px 20px 15px rgba(0, 0, 0, 0.1);
+}

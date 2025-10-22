@@ -8,9 +8,8 @@ import { useRouter } from "next/navigation";
 import { Login } from "@/services/auth/authService";
 
 interface IFormValues {
-  // name: string;
-  email: string;
-  password: string;
+  usuario: string;
+  senha: string;
 }
 
 export default function LoginFormCard() {
@@ -25,10 +24,9 @@ export default function LoginFormCard() {
   const onSubmit: SubmitHandler<IFormValues> = async (data) => {
     try {
       await Login(data);
-      router.push("/main/clientes");
+      router.push("/vendedor/novo");
     } catch (error) {
       console.error(error);
-      alert("Erro ao fazer login. Verifique seu email e senha.");
     }
   };
 
@@ -54,18 +52,18 @@ export default function LoginFormCard() {
                 /> */}
 
         <InputLabel
-          text="Email"
-          id="email"
-          type="email"
-          placeholder="seu@email.com"
+          text="Usuário"
+          id="usuario"
+          type="text"
+          placeholder="Usuário"
           register={register}
-          rules={{ required: "Digite seu email" }}
-          errorMesage={errors.email?.message}
+          rules={{ required: "Digite seu usuário" }}
+          errorMesage={errors.usuario?.message}
         />
 
         <InputLabel
           text="Senha"
-          id="password"
+          id="senha"
           type="password"
           placeholder="••••••••"
           register={register}
@@ -76,7 +74,7 @@ export default function LoginFormCard() {
               message: "A senha deve ter no mínimo 3 caracteres",
             },
           }}
-          errorMesage={errors.password?.message}
+          errorMesage={errors.senha?.message}
         />
 
         <Button>Login</Button>
