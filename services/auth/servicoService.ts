@@ -1,16 +1,19 @@
+import { apiFetch } from "../api";
+
 interface ICriarServicoDto {
   nome: string;
 }
 
 export const CriarServico = async (data: ICriarServicoDto) => {
   try {
-    //TODO: Fazer a chamada para o serviço de criação de serviço
-
-    //TODO: Tratar a resposta do serviço de criação de serviço
-    if (false) {
-      throw new Error("Falha ao criar serviço. Verifique os dados.");
-    }
+    await apiFetch("/servico", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
   } catch (error) {
-    throw error;
+    console.error("Erro ao criar serviço:", error);
+    throw error instanceof Error
+      ? error
+      : new Error("Erro inesperado ao criar serviço.");
   }
 };
