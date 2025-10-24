@@ -63,3 +63,16 @@ export const CriarVendedor = async (data: ICriarVendedorDto) => {
       : new Error("Erro inesperado ao criar vendedor.");
   }
 };
+
+export const BuscarUsuarios = async (parametros: string) => {
+  try {
+    return await apiFetch(`/usuario?${parametros}`, {
+      method: "GET",
+    });
+  } catch (error) {
+    console.error("Erro ao buscar usuários:", error);
+    throw error instanceof Error
+      ? error
+      : new Error("Erro inesperado ao buscar usuários.");
+  }
+};
