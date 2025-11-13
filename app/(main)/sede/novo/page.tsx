@@ -1,6 +1,6 @@
 "use client";
 
-import { CriarSede } from "@/services/auth/sedeService";
+import { CriarSede } from "@/services/sedeService";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { CriarServico } from "@/services/servicoService";
+import { CriarCondicaoVenda } from "@/services/condicaoVendaService";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 
@@ -8,7 +8,7 @@ type FormData = {
   nome: string;
 };
 
-export default function NovoServico() {
+export default function NovoCondicaoVenda() {
   const {
     register,
     handleSubmit,
@@ -21,11 +21,11 @@ export default function NovoServico() {
 
   const onSubmit = async (data: FormData) => {
     try {
-      await CriarServico(data);
+      await CriarCondicaoVenda(data);
       setSuccessMessage("Serviço adicionado com sucesso!");
       reset();
     } catch (err) {
-      setSubmitError("Erro ao adicionar serviço. Tente novamente.");
+      setSubmitError("Erro ao adicionar condição venda. Tente novamente.");
     }
   };
 
@@ -64,7 +64,7 @@ export default function NovoServico() {
                     ? "ring-1 focus:ring-2 ring-error"
                     : "focus:ring-2 focus:ring-primary"
                 }`}
-              placeholder="Digite o nome do serviço"
+              placeholder="Digite o nome do condição venda"
             />
             {errors.nome && (
               <p className="text-error text-sm mt-1">{errors.nome.message}</p>

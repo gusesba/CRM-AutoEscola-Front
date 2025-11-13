@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ArrowUpDown, ChevronLeft, ChevronRight } from "lucide-react";
-import { BuscarSedes } from "@/services/auth/sedeService";
+import { BuscarSedes } from "@/services/sedeService";
 
 type Sede = {
   id: number;

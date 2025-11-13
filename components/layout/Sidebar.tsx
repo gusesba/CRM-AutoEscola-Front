@@ -56,7 +56,7 @@ export const Sidebar = () => {
           </li>
           <li
             className="flex items-center gap-2 p-2 rounded hover:bg-gray-100 cursor-pointer"
-            onClick={() => router.push("/condicao-venda/novo")}
+            onClick={() => router.push("/condicaoVenda/novo")}
           >
             Condição Venda
           </li>
@@ -101,7 +101,7 @@ export const Sidebar = () => {
           </li>
           <li
             className="flex items-center gap-2 p-2 rounded hover:bg-gray-100 cursor-pointer"
-            onClick={() => router.push("/condicao-venda")}
+            onClick={() => router.push("/condicaoVenda")}
           >
             Condição Venda
           </li>

@@ -1,4 +1,4 @@
-import { apiFetch } from "../api";
+import { apiFetch } from "./api";
 
 interface ILoginDto {
   usuario: string;

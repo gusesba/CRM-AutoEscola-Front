@@ -1,6 +1,6 @@
 "use client";
 
-import { CriarVendedor } from "@/services/auth/authService";
+import { CriarVendedor } from "@/services/authService";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ArrowUpDown, ChevronLeft, ChevronRight } from "lucide-react";
-import { BuscarServicos } from "@/services/auth/servicoService";
+import { BuscarServicos } from "@/services/servicoService";
 
 type Servico = {
   id: number;

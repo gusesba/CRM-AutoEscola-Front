@@ -5,7 +5,7 @@ import Button from "../UI/Button";
 import Link from "next/link";
 import { SubmitHandler, useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
-import { Login } from "@/services/auth/authService";
+import { Login } from "@/services/authService";
 
 interface IFormValues {
   usuario: string;
