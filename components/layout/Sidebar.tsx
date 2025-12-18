@@ -12,7 +12,8 @@ export const Sidebar = () => {
           Atividades
         </span>
         <ul className="mt-2 space-y-1 text-sm">
-          <li className="flex items-center gap-2 p-2 rounded hover:bg-gray-100 cursor-pointer">
+          <li className="flex items-center gap-2 p-2 rounded hover:bg-gray-100 cursor-pointer"
+           onClick={() => router.push("/agendamento/diario")}>
             Agendamentos Diários
           </li>
           <li className="flex items-center gap-2 p-2 rounded hover:bg-gray-100 cursor-pointer">
@@ -35,6 +36,12 @@ export const Sidebar = () => {
             onClick={() => router.push("/venda/novo")}
           >
             Venda
+          </li>
+          <li
+            className="flex items-center gap-2 p-2 rounded hover:bg-gray-100 cursor-pointer"
+            onClick={() => router.push("/agendamento/novo")}
+          >
+            Agendamento
           </li>
           <li
             className="flex items-center gap-2 p-2 rounded hover:bg-gray-100 cursor-pointer"
@@ -77,7 +84,7 @@ export const Sidebar = () => {
           </li>
           <li
             className="flex items-center gap-2 p-2 rounded hover:bg-gray-100 cursor-pointer"
-            onClick={() => router.push("/agendamentos")}
+            onClick={() => router.push("/agendamento")}
           >
             Agendamentos
           </li>
@@ -106,6 +113,18 @@ export const Sidebar = () => {
             Condição Venda
           </li>
         </ul>
+      </div>
+      {/* Botão de sair */}
+      <div className="mt-auto">
+        <button
+          onClick={() => {
+            // Aqui você pode limpar sessão ou redirecionar
+            router.push("/auth");
+          }}
+          className="w-full text-red-600 font-semibold py-2 rounded-lg hover:bg-red-100 transition"
+        >
+          Sair
+        </button>
       </div>
     </aside>
   );
