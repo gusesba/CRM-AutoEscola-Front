@@ -8,7 +8,6 @@ interface IVendaServicoDto {
   origem: number;
   email: string;
   fone: string;
-  celular: string;
   contato: string;
   comoConheceu: string;
   motivoEscolha: string;

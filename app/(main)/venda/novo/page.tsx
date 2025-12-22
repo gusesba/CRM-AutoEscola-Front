@@ -17,7 +17,6 @@ type FormData = {
   origem: number;
   email: string;
   fone: string;
-  celular: string;
   contato: string;
   comoConheceu: string;
   motivoEscolha: string;
@@ -280,17 +279,6 @@ export default function NovaVenda() {
               {...register("fone")}
               className="w-full p-2 border rounded-lg bg-background focus:ring-2 focus:ring-primary"
               placeholder="(xx) xxxx-xxxx"
-            />
-          </div>
-
-          <div>
-            <label className="block mb-1 text-sm font-medium text-muted-foreground">
-              Celular
-            </label>
-            <input
-              {...register("celular")}
-              className="w-full p-2 border rounded-lg bg-background focus:ring-2 focus:ring-primary"
-              placeholder="(xx) xxxxx-xxxx"
             />
           </div>
 
