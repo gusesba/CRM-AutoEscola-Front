@@ -28,6 +28,7 @@ type FormData = {
   status: number;
   valorVenda: number;
   indicacao: string;
+  dataNascimento: string;
 };
 
 type OptionType = {
@@ -102,6 +103,7 @@ export default function EditarVenda() {
             status: venda.status,
             valorVenda: venda.valorVenda,
             indicacao: venda.indicacao,
+            dataNascimento: venda.dataNascimento,
           });
         } else {
           setLoadError("Venda não encontrada.");
@@ -499,6 +501,17 @@ export default function EditarVenda() {
               step="0.01"
               className="w-full p-2 border rounded-lg bg-background focus:ring-2 focus:ring-primary"
               placeholder="R$"
+            />
+          </div>
+
+          <div>
+            <label className="block mb-1 text-sm font-medium text-muted-foreground">
+              Data de Nascimento
+            </label>
+            <input
+              type="date"
+              {...register("dataNascimento")}
+              className="w-full p-2 border rounded-lg bg-background focus:ring-2 focus:ring-primary"
             />
           </div>
 

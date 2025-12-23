@@ -17,6 +17,7 @@ interface IVendaServicoDto {
   status: number;
   valorVenda: number;
   indicacao: string;
+  dataNascimento: string;
 }
 
 export const CriarVenda = async (data: IVendaServicoDto) => {

@@ -28,6 +28,7 @@ type FormData = {
   status: number;
   valorVenda: number;
   indicacao: string;
+  dataNascimento: string;
 };
 
 type OptionType = {
@@ -453,6 +454,18 @@ export default function NovaVenda() {
               step="0.01"
               className="w-full p-2 border rounded-lg bg-background focus:ring-2 focus:ring-primary"
               placeholder="R$"
+            />
+          </div>
+
+          {/* Data de Nascimento */}
+          <div>
+            <label className="block mb-1 text-sm font-medium text-muted-foreground">
+              Data de Nascimento
+            </label>
+            <input
+              type="date"
+              {...register("dataNascimento")}
+              className="w-full p-2 border rounded-lg bg-background focus:ring-2 focus:ring-primary"
             />
           </div>
 
