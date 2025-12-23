@@ -45,3 +45,30 @@ export const BuscarVendas = async (parametros: string) => {
       : new Error("Erro inesperado ao buscar vendas.");
   }
 };
+
+export const BuscarVendaPorId = async (id: string) => {
+  try {
+    return await apiFetch(`/venda/${id}`, {
+      method: "GET",
+    });
+  } catch (error) {
+    console.error("Erro ao buscar venda por ID:", error);
+    throw error instanceof Error
+      ? error
+      : new Error("Erro inesperado ao buscar venda.");
+  }
+};
+
+export const AtualizarVenda = async (id: string, data: any) => {
+  try {
+    return await apiFetch(`/venda/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  } catch (error) {
+    console.error("Erro ao atualizar venda:", error);
+    throw error instanceof Error
+      ? error
+      : new Error("Erro inesperado ao atualizar venda.");
+  }
+};
