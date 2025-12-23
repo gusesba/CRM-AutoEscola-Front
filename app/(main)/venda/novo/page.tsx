@@ -8,6 +8,8 @@ import { BuscarCondicaoVendas } from "@/services/condicaoVendaService";
 import { BuscarServicos } from "@/services/servicoService";
 import { BuscarSedes } from "@/services/sedeService"; // supondo que exista
 import { CriarVenda } from "@/services/vendaService";
+import { useAuth } from "@/hooks/useAuth";
+import { PatternFormat } from "react-number-format";
 
 type FormData = {
   sedeId: number;
@@ -40,7 +42,10 @@ export default function NovaVenda() {
     control,
     formState: { errors, isSubmitting },
     reset,
+    setValue,
   } = useForm<FormData>();
+
+  const { isAdmin, user } = useAuth();
 
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -71,6 +76,12 @@ export default function NovaVenda() {
 
     carregarListas();
   }, []);
+
+  useEffect(() => {
+    if (user?.UserId) {
+      setValue("vendedorId", Number(user.UserId));
+    }
+  }, [user, setValue]);
 
   const onSubmit = async (data: FormData) => {
     try {
@@ -175,7 +186,8 @@ export default function NovaVenda() {
                   }))}
                   onChange={(option) => field.onChange(option?.value)}
                   placeholder="Selecione o vendedor"
-                  isClearable
+                  isClearable={isAdmin}
+                  isDisabled={!isAdmin}
                   classNamePrefix="react-select"
                 />
                 {fieldState.error && (
@@ -271,27 +283,47 @@ export default function NovaVenda() {
             />
           </div>
 
-          <div>
-            <label className="block mb-1 text-sm font-medium text-muted-foreground">
-              Fone
-            </label>
-            <input
-              {...register("fone")}
-              className="w-full p-2 border rounded-lg bg-background focus:ring-2 focus:ring-primary"
-              placeholder="(xx) xxxx-xxxx"
-            />
-          </div>
+          <Controller
+            name="fone"
+            control={control}
+            render={({ field }) => (
+              <div>
+                <label className="block mb-1 text-sm font-medium text-muted-foreground">
+                  Fone
+                </label>
 
-          <div>
-            <label className="block mb-1 text-sm font-medium text-muted-foreground">
-              Contato (Telefone)
-            </label>
-            <input
-              {...register("contato")}
-              className="w-full p-2 border rounded-lg bg-background focus:ring-2 focus:ring-primary"
-              placeholder="Telefone do contato"
-            />
-          </div>
+                <PatternFormat
+                  value={field.value || ""}
+                  onValueChange={(values) => field.onChange(values.value)}
+                  format="(##) #####-####"
+                  mask="_"
+                  className="w-full p-2 border rounded-lg bg-background focus:ring-2 focus:ring-primary"
+                  placeholder="(41) 99999-9999"
+                />
+              </div>
+            )}
+          />
+
+          <Controller
+            name="contato"
+            control={control}
+            render={({ field }) => (
+              <div>
+                <label className="block mb-1 text-sm font-medium text-muted-foreground">
+                  Contato (Telefone)
+                </label>
+
+                <PatternFormat
+                  value={field.value || ""}
+                  onValueChange={(values) => field.onChange(values.value)}
+                  format="(##) #####-####"
+                  mask="_"
+                  className="w-full p-2 border rounded-lg bg-background focus:ring-2 focus:ring-primary"
+                  placeholder="(41) 99999-9999"
+                />
+              </div>
+            )}
+          />
 
           {/* Indicação */}
           <div>
