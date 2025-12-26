@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { ArrowUpDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { BuscarAgendamentos } from "@/services/agendamentoService";
+import { useRouter } from "next/navigation";
 
 type Agendamento = {
   id: number;
@@ -33,16 +34,21 @@ type Filtro = {
   orderDirection?: "asc" | "desc";
 };
 
-async function buscarAgendamentos(filtro: Filtro): Promise<PagedResult<Agendamento>> {
+async function buscarAgendamentos(
+  filtro: Filtro
+): Promise<PagedResult<Agendamento>> {
   const params = new URLSearchParams();
   if (filtro.vendaId) params.append("vendaId", filtro.vendaId.toString());
   if (filtro.cliente) params.append("cliente", filtro.cliente);
-  if (filtro.dataAgendamentoDe) params.append("dataAgendamentoDe", filtro.dataAgendamentoDe);
-  if (filtro.dataAgendamentoAte) params.append("dataAgendamentoAte", filtro.dataAgendamentoAte);
+  if (filtro.dataAgendamentoDe)
+    params.append("dataAgendamentoDe", filtro.dataAgendamentoDe);
+  if (filtro.dataAgendamentoAte)
+    params.append("dataAgendamentoAte", filtro.dataAgendamentoAte);
   params.append("page", filtro.page.toString());
   params.append("pageSize", filtro.pageSize.toString());
   if (filtro.orderBy) params.append("orderBy", filtro.orderBy);
-  if (filtro.orderDirection) params.append("orderDirection", filtro.orderDirection);
+  if (filtro.orderDirection)
+    params.append("orderDirection", filtro.orderDirection);
 
   return await BuscarAgendamentos(params.toString());
 }
@@ -58,11 +64,14 @@ export default function AgendamentosDiarios() {
   const [totalPaginas, setTotalPaginas] = useState(1);
   const [totalRegistros, setTotalRegistros] = useState(0);
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   // Define a data de hoje no formato YYYY-MM-DD (horário de Brasília)
   useEffect(() => {
     const now = new Date();
-    const brasiliaDate = now.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
+    const brasiliaDate = now.toLocaleDateString("pt-BR", {
+      timeZone: "America/Sao_Paulo",
+    });
     const [day, month, year] = brasiliaDate.split("/");
     const todayStart = `${year}-${month}-${day}T00:00:00`;
     const todayEnd = `${year}-${month}-${day}T23:59:59`;
@@ -96,7 +105,10 @@ export default function AgendamentosDiarios() {
     setFiltro((prev) => ({
       ...prev,
       orderBy: campo,
-      orderDirection: prev.orderBy === campo && prev.orderDirection === "asc" ? "desc" : "asc",
+      orderDirection:
+        prev.orderBy === campo && prev.orderDirection === "asc"
+          ? "desc"
+          : "asc",
     }));
   };
 
@@ -175,12 +187,18 @@ export default function AgendamentosDiarios() {
                   <tr
                     key={a.id}
                     className="border-t border-border hover:bg-muted/40 transition"
+                    onDoubleClick={() =>
+                      router.push(`/venda/editar/${a.vendaId}`)
+                    }
                   >
                     <td className="px-4 py-2">{a.id}</td>
                     <td className="px-4 py-2">{a.vendaId}</td>
                     <td className="px-4 py-2">{a.venda?.cliente}</td>
                     <td className="px-4 py-2">
-                      {new Date(new Date(a.dataAgendamento).getTime() + 3 * 60 * 60 * 1000).toLocaleString()}
+                      {new Date(
+                        new Date(a.dataAgendamento).getTime() +
+                          3 * 60 * 60 * 1000
+                      ).toLocaleString()}
                     </td>
                     <td className="px-4 py-2">{a.obs}</td>
                   </tr>
