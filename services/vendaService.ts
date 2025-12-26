@@ -62,9 +62,9 @@ export const BuscarVendaPorId = async (id: string) => {
 
 export const AtualizarVenda = async (id: string, data: any) => {
   try {
-    return await apiFetch(`/venda/${id}`, {
+    return await apiFetch(`/venda`, {
       method: "PUT",
-      body: JSON.stringify(data),
+      body: JSON.stringify({ id, ...data }),
     });
   } catch (error) {
     console.error("Erro ao atualizar venda:", error);
