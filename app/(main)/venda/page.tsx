@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { ArrowUpDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { BuscarVendas } from "@/services/vendaService";
+import { useRouter } from "next/navigation";
 
 /* ======================================================
    MODELOS (alinhados ao backend)
@@ -89,9 +90,7 @@ type FiltroVenda = {
    API
 ====================================================== */
 
-async function buscarVendas(
-  filtro: FiltroVenda
-): Promise<PagedResult<Venda>> {
+async function buscarVendas(filtro: FiltroVenda): Promise<PagedResult<Venda>> {
   const params = new URLSearchParams();
 
   if (filtro.id) params.append("id", filtro.id.toString());
@@ -124,6 +123,7 @@ export default function ListaVendasPage() {
   const [totalPaginas, setTotalPaginas] = useState(1);
   const [totalRegistros, setTotalRegistros] = useState(0);
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     carregarVendas();
@@ -154,9 +154,7 @@ export default function ListaVendasPage() {
     }));
   };
 
-  const handleFiltroChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleFiltroChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
 
     setFiltro((prev) => ({
@@ -169,9 +167,7 @@ export default function ListaVendasPage() {
   return (
     <div className="flex flex-col items-center w-full p-6">
       <div className="w-full max-w-7xl bg-card border border-border rounded-xl shadow-md p-6 space-y-4">
-        <h1 className="text-2xl font-semibold text-center">
-          Vendas
-        </h1>
+        <h1 className="text-2xl font-semibold text-center">Vendas</h1>
 
         {/* ================= FILTROS ================= */}
         <div className="grid grid-cols-3 gap-3">
@@ -237,18 +233,15 @@ export default function ListaVendasPage() {
                   <tr
                     key={v.id}
                     className="border-t hover:bg-muted/40 transition"
+                    onDoubleClick={() => router.push(`/venda/editar/${v.id}`)}
                   >
                     <td className="px-4 py-2">{v.id}</td>
                     <td className="px-4 py-2">{v.cliente}</td>
                     <td className="px-4 py-2">{v.sede?.nome}</td>
                     <td className="px-4 py-2">{v.vendedor?.nome}</td>
                     <td className="px-4 py-2">{v.servico?.nome}</td>
-                    <td className="px-4 py-2">
-                      {v.condicaoVenda?.nome}
-                    </td>
-                    <td className="px-4 py-2">
-                      R$ {v.valorVenda.toFixed(2)}
-                    </td>
+                    <td className="px-4 py-2">{v.condicaoVenda?.nome}</td>
+                    <td className="px-4 py-2">R$ {v.valorVenda.toFixed(2)}</td>
                     <td className="px-4 py-2">{v.status}</td>
                   </tr>
                 ))
