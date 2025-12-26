@@ -69,6 +69,14 @@ type Venda = {
   indicacao?: string;
 };
 
+const StatusVendaMap: Record<number, string> = {
+  1: "Agendar contato",
+  2: "Venda efetivada",
+  3: "Stand by",
+  4: "Optou pela concorrência",
+  5: "Não enviar mais",
+};
+
 type PagedResult<T> = {
   items: T[];
   totalCount: number;
@@ -77,9 +85,9 @@ type PagedResult<T> = {
 };
 
 type FiltroVenda = {
-  id?: number;
   cliente?: string;
   vendedor?: string;
+  contato?: string;
   page: number;
   pageSize: number;
   orderBy?: string;
@@ -93,9 +101,9 @@ type FiltroVenda = {
 async function buscarVendas(filtro: FiltroVenda): Promise<PagedResult<Venda>> {
   const params = new URLSearchParams();
 
-  if (filtro.id) params.append("id", filtro.id.toString());
   if (filtro.cliente) params.append("cliente", filtro.cliente);
   if (filtro.vendedor) params.append("vendedor", filtro.vendedor);
+  if (filtro.contato) params.append("contato", filtro.contato);
 
   params.append("page", filtro.page.toString());
   params.append("pageSize", filtro.pageSize.toString());
@@ -172,21 +180,20 @@ export default function ListaVendasPage() {
         {/* ================= FILTROS ================= */}
         <div className="grid grid-cols-3 gap-3">
           <input
-            name="id"
-            type="number"
-            placeholder="ID"
-            className="p-2 border rounded-lg bg-background text-sm"
-            onChange={handleFiltroChange}
-          />
-          <input
             name="cliente"
-            placeholder="Cliente"
+            placeholder="Nome do cliente"
             className="p-2 border rounded-lg bg-background text-sm"
             onChange={handleFiltroChange}
           />
           <input
             name="vendedor"
             placeholder="Vendedor"
+            className="p-2 border rounded-lg bg-background text-sm"
+            onChange={handleFiltroChange}
+          />
+          <input
+            name="contato"
+            placeholder="Contato"
             className="p-2 border rounded-lg bg-background text-sm"
             onChange={handleFiltroChange}
           />
@@ -198,8 +205,9 @@ export default function ListaVendasPage() {
             <thead>
               <tr className="bg-muted text-muted-foreground">
                 {[
-                  { key: "id", label: "ID" },
                   { key: "cliente", label: "Cliente" },
+                  { key: "contato", label: "Contato" },
+                  { key: "dataInicial", label: "Data Inicial" },
                   { key: "sede", label: "Sede" },
                   { key: "vendedor", label: "Vendedor" },
                   { key: "servico", label: "Serviço" },
@@ -235,14 +243,19 @@ export default function ListaVendasPage() {
                     className="border-t hover:bg-muted/40 transition"
                     onDoubleClick={() => router.push(`/venda/editar/${v.id}`)}
                   >
-                    <td className="px-4 py-2">{v.id}</td>
                     <td className="px-4 py-2">{v.cliente}</td>
+                    <td className="px-4 py-2">{v.contato}</td>
+                    <td className="px-4 py-2">
+                      {new Date(v.dataInicial).toLocaleString("pt-BR")}
+                    </td>
                     <td className="px-4 py-2">{v.sede?.nome}</td>
                     <td className="px-4 py-2">{v.vendedor?.nome}</td>
                     <td className="px-4 py-2">{v.servico?.nome}</td>
                     <td className="px-4 py-2">{v.condicaoVenda?.nome}</td>
                     <td className="px-4 py-2">R$ {v.valorVenda.toFixed(2)}</td>
-                    <td className="px-4 py-2">{v.status}</td>
+                    <td className="px-4 py-2">
+                      {StatusVendaMap[v.status] ?? "Desconhecido"}
+                    </td>
                   </tr>
                 ))
               ) : (
