@@ -16,6 +16,11 @@ export async function apiFetch(endpoint: string, options: RequestInit = {}) {
       headers,
     });
 
+    if (response.status === 401) {
+      window.location.href = "/auth";
+      return; // garante que nada mais execute
+    }
+
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(errorData.message || "Erro na requisição.");
