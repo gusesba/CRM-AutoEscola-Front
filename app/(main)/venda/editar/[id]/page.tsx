@@ -10,6 +10,7 @@ import { BuscarServicos } from "@/services/servicoService";
 import { BuscarSedes } from "@/services/sedeService";
 import { BuscarVendaPorId, AtualizarVenda } from "@/services/vendaService";
 import { useAuth } from "@/hooks/useAuth";
+import { PatternFormat } from "react-number-format";
 
 type FormData = {
   sedeId: number;
@@ -232,7 +233,7 @@ export default function EditarVenda() {
             control={control}
             rules={{ required: "Selecione o vendedor." }}
             render={({ field, fieldState }) => (
-              <div>
+              <div className={`${!isAdmin && "cursor-not-allowed"}`}>
                 <label className="block mb-1 text-sm font-medium text-muted-foreground">
                   Vendedor {!isAdmin && "(Somente admin)"}
                 </label>
@@ -348,30 +349,50 @@ export default function EditarVenda() {
           </div>
 
           {/* Fone - Apenas admin pode editar */}
-          <div>
-            <label className="block mb-1 text-sm font-medium text-muted-foreground">
-              Fone {!isAdmin && "(Somente admin)"}
-            </label>
-            <input
-              {...register("fone")}
-              className="w-full p-2 border rounded-lg bg-background focus:ring-2 focus:ring-primary disabled:opacity-60 disabled:cursor-not-allowed"
-              placeholder="(xx) xxxx-xxxx"
-              disabled={!isAdmin}
-            />
-          </div>
+          <Controller
+                      name="fone"
+                      control={control}
+                      render={({ field }) => (
+                        <div>
+                          <label className="block mb-1 text-sm font-medium text-muted-foreground">
+                            Fone {!isAdmin && "(Somente admin)"}
+                          </label>
+          
+                          <PatternFormat
+                            value={field.value || ""}
+                            onValueChange={(values) => field.onChange(values.value)}
+                            format="(##) #####-####"
+                            disabled={!isAdmin}
+                            mask="_"
+                            className="w-full p-2 border rounded-lg bg-background focus:ring-2 focus:ring-primary disabled:cursor-not-allowed"
+                            placeholder="(41) 99999-9999"
+                          />
+                        </div>
+                      )}
+                    />
 
           {/* Contato - Apenas admin pode editar */}
-          <div>
-            <label className="block mb-1 text-sm font-medium text-muted-foreground">
-              Contato (Telefone) {!isAdmin && "(Somente admin)"}
-            </label>
-            <input
-              {...register("contato")}
-              className="w-full p-2 border rounded-lg bg-background focus:ring-2 focus:ring-primary disabled:opacity-60 disabled:cursor-not-allowed"
-              placeholder="Telefone do contato"
-              disabled={!isAdmin}
-            />
-          </div>
+          <Controller
+            name="contato"
+            control={control}
+            render={({ field }) => (
+              <div>
+                <label className="block mb-1 text-sm font-medium text-muted-foreground">
+                  Contato (Telefone) {!isAdmin && "(Somente admin)"}
+                </label>
+
+                <PatternFormat
+                  value={field.value || ""}
+                  onValueChange={(values) => field.onChange(values.value)}
+                  format="(##) #####-####"
+                  disabled={!isAdmin}
+                  mask="_"
+                  className="w-full p-2 border rounded-lg bg-background focus:ring-2 focus:ring-primary disabled:cursor-not-allowed"
+                  placeholder="(41) 99999-9999"
+                />
+              </div>
+            )}
+          />
 
           {/* Indicação */}
           <div>

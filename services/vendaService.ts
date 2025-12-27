@@ -15,7 +15,7 @@ interface IVendaServicoDto {
   obs: string;
   condicaoVendaId: number;
   status: number;
-  valorVenda: number;
+  valorVenda: string;
   indicacao: string;
   dataNascimento: string;
 }
@@ -24,7 +24,18 @@ export const CriarVenda = async (data: IVendaServicoDto) => {
   try {
     await apiFetch("/venda", {
       method: "POST",
-      body: JSON.stringify(data),
+      body: JSON.stringify({
+        ...data,
+        valorVenda:
+          data.valorVenda === "" || data.valorVenda == null
+            ? null
+            : Number(String(data.valorVenda).replace(",", ".")),
+
+        dataNascimento:
+          data.dataNascimento === "" || data.dataNascimento == null
+            ? null
+            : new Date(data.dataNascimento)
+      }),
     });
   } catch (error) {
     console.error("Erro ao criar venda:", error);
@@ -64,7 +75,16 @@ export const AtualizarVenda = async (id: string, data: any) => {
   try {
     return await apiFetch(`/venda`, {
       method: "PUT",
-      body: JSON.stringify({ id, ...data }),
+      body: JSON.stringify({ id, ...data,
+        valorVenda:
+          data.valorVenda === "" || data.valorVenda == null
+            ? null
+            : Number(String(data.valorVenda).replace(",", ".")),
+
+        dataNascimento:
+          data.dataNascimento === "" || data.dataNascimento == null
+            ? null
+            : new Date(data.dataNascimento) }),
     });
   } catch (error) {
     console.error("Erro ao atualizar venda:", error);

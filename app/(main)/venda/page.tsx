@@ -292,7 +292,7 @@ export default function ListaVendasPage() {
                     <td className="px-4 py-2">{v.vendedor?.nome}</td>
                     <td className="px-4 py-2">{v.servico?.nome}</td>
                     <td className="px-4 py-2">{v.condicaoVenda?.nome}</td>
-                    <td className="px-4 py-2">R$ {v.valorVenda.toFixed(2)}</td>
+                    <td className="px-4 py-2">{v.valorVenda && `R$ ${v.valorVenda.toFixed(2)}`}</td>
                     <td className="px-4 py-2">
                       {StatusVendaMap[v.status] ?? "Desconhecido"}
                     </td>

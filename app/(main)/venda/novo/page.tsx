@@ -26,7 +26,7 @@ type FormData = {
   obs: string;
   condicaoVendaId: number;
   status: number;
-  valorVenda: number;
+  valorVenda: string;
   indicacao: string;
   dataNascimento: string;
 };
@@ -308,7 +308,8 @@ export default function NovaVenda() {
           <Controller
             name="contato"
             control={control}
-            render={({ field }) => (
+            rules={{ required: "O contato é obrigatório." }}
+            render={({ field, fieldState }) => (
               <div>
                 <label className="block mb-1 text-sm font-medium text-muted-foreground">
                   Contato (Telefone)
@@ -322,6 +323,12 @@ export default function NovaVenda() {
                   className="w-full p-2 border rounded-lg bg-background focus:ring-2 focus:ring-primary"
                   placeholder="(41) 99999-9999"
                 />
+
+                {fieldState.error && (
+                  <p className="text-error text-sm mt-1">
+                    {fieldState.error.message}
+                  </p>
+                )}
               </div>
             )}
           />
@@ -421,24 +428,30 @@ export default function NovaVenda() {
           <Controller
             name="status"
             control={control}
-            render={({ field }) => (
+            rules={{ required: "O status é obrigatório." }}
+            render={({ field, fieldState }) => (
               <div>
                 <label className="block mb-1 text-sm font-medium text-muted-foreground">
                   Status
                 </label>
+
                 <Select<OptionType, false>
                   {...field}
                   options={statusOptions}
                   value={
-                    statusOptions
-                      .map((s) => ({ value: s.value, label: s.label }))
-                      .find((opt) => opt.value === field.value) || null
+                    statusOptions.find((opt) => opt.value === field.value) || null
                   }
                   onChange={(option) => field.onChange(option?.value)}
                   placeholder="Selecione o status"
                   isClearable
                   classNamePrefix="react-select"
                 />
+
+                {fieldState.error && (
+                  <p className="text-error text-sm mt-1">
+                    {fieldState.error.message}
+                  </p>
+                )}
               </div>
             )}
           />
