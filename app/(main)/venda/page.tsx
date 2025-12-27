@@ -97,6 +97,46 @@ type FiltroVenda = {
 /* ======================================================
    API
 ====================================================== */
+const statusRowClass = (status: number) => {
+  switch (status) {
+    case 2: // Venda efetivada
+      return "bg-green-100 hover:bg-green-200";
+    case 1: // Agendar contato
+      return "bg-yellow-100 hover:bg-yellow-200";
+    case 4: // Optou pela concorrência
+    case 5: // Não enviar mais
+      return "bg-red-100 hover:bg-red-200";
+    case 3: // Stand by
+    default:
+      return "hover:bg-muted/40";
+  }
+};
+
+const formatarContato = (valor?: string) => {
+  if (!valor) return "";
+
+  // remove tudo que não for número
+  const numeros = valor.replace(/\D/g, "");
+
+  // celular com DDD (11 dígitos) → (41) 99999-9999
+  if (numeros.length === 11) {
+    return numeros.replace(
+      /(\d{2})(\d{5})(\d{4})/,
+      "($1) $2-$3"
+    );
+  }
+
+  // telefone fixo com DDD (10 dígitos) → (41) 3333-3333
+  if (numeros.length === 10) {
+    return numeros.replace(
+      /(\d{2})(\d{4})(\d{4})/,
+      "($1) $2-$3"
+    );
+  }
+
+  // fallback (caso venha incompleto)
+  return valor;
+};
 
 async function buscarVendas(filtro: FiltroVenda): Promise<PagedResult<Venda>> {
   const params = new URLSearchParams();
@@ -240,11 +280,11 @@ export default function ListaVendasPage() {
                 vendas.map((v) => (
                   <tr
                     key={v.id}
-                    className="border-t hover:bg-muted/40 transition"
+                    className={`border-t transition cursor-pointer ${statusRowClass(v.status)}`}
                     onDoubleClick={() => router.push(`/venda/editar/${v.id}`)}
                   >
                     <td className="px-4 py-2">{v.cliente}</td>
-                    <td className="px-4 py-2">{v.contato}</td>
+                    <td className="px-4 py-2">{formatarContato(v.contato)}</td>
                     <td className="px-4 py-2">
                       {new Date(v.dataInicial).toLocaleString("pt-BR")}
                     </td>

@@ -531,10 +531,10 @@ export default function EditarVenda() {
         <div className="flex gap-4">
           <button
             type="button"
-            onClick={() => router.push("/venda")}
+            onClick={() => router.push(`/agendamento/venda/${vendaId}`)}
             className="flex-1 bg-gray-200 text-gray-800 font-medium py-2 rounded-lg hover:bg-gray-300 transition"
           >
-            Cancelar
+            Agendamentos
           </button>
           <button
             type="submit"
