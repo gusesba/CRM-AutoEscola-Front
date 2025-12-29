@@ -21,6 +21,7 @@ type DashboardResumo = {
   totalMatriculas: number;
   leadsAbertos: number;
   leadsSemSucesso: number;
+  totalVendas: number; // ✅ NOVO
 };
 
 type ComparativoVendedor = {
@@ -28,6 +29,7 @@ type ComparativoVendedor = {
   nome: string;
   leads: number;
   matriculas: number;
+  totalVendas: number; // ✅ NOVO
 };
 
 const getMesAnterior = () => {
@@ -105,6 +107,7 @@ export default function DashboardPage() {
           totalMatriculas: response.totalMatriculas,
           leadsAbertos: response.leadsAbertos,
           leadsSemSucesso: response.leadsSemSucesso,
+          totalVendas: response.totalVendas, // ✅
         });
 
         setComparativo(
@@ -113,6 +116,7 @@ export default function DashboardPage() {
             nome: v.vendedorNome,
             leads: v.totalLeads,
             matriculas: v.totalMatriculas,
+            totalVendas: v.totalVendas, // ✅
           }))
         );
       } catch (err) {
@@ -204,6 +208,16 @@ export default function DashboardPage() {
           icon={<XCircle />}
           danger
         />
+        <DashboardCard
+          titulo="Total em Vendas"
+          valor={`R$ ${
+            resumo?.totalVendas?.toLocaleString("pt-BR", {
+              minimumFractionDigits: 2,
+            }) ?? "0,00"
+          }`}
+          icon={<BarChart3 />}
+          destaque
+        />
       </div>
 
       {/* =====================
@@ -221,6 +235,7 @@ export default function DashboardPage() {
               <th className="px-4 py-2 text-right">Leads</th>
               <th className="px-4 py-2 text-right">Matrículas</th>
               <th className="px-4 py-2 text-right">Conversão</th>
+              <th className="px-4 py-2 text-right">Vendas</th>
             </tr>
           </thead>
           <tbody>
@@ -234,6 +249,12 @@ export default function DashboardPage() {
                   <td className="px-4 py-2 text-right">{v.leads}</td>
                   <td className="px-4 py-2 text-right">{v.matriculas}</td>
                   <td className="px-4 py-2 text-right">{conversao}%</td>
+                  <td className="px-4 py-2 text-right">
+                    R${" "}
+                    {v.totalVendas.toLocaleString("pt-BR", {
+                      minimumFractionDigits: 2,
+                    })}
+                  </td>
                 </tr>
               );
             })}
@@ -256,7 +277,7 @@ function DashboardCard({
   danger,
 }: {
   titulo: string;
-  valor: number;
+  valor: number | string;
   icon: React.ReactNode;
   destaque?: boolean;
   danger?: boolean;
