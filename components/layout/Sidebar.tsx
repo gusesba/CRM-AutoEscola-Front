@@ -29,9 +29,17 @@ export const Sidebar = () => {
             Disparos
           </li>
           {isAdmin && (
+            <>
+            <li className="flex items-center gap-2 p-2 rounded hover:bg-gray-100 cursor-pointer" onClick={() => router.push("/dashboard")}>
+              Dashboard
+            </li>
             <li className="flex items-center gap-2 p-2 rounded hover:bg-gray-100 cursor-pointer">
               Relatórios
             </li>
+            <li className="flex items-center gap-2 p-2 rounded hover:bg-gray-100 cursor-pointer" onClick={() => router.push("/venda/trocar")}>
+              Transferir Leads
+            </li>
+            </>
           )}
         </ul>
       </div>

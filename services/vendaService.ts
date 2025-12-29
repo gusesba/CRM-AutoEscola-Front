@@ -75,7 +75,8 @@ export const AtualizarVenda = async (id: string, data: any) => {
   try {
     return await apiFetch(`/venda`, {
       method: "PUT",
-      body: JSON.stringify({ id, ...data,
+      body: JSON.stringify({
+        id, ...data,
         valorVenda:
           data.valorVenda === "" || data.valorVenda == null
             ? null
@@ -84,12 +85,46 @@ export const AtualizarVenda = async (id: string, data: any) => {
         dataNascimento:
           data.dataNascimento === "" || data.dataNascimento == null
             ? null
-            : new Date(data.dataNascimento) }),
+            : new Date(data.dataNascimento)
+      }),
     });
   } catch (error) {
     console.error("Erro ao atualizar venda:", error);
     throw error instanceof Error
       ? error
       : new Error("Erro inesperado ao atualizar venda.");
+  }
+};
+
+export const TransferirVendas = async (
+  usuarioDestinoId: number,
+  vendasIds: number[]
+) => {
+  try {
+    return await apiFetch(`/venda/transferir`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        usuarioId: usuarioDestinoId,
+        vendasIds,
+      }),
+    });
+  } catch (error) {
+    console.error("Erro ao transferir vendas:", error);
+    throw error instanceof Error
+      ? error
+      : new Error("Erro inesperado ao transferir vendas.");
+  }
+};
+
+export const BuscarDashboard = async (parametros: string) => {
+  try {
+    return await apiFetch(`/venda/dashboard?${parametros}`, {
+      method: "GET",
+    });
+  } catch (error) {
+    console.error("Erro ao buscar dashboard:", error);
+    throw error instanceof Error
+      ? error
+      : new Error("Erro inesperado ao buscar dashboard.");
   }
 };

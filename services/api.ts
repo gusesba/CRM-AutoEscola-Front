@@ -21,6 +21,10 @@ export async function apiFetch(endpoint: string, options: RequestInit = {}) {
       return; // garante que nada mais execute
     }
 
+    if (response.status === 204) {
+      return null;
+    }
+
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(errorData.message || "Erro na requisição.");
