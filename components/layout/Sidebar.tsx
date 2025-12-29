@@ -41,7 +41,7 @@ export const Sidebar = () => {
           </li>
           <li
             className="flex items-center gap-2 p-2 rounded hover:bg-gray-100 cursor-pointer"
-            onClick={() => router.push("/agendamento/diario")}
+            onClick={() => router.push("/venda/leads")}
           >
             Meus Leads
           </li>

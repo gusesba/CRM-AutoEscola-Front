@@ -46,6 +46,9 @@ type Venda = {
   vendedorId: number;
   vendedor: Usuario;
 
+  vendedorAtualId: number;
+  vendedorAtual: Usuario;
+
   cliente: string;
 
   genero: number;
@@ -89,7 +92,7 @@ type PagedResult<T> = {
 
 type FiltroVenda = {
   cliente?: string;
-  vendedor?: string;
+  vendedorAtual?: string;
   contato?: string;
   page: number;
   pageSize: number;
@@ -139,7 +142,8 @@ async function buscarVendas(filtro: FiltroVenda): Promise<PagedResult<Venda>> {
   const params = new URLSearchParams();
 
   if (filtro.cliente) params.append("cliente", filtro.cliente);
-  if (filtro.vendedor) params.append("vendedor", filtro.vendedor);
+  if (filtro.vendedorAtual)
+    params.append("vendedorAtual", filtro.vendedorAtual);
   if (filtro.contato) params.append("contato", filtro.contato);
 
   params.append("page", filtro.page.toString());
@@ -175,7 +179,7 @@ export default function ListaVendasPage() {
     dataFinal: "",
     status: "",
     sedeId: "",
-    vendedorId: "",
+    vendedorAtualId: "",
   });
 
   const [totalPaginas, setTotalPaginas] = useState(1);
@@ -193,8 +197,8 @@ export default function ListaVendasPage() {
         params.append("dataFinal", exportFiltro.dataFinal);
       if (exportFiltro.status) params.append("status", exportFiltro.status);
       if (exportFiltro.sedeId) params.append("sedeId", exportFiltro.sedeId);
-      if (exportFiltro.vendedorId)
-        params.append("vendedorId", exportFiltro.vendedorId);
+      if (exportFiltro.vendedorAtualId)
+        params.append("vendedorAtualId", exportFiltro.vendedorAtualId);
 
       params.append("page", "1");
       params.append("pageSize", "10000");
@@ -206,7 +210,7 @@ export default function ListaVendasPage() {
         Contato: formatarContato(v.contato),
         "Data Inicial": new Date(v.dataInicial).toLocaleDateString("pt-BR"),
         Sede: v.sede?.nome,
-        Vendedor: v.vendedor?.nome,
+        VendedorAtual: v.vendedorAtual?.nome,
         Serviço: v.servico?.nome,
         Condição: v.condicaoVenda?.nome,
         Valor: v.valorVenda,
@@ -305,8 +309,8 @@ export default function ListaVendasPage() {
               onChange={handleFiltroChange}
             />
             <input
-              name="vendedor"
-              placeholder="Vendedor"
+              name="vendedorAtual"
+              placeholder="Vendedor Atual"
               className="p-2 border rounded-lg bg-background text-sm"
               onChange={handleFiltroChange}
             />
@@ -328,7 +332,7 @@ export default function ListaVendasPage() {
                     { key: "contato", label: "Contato" },
                     { key: "dataInicial", label: "Data Inicial" },
                     { key: "sede", label: "Sede" },
-                    { key: "vendedor", label: "Vendedor" },
+                    { key: "vendedorAtual", label: "Vendedor Atual" },
                     { key: "servico", label: "Serviço" },
                     { key: "condicaoVenda", label: "Condição" },
                     { key: "valorVenda", label: "Valor" },
@@ -372,7 +376,7 @@ export default function ListaVendasPage() {
                         {new Date(v.dataInicial).toLocaleString("pt-BR")}
                       </td>
                       <td className="px-4 py-2">{v.sede?.nome}</td>
-                      <td className="px-4 py-2">{v.vendedor?.nome}</td>
+                      <td className="px-4 py-2">{v.vendedorAtual?.nome}</td>
                       <td className="px-4 py-2">{v.servico?.nome}</td>
                       <td className="px-4 py-2">{v.condicaoVenda?.nome}</td>
                       <td className="px-4 py-2">
@@ -493,12 +497,15 @@ export default function ListaVendasPage() {
 
               <select
                 className="p-2 border rounded-lg col-span-2"
-                value={exportFiltro.vendedorId}
+                value={exportFiltro.vendedorAtualId}
                 onChange={(e) =>
-                  setExportFiltro((p) => ({ ...p, vendedorId: e.target.value }))
+                  setExportFiltro((p) => ({
+                    ...p,
+                    vendedorAtualId: e.target.value,
+                  }))
                 }
               >
-                <option value="">Vendedor</option>
+                <option value="">Vendedor Atual</option>
                 {vendedores.map((v) => (
                   <option key={v.id} value={v.id}>
                     {v.nome}
