@@ -12,7 +12,21 @@ export const Sidebar = () => {
     );
   }
   return (
-    <aside className="w-64 fixed top-14 left-0 h-full shadow-right border-r-2 border-gray-200 p-5">
+    <aside
+      className="
+  w-64
+  fixed
+  top-14
+  left-0
+  h-[calc(100vh-3.5rem)]
+  shadow-right
+  border-r-2
+  border-gray-200
+  p-5
+  overflow-y-auto
+  scrollbar-thin scrollbar-thumb-gray-100 scrollbar-track-transparent
+"
+    >
       {/* Atividades */}
       <div className="mb-6">
         <span className="text-xs font-semibold text-gray-400 uppercase">
@@ -30,15 +44,21 @@ export const Sidebar = () => {
           </li>
           {isAdmin && (
             <>
-            <li className="flex items-center gap-2 p-2 rounded hover:bg-gray-100 cursor-pointer" onClick={() => router.push("/dashboard")}>
-              Dashboard
-            </li>
-            <li className="flex items-center gap-2 p-2 rounded hover:bg-gray-100 cursor-pointer">
-              Relatórios
-            </li>
-            <li className="flex items-center gap-2 p-2 rounded hover:bg-gray-100 cursor-pointer" onClick={() => router.push("/venda/trocar")}>
-              Transferir Leads
-            </li>
+              <li
+                className="flex items-center gap-2 p-2 rounded hover:bg-gray-100 cursor-pointer"
+                onClick={() => router.push("/dashboard")}
+              >
+                Dashboard
+              </li>
+              <li className="flex items-center gap-2 p-2 rounded hover:bg-gray-100 cursor-pointer">
+                Relatórios
+              </li>
+              <li
+                className="flex items-center gap-2 p-2 rounded hover:bg-gray-100 cursor-pointer"
+                onClick={() => router.push("/venda/trocar")}
+              >
+                Transferir Leads
+              </li>
             </>
           )}
         </ul>
