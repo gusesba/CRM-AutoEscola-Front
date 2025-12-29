@@ -11,6 +11,7 @@ type Agendamento = {
   venda: {
     id: number;
     cliente: string;
+    contato: string;
   };
   dataAgendamento: string;
   obs: string;
@@ -34,6 +35,26 @@ type Filtro = {
   orderDirection?: "asc" | "desc";
 };
 
+const formatarContato = (valor?: string) => {
+  if (!valor) return "";
+
+  // remove tudo que não for número
+  const numeros = valor.replace(/\D/g, "");
+
+  // celular com DDD (11 dígitos) → (41) 99999-9999
+  if (numeros.length === 11) {
+    return numeros.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3");
+  }
+
+  // telefone fixo com DDD (10 dígitos) → (41) 3333-3333
+  if (numeros.length === 10) {
+    return numeros.replace(/(\d{2})(\d{4})(\d{4})/, "($1) $2-$3");
+  }
+
+  // fallback (caso venha incompleto)
+  return valor;
+};
+
 async function buscarAgendamentos(
   filtro: Filtro
 ): Promise<PagedResult<Agendamento>> {
@@ -55,6 +76,7 @@ async function buscarAgendamentos(
 
 export default function AgendamentosDiarios() {
   const [agendamentos, setAgendamentos] = useState<Agendamento[]>([]);
+  const [dataSelecionada, setDataSelecionada] = useState<string>("");
   const [filtro, setFiltro] = useState<Filtro>({
     page: 1,
     pageSize: 10,
@@ -72,16 +94,32 @@ export default function AgendamentosDiarios() {
     const brasiliaDate = now.toLocaleDateString("pt-BR", {
       timeZone: "America/Sao_Paulo",
     });
+
     const [day, month, year] = brasiliaDate.split("/");
-    const todayStart = `${year}-${month}-${day}T00:00:00`;
-    const todayEnd = `${year}-${month}-${day}T23:59:59`;
+    const today = `${year}-${month}-${day}`;
+
+    setDataSelecionada(today);
 
     setFiltro((prev) => ({
       ...prev,
-      dataAgendamentoDe: todayStart,
-      dataAgendamentoAte: todayEnd,
+      dataAgendamentoDe: `${today}T00:00:00`,
+      dataAgendamentoAte: `${today}T23:59:59`,
+      page: 1,
     }));
   }, []);
+
+  const handleDataChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const data = e.target.value;
+
+    setDataSelecionada(data);
+
+    setFiltro((prev) => ({
+      ...prev,
+      dataAgendamentoDe: `${data}T00:00:00`,
+      dataAgendamentoAte: `${data}T23:59:59`,
+      page: 1,
+    }));
+  };
 
   useEffect(() => {
     carregarAgendamentos();
@@ -125,17 +163,16 @@ export default function AgendamentosDiarios() {
     <div className="flex flex-col items-center justify-center w-full h-full p-6">
       <div className="w-full max-w-6xl bg-card border border-border rounded-xl shadow-right p-6 space-y-4">
         <h1 className="text-2xl font-semibold text-foreground text-center">
-          Agendamentos de Hoje
+          Meus Agendamentos
         </h1>
 
         {/* Filtros adicionais */}
         <div className="grid grid-cols-3 gap-3">
           <input
-            name="vendaId"
-            type="number"
-            placeholder="Filtrar por ID da Venda"
+            type="date"
+            value={dataSelecionada}
+            onChange={handleDataChange}
             className="p-2 border rounded-lg bg-background text-sm focus:ring-2 focus:ring-primary outline-none transition"
-            onChange={handleFiltroChange}
           />
           <input
             name="cliente"
@@ -151,7 +188,7 @@ export default function AgendamentosDiarios() {
           <table className="w-full border-collapse text-sm text-foreground">
             <thead>
               <tr className="bg-muted text-muted-foreground">
-                {["id", "vendaId", "cliente", "dataAgendamento", "obs"].map(
+                {["cliente", "contato", "dataAgendamento", "obs"].map(
                   (campo) => (
                     <th
                       key={campo}
@@ -191,9 +228,10 @@ export default function AgendamentosDiarios() {
                       router.push(`/venda/editar/${a.vendaId}`)
                     }
                   >
-                    <td className="px-4 py-2">{a.id}</td>
-                    <td className="px-4 py-2">{a.vendaId}</td>
                     <td className="px-4 py-2">{a.venda?.cliente}</td>
+                    <td className="px-4 py-2">
+                      {formatarContato(a.venda?.contato)}
+                    </td>
                     <td className="px-4 py-2">
                       {new Date(
                         new Date(a.dataAgendamento).getTime() +

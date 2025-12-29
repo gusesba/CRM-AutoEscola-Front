@@ -37,7 +37,13 @@ export const Sidebar = () => {
             className="flex items-center gap-2 p-2 rounded hover:bg-gray-100 cursor-pointer"
             onClick={() => router.push("/agendamento/diario")}
           >
-            Agendamentos Diários
+            Meus Agendamentos
+          </li>
+          <li
+            className="flex items-center gap-2 p-2 rounded hover:bg-gray-100 cursor-pointer"
+            onClick={() => router.push("/agendamento/diario")}
+          >
+            Meus Leads
           </li>
           <li className="flex items-center gap-2 p-2 rounded hover:bg-gray-100 cursor-pointer">
             Disparos
@@ -49,9 +55,6 @@ export const Sidebar = () => {
                 onClick={() => router.push("/dashboard")}
               >
                 Dashboard
-              </li>
-              <li className="flex items-center gap-2 p-2 rounded hover:bg-gray-100 cursor-pointer">
-                Relatórios
               </li>
               <li
                 className="flex items-center gap-2 p-2 rounded hover:bg-gray-100 cursor-pointer"
@@ -74,13 +77,13 @@ export const Sidebar = () => {
             className="flex items-center gap-2 p-2 rounded hover:bg-gray-100 cursor-pointer"
             onClick={() => router.push("/venda/novo")}
           >
-            Venda
+            Vendas e Leads
           </li>
           <li
             className="flex items-center gap-2 p-2 rounded hover:bg-gray-100 cursor-pointer"
             onClick={() => router.push("/agendamento/novo")}
           >
-            Agendamento
+            Agendamentos
           </li>
           {isAdmin && (
             <>
@@ -88,25 +91,25 @@ export const Sidebar = () => {
                 className="flex items-center gap-2 p-2 rounded hover:bg-gray-100 cursor-pointer"
                 onClick={() => router.push("/vendedor/novo")}
               >
-                Vendedor
+                Vendedores
               </li>
               <li
                 className="flex items-center gap-2 p-2 rounded hover:bg-gray-100 cursor-pointer"
                 onClick={() => router.push("/servico/novo")}
               >
-                Serviço
+                Serviços
               </li>
               <li
                 className="flex items-center gap-2 p-2 rounded hover:bg-gray-100 cursor-pointer"
                 onClick={() => router.push("/sede/novo")}
               >
-                Sede
+                Sedes
               </li>
               <li
                 className="flex items-center gap-2 p-2 rounded hover:bg-gray-100 cursor-pointer"
                 onClick={() => router.push("/condicaoVenda/novo")}
               >
-                Condição Venda
+                Condições de Venda
               </li>
             </>
           )}
@@ -123,7 +126,7 @@ export const Sidebar = () => {
             className="flex items-center gap-2 p-2 rounded hover:bg-gray-100 cursor-pointer"
             onClick={() => router.push("/venda")}
           >
-            Venda
+            Vendas e Leads
           </li>
           <li
             className="flex items-center gap-2 p-2 rounded hover:bg-gray-100 cursor-pointer"
@@ -135,25 +138,25 @@ export const Sidebar = () => {
             className="flex items-center gap-2 p-2 rounded hover:bg-gray-100 cursor-pointer"
             onClick={() => router.push("/vendedor")}
           >
-            Vendedor
+            Vendedores
           </li>
           <li
             className="flex items-center gap-2 p-2 rounded hover:bg-gray-100 cursor-pointer"
             onClick={() => router.push("/servico")}
           >
-            Serviço
+            Serviços
           </li>
           <li
             className="flex items-center gap-2 p-2 rounded hover:bg-gray-100 cursor-pointer"
             onClick={() => router.push("/sede")}
           >
-            Sede
+            Sedes
           </li>
           <li
             className="flex items-center gap-2 p-2 rounded hover:bg-gray-100 cursor-pointer"
             onClick={() => router.push("/condicaoVenda")}
           >
-            Condição Venda
+            Condições de Venda
           </li>
         </ul>
       </div>
