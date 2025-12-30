@@ -35,6 +35,16 @@ type Filtro = {
   orderDirection?: "asc" | "desc";
 };
 
+const getTodayBrazil = () => {
+  const now = new Date();
+  const brasiliaDate = now.toLocaleDateString("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+  });
+
+  const [day, month, year] = brasiliaDate.split("/");
+  return `${year}-${month}-${day}`;
+};
+
 const formatarContato = (valor?: string) => {
   if (!valor) return "";
 
@@ -75,38 +85,21 @@ async function buscarAgendamentos(
 }
 
 export default function AgendamentosDiarios() {
+  const today = getTodayBrazil();
   const [agendamentos, setAgendamentos] = useState<Agendamento[]>([]);
-  const [dataSelecionada, setDataSelecionada] = useState<string>("");
+  const [dataSelecionada, setDataSelecionada] = useState<string>(today);
   const [filtro, setFiltro] = useState<Filtro>({
     page: 1,
     pageSize: 10,
     orderBy: "dataAgendamento",
     orderDirection: "asc",
+    dataAgendamentoDe: `${today}T00:00:00`,
+    dataAgendamentoAte: `${today}T23:59:59`,
   });
   const [totalPaginas, setTotalPaginas] = useState(1);
   const [totalRegistros, setTotalRegistros] = useState(0);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-
-  // Define a data de hoje no formato YYYY-MM-DD (horário de Brasília)
-  useEffect(() => {
-    const now = new Date();
-    const brasiliaDate = now.toLocaleDateString("pt-BR", {
-      timeZone: "America/Sao_Paulo",
-    });
-
-    const [day, month, year] = brasiliaDate.split("/");
-    const today = `${year}-${month}-${day}`;
-
-    setDataSelecionada(today);
-
-    setFiltro((prev) => ({
-      ...prev,
-      dataAgendamentoDe: `${today}T00:00:00`,
-      dataAgendamentoAte: `${today}T23:59:59`,
-      page: 1,
-    }));
-  }, []);
 
   const handleDataChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const data = e.target.value;

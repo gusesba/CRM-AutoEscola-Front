@@ -1,11 +1,11 @@
 "use client";
 
 import { CriarAgendamento } from "@/services/agendamentoService";
+import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 
 type FormData = {
-  vendaId: number;
   dataAgendamento: string;
   obs?: string;
 };
@@ -21,16 +21,20 @@ export default function NovoAgendamento() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
+  const params = useParams();
+  const router = useRouter();
+
   const onSubmit = async (data: FormData) => {
     try {
       await CriarAgendamento({
-        vendaId: Number(data.vendaId),
+        vendaId: Number(params.id),
         dataAgendamento: data.dataAgendamento,
         obs: data.obs,
       });
 
       setSuccessMessage("Agendamento criado com sucesso!");
       reset();
+      router.push(`/agendamento/venda/${params.id}`);
     } catch (err) {
       setSubmitError("Erro ao criar agendamento. Tente novamente.");
     }
@@ -51,37 +55,6 @@ export default function NovoAgendamento() {
           <h1 className="text-2xl font-semibold text-center text-foreground">
             Novo Agendamento
           </h1>
-
-          {/* Venda */}
-          <div>
-            <label
-              htmlFor="vendaId"
-              className="block mb-1 text-sm font-medium text-muted-foreground"
-            >
-              ID da Venda
-            </label>
-            <input
-              id="vendaId"
-              type="number"
-              {...register("vendaId", {
-                required: "A venda é obrigatória.",
-                valueAsNumber: true,
-              })}
-              aria-invalid={errors.vendaId ? "true" : "false"}
-              className={`w-full p-2 border rounded-lg bg-background focus:outline-none transition
-                ${
-                  errors.vendaId
-                    ? "ring-1 focus:ring-2 ring-error"
-                    : "focus:ring-2 focus:ring-primary"
-                }`}
-              placeholder="Informe o ID da venda"
-            />
-            {errors.vendaId && (
-              <p className="text-error text-sm mt-1">
-                {errors.vendaId.message}
-              </p>
-            )}
-          </div>
 
           {/* Data do Agendamento */}
           <div>

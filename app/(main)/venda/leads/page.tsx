@@ -273,7 +273,7 @@ export default function MinhasVendasPendentesPage() {
               ) : (
                 <tr>
                   <td colSpan={7} className="text-center py-6">
-                    Nenhuma venda encontrada
+                    Nenhum Lead encontrado
                   </td>
                 </tr>
               )}

@@ -4,6 +4,13 @@ import { useEffect, useState } from "react";
 import { ArrowUpDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { BuscarAgendamentos } from "@/services/agendamentoService";
 import { useParams, useRouter } from "next/navigation";
+import { BuscarVendaPorId } from "@/services/vendaService";
+
+type Venda = {
+  id: number;
+  cliente: string;
+  contato: string;
+};
 
 type Agendamento = {
   id: number;
@@ -32,6 +39,26 @@ type Filtro = {
   pageSize: number;
   orderBy?: string;
   orderDirection?: "asc" | "desc";
+};
+
+const formatarContato = (valor?: string) => {
+  if (!valor) return "";
+
+  // remove tudo que não for número
+  const numeros = valor.replace(/\D/g, "");
+
+  // celular com DDD (11 dígitos) → (41) 99999-9999
+  if (numeros.length === 11) {
+    return numeros.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3");
+  }
+
+  // telefone fixo com DDD (10 dígitos) → (41) 3333-3333
+  if (numeros.length === 10) {
+    return numeros.replace(/(\d{2})(\d{4})(\d{4})/, "($1) $2-$3");
+  }
+
+  // fallback (caso venha incompleto)
+  return valor;
 };
 
 async function buscarAgendamentos(
@@ -64,6 +91,7 @@ export default function AgendamentosDiarios() {
   const [totalPaginas, setTotalPaginas] = useState(1);
   const [totalRegistros, setTotalRegistros] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [venda, setVenda] = useState<Venda | null>(null);
   const router = useRouter();
   const params = useParams();
 
@@ -93,6 +121,21 @@ export default function AgendamentosDiarios() {
     }
   };
 
+  useEffect(() => {
+    const vendaId = params.id as string;
+
+    const carregarVenda = async () => {
+      try {
+        const vendaData = await BuscarVendaPorId(vendaId);
+        setVenda(vendaData);
+      } catch (error) {
+        console.error("Erro ao buscar venda:", error);
+      }
+    };
+
+    carregarVenda();
+  }, [params.id]);
+
   const handleOrdenacao = (campo: string) => {
     setFiltro((prev) => ({
       ...prev,
@@ -104,64 +147,70 @@ export default function AgendamentosDiarios() {
     }));
   };
 
-  const handleFiltroChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFiltro((prev) => ({
-      ...prev,
-      [name]: value || undefined,
-      page: 1,
-    }));
-  };
-
   return (
     <div className="flex flex-col items-center justify-center w-full h-full p-6">
       <div className="w-full max-w-6xl bg-card border border-border rounded-xl shadow-right p-6 space-y-4">
+        <div className="flex justify-end mb-[-10px]">
+          <button
+            className="px-4 py-2 bg-primary text-white rounded-lg hover:opacity-90"
+            onClick={() => router.push(`/agendamento/novo/${params.id}`)}
+          >
+            Novo
+          </button>
+        </div>
+
         <h1 className="text-2xl font-semibold text-foreground text-center">
           Agendamentos do Cliente
         </h1>
+        {venda && (
+          <div className="flex gap-4 mb-4">
+            <div className="flex flex-col w-full">
+              <label className="text-xs text-muted-foreground mb-1">
+                Cliente
+              </label>
+              <input
+                type="text"
+                value={venda.cliente}
+                disabled
+                className="h-9 px-3 rounded-md border border-border bg-muted text-foreground disabled:opacity-100 disabled:cursor-default"
+              />
+            </div>
 
-        {/* Filtros adicionais */}
-        <div className="grid grid-cols-3 gap-3">
-          <input
-            name="vendaId"
-            type="number"
-            placeholder="Filtrar por ID da Venda"
-            className="p-2 border rounded-lg bg-background text-sm focus:ring-2 focus:ring-primary outline-none transition"
-            onChange={handleFiltroChange}
-          />
-          <input
-            name="cliente"
-            type="text"
-            placeholder="Filtrar por Cliente"
-            className="p-2 border rounded-lg bg-background text-sm focus:ring-2 focus:ring-primary outline-none transition"
-            onChange={handleFiltroChange}
-          />
-        </div>
-
+            <div className="flex flex-col w-full">
+              <label className="text-xs text-muted-foreground mb-1">
+                Contato
+              </label>
+              <input
+                type="text"
+                value={formatarContato(venda.contato)}
+                disabled
+                className="h-9 px-3 rounded-md border border-border bg-muted text-foreground disabled:opacity-100 disabled:cursor-default"
+              />
+            </div>
+          </div>
+        )}
         {/* Tabela */}
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-sm text-foreground">
             <thead>
               <tr className="bg-muted text-muted-foreground">
-                {["id", "vendaId", "cliente", "dataAgendamento", "obs"].map(
-                  (campo) => (
-                    <th
-                      key={campo}
-                      onClick={() => handleOrdenacao(campo)}
-                      className="px-4 py-3 text-left font-medium cursor-pointer select-none hover:text-primary transition"
-                    >
-                      <div className="flex items-center gap-1">
-                        {campo.charAt(0).toUpperCase() + campo.slice(1)}
-                        <ArrowUpDown
-                          size={14}
-                          className={`transition ${
-                            filtro.orderBy === campo ? "text-primary" : ""
-                          }`}
-                        />
-                      </div>
-                    </th>
-                  )
-                )}
+                {["dataAgendamento", "obs"].map((campo) => (
+                  <th
+                    key={campo}
+                    onClick={() => handleOrdenacao(campo)}
+                    className="px-4 py-3 text-left font-medium cursor-pointer select-none hover:text-primary transition"
+                  >
+                    <div className="flex items-center gap-1">
+                      {campo.charAt(0).toUpperCase() + campo.slice(1)}
+                      <ArrowUpDown
+                        size={14}
+                        className={`transition ${
+                          filtro.orderBy === campo ? "text-primary" : ""
+                        }`}
+                      />
+                    </div>
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
@@ -183,9 +232,6 @@ export default function AgendamentosDiarios() {
                       router.push(`/venda/editar/${a.vendaId}`)
                     }
                   >
-                    <td className="px-4 py-2">{a.id}</td>
-                    <td className="px-4 py-2">{a.vendaId}</td>
-                    <td className="px-4 py-2">{a.venda?.cliente}</td>
                     <td className="px-4 py-2">
                       {new Date(
                         new Date(a.dataAgendamento).getTime() +
