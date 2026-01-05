@@ -19,7 +19,7 @@ export function ChatList({ chats, selectedChatId, onSelect }: Props) {
   );
 
   return (
-    <aside className="w-[360px] bg-[#111b21] border-r border-[#222] overflow-y-auto">
+    <aside className="w-[360px] bg-white border-r border-gray-200 overflow-y-auto">
       {chats.map((chat) => (
         <ChatItem
           key={chat.id}

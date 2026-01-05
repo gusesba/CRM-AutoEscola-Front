@@ -46,21 +46,34 @@ export default function Home() {
   const selectedChat = chats.find((c) => c.id === selectedChatId);
 
   return (
-    <div className="flex bg-black h-screen">
-      <ChatList
-        chats={chats}
-        selectedChatId={selectedChatId}
-        onSelect={(id) => {
-          setSelectedChatId(id);
+    <div className="flex-1 bg-[#f0f2f5]">
+      <div
+        className="
+          mx-auto
+          h-[calc(100vh-7rem)]   /* espaço p/ header global */
+          max-w-[1400px]
+          bg-white
+          rounded-xl
+          shadow-md
+          flex
+          overflow-hidden
+        "
+      >
+        <ChatList
+          chats={chats}
+          selectedChatId={selectedChatId}
+          onSelect={(id) => {
+            setSelectedChatId(id);
 
-          // zera unread ao abrir
-          setChats((prev) =>
-            prev.map((c) => (c.id === id ? { ...c, unreadCount: 0 } : c))
-          );
-        }}
-      />
+            // zera unread ao abrir
+            setChats((prev) =>
+              prev.map((c) => (c.id === id ? { ...c, unreadCount: 0 } : c))
+            );
+          }}
+        />
 
-      <ChatWindow chat={selectedChat} />
+        <ChatWindow chat={selectedChat} />
+      </div>
     </div>
   );
 }

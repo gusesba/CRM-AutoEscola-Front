@@ -5,6 +5,7 @@ import { Chat } from "@/types/chat";
 import { Message } from "@/types/messages";
 import { fetchMessages, sendMessage } from "@/services/whatsapp";
 import { MessageBubble } from "./MessageBubble";
+import { MessageInput } from "./MessageInput";
 
 function lastMessageToMessage(
   last: NonNullable<Chat["lastMessage"]>,
@@ -68,7 +69,6 @@ export const ChatWindow = React.memo(function ChatWindow({ chat }: Props) {
     };
 
     // UX instantâneo
-    setMessages((prev) => [...prev, optimisticMessage]);
     setText("");
 
     try {
@@ -81,35 +81,40 @@ export const ChatWindow = React.memo(function ChatWindow({ chat }: Props) {
 
   if (!chat) {
     return (
-      <main className="flex-1 bg-[#0b141a] flex items-center justify-center text-gray-400">
-        Selecione uma conversa
+      <main className="flex-1 flex items-center justify-center bg-[#f7f8fa]">
+        <p className="text-gray-500">Selecione uma conversa</p>
       </main>
     );
   }
 
   return (
-    <main className="flex-1 flex flex-col bg-[#0b141a] min-h-0">
+    <main className="flex-1 flex flex-col min-w-0">
       {/* Header */}
-      <header className="h-16 shrink-0 bg-[#202c33] flex items-center px-4 border-b border-[#222]">
-        <p className="text-white font-medium">{chat.name}</p>
+      <header className="h-16 shrink-0 px-6 flex items-center border-b border-gray-200 bg-[#f7f8fa]">
+        <p className="font-medium text-gray-900">{chat.name}</p>
       </header>
 
       {/* Mensagens */}
-      <div className="flex-1 p-6 flex flex-col gap-2 overflow-y-auto">
+      <div
+        className="
+          flex-1
+          overflow-y-auto
+          px-6
+          py-4
+          bg-[#efeae2]
+          flex
+          flex-col
+          gap-2
+        "
+      >
         {messages.map((msg) => (
           <MessageBubble key={msg.id} text={msg.body} isMe={msg.fromMe} />
         ))}
       </div>
 
       {/* Footer */}
-      <footer className="h-16 shrink-0 bg-[#202c33] flex items-center px-4 gap-3">
-        <input
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleSend()}
-          className="flex-1 bg-[#2a3942] rounded-lg px-4 py-2 text-white outline-none"
-          placeholder="Digite uma mensagem"
-        />
+      <footer className="h-16 shrink-0 px-6 flex items-center gap-3 border-t border-gray-200 bg-[#f7f8fa]">
+        <MessageInput value={text} onChange={setText} onSend={handleSend} />
       </footer>
     </main>
   );

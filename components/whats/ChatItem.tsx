@@ -7,42 +7,79 @@ type Props = {
   onSelect: (id: string) => void;
 };
 
+function formatTime(timestamp?: number) {
+  if (!timestamp) return "";
+  const date = new Date(timestamp * 1000);
+  return date.toLocaleTimeString("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 function ChatItemComponent({ chat, isSelected, onSelect }: Props) {
+  const hasUnread = chat.unreadCount > 0 && !isSelected;
+
   return (
     <div
       onClick={() => onSelect(chat.id)}
-      className={`flex gap-3 px-4 py-3 cursor-pointer hover:bg-[#202c33]
-        ${isSelected ? "bg-[#202c33]" : ""}
+      className={`
+        mx-3 my-1.5
+        px-4 py-3
+        flex gap-3 cursor-pointer
+        rounded-lg
+        transition-colors
+        hover:bg-gray-100
+        ${isSelected ? "bg-gray-100" : "bg-white"}
       `}
     >
       {/* Avatar */}
-      <div className="w-12 h-12 rounded-full bg-[#2a3942]" />
+      <div className="w-12 h-12 rounded-full bg-gray-300 shrink-0" />
 
       {/* Conteúdo */}
-      <div className="flex-1 border-b border-[#222] pb-3">
+      <div className="flex-1 min-w-0">
+        {/* Linha 1 */}
         <div className="flex justify-between items-center">
-          <p className="text-white font-medium">{chat.name}</p>
+          <p
+            className={`truncate ${
+              hasUnread ? "font-semibold text-gray-900" : "text-gray-900"
+            }`}
+          >
+            {chat.name}
+          </p>
 
-          {/* 🔔 BADGE */}
-          {chat.unreadCount > 0 && !isSelected && (
+          <span
+            className={`text-xs ${
+              hasUnread ? "text-green-600 font-medium" : "text-gray-400"
+            }`}
+          >
+            {formatTime(chat.lastMessage?.timestamp)}
+          </span>
+        </div>
+
+        {/* Linha 2 */}
+        <div className="flex justify-between items-center gap-2">
+          <p
+            className={`text-sm truncate ${
+              hasUnread ? "font-medium text-gray-900" : "text-gray-500"
+            }`}
+          >
+            {chat.lastMessage?.body ?? "Sem mensagens"}
+          </p>
+
+          {hasUnread && (
             <span
-              className="min-w-[20px] h-5 px-2 text-xs font-semibold
-              bg-[#00a884] text-black rounded-full flex items-center justify-center"
+              className="
+                min-w-[20px] h-5 px-2
+                text-xs font-semibold
+                bg-green-500 text-white
+                rounded-full
+                flex items-center justify-center
+              "
             >
               {chat.unreadCount}
             </span>
           )}
         </div>
-
-        <p
-          className={`text-sm truncate ${
-            chat.unreadCount > 0 && !isSelected
-              ? "text-white font-medium"
-              : "text-gray-400"
-          }`}
-        >
-          {chat.lastMessage?.body ?? "Sem mensagens"}
-        </p>
       </div>
     </div>
   );
