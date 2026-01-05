@@ -15,14 +15,32 @@ function ChatItemComponent({ chat, isSelected, onSelect }: Props) {
         ${isSelected ? "bg-[#202c33]" : ""}
       `}
     >
+      {/* Avatar */}
       <div className="w-12 h-12 rounded-full bg-[#2a3942]" />
 
+      {/* Conteúdo */}
       <div className="flex-1 border-b border-[#222] pb-3">
-        <div className="flex justify-between">
+        <div className="flex justify-between items-center">
           <p className="text-white font-medium">{chat.name}</p>
+
+          {/* 🔔 BADGE */}
+          {chat.unreadCount > 0 && !isSelected && (
+            <span
+              className="min-w-[20px] h-5 px-2 text-xs font-semibold
+              bg-[#00a884] text-black rounded-full flex items-center justify-center"
+            >
+              {chat.unreadCount}
+            </span>
+          )}
         </div>
 
-        <p className="text-sm text-gray-400 truncate">
+        <p
+          className={`text-sm truncate ${
+            chat.unreadCount > 0 && !isSelected
+              ? "text-white font-medium"
+              : "text-gray-400"
+          }`}
+        >
           {chat.lastMessage?.body ?? "Sem mensagens"}
         </p>
       </div>
@@ -34,6 +52,6 @@ export const ChatItem = React.memo(
   ChatItemComponent,
   (prev, next) =>
     prev.isSelected === next.isSelected &&
-    prev.chat.lastMessage?.timestamp === next.chat.lastMessage?.timestamp &&
-    prev.chat.unreadCount === next.chat.unreadCount
+    prev.chat.unreadCount === next.chat.unreadCount &&
+    prev.chat.lastMessage?.timestamp === next.chat.lastMessage?.timestamp
 );

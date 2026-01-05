@@ -32,3 +32,15 @@ export async function fetchMessages(
 
   return res.json();
 }
+
+export async function sendMessage(
+  userId: string,
+  chatId: string,
+  message: string
+) {
+  await fetch(`http://localhost:3001/whatsapp/${userId}/messages/${chatId}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message }),
+  });
+}
