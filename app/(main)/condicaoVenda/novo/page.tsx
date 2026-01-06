@@ -3,6 +3,7 @@
 import { CriarCondicaoVenda } from "@/services/condicaoVendaService";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 
 type FormData = {
   nome: string;
@@ -22,10 +23,11 @@ export default function NovoCondicaoVenda() {
   const onSubmit = async (data: FormData) => {
     try {
       await CriarCondicaoVenda(data);
-      setSuccessMessage("Serviço adicionado com sucesso!");
+      toast.success("Condição venda adicionada com sucesso!");
       reset();
     } catch (err) {
-      setSubmitError("Erro ao adicionar condição venda. Tente novamente.");
+      console.log(err);
+      toast.error("Erro ao adicionar condição venda. Tente novamente.");
     }
   };
 

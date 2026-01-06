@@ -91,6 +91,7 @@ export default function AgendamentosDiarios() {
   const [totalPaginas, setTotalPaginas] = useState(1);
   const [totalRegistros, setTotalRegistros] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const [venda, setVenda] = useState<Venda | null>(null);
   const router = useRouter();
   const params = useParams();
@@ -153,9 +154,13 @@ export default function AgendamentosDiarios() {
         <div className="flex justify-end mb-[-10px]">
           <button
             className="px-4 py-2 bg-primary text-white rounded-lg hover:opacity-90"
-            onClick={() => router.push(`/agendamento/novo/${params.id}`)}
+            onClick={() => {
+              setIsRedirecting(true);
+              router.push(`/agendamento/novo/${params.id}`);
+            }}
+            disabled={isRedirecting}
           >
-            Novo
+            {isRedirecting ? "Redirecionando..." : "Novo"}
           </button>
         </div>
 

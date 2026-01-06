@@ -4,6 +4,7 @@ import { CriarAgendamento } from "@/services/agendamentoService";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 
 type FormData = {
   dataAgendamento: string;
@@ -32,11 +33,12 @@ export default function NovoAgendamento() {
         obs: data.obs,
       });
 
-      setSuccessMessage("Agendamento criado com sucesso!");
+      toast.success("Agendamento criado com sucesso!");
       reset();
-      router.push(`/agendamento/venda/${params.id}`);
-    } catch (err) {
-      setSubmitError("Erro ao criar agendamento. Tente novamente.");
+      await router.push(`/agendamento/venda/${params.id}`);
+    } catch (error) {
+      console.log(error);
+      toast.error("Erro ao criar agendamento. Tente novamente mais tarde.");
     }
   };
 

@@ -11,6 +11,7 @@ import { BuscarSedes } from "@/services/sedeService";
 import { BuscarVendaPorId, AtualizarVenda } from "@/services/vendaService";
 import { useAuth } from "@/hooks/useAuth";
 import { PatternFormat } from "react-number-format";
+import { toast } from "sonner";
 
 type FormData = {
   sedeId: number;
@@ -57,6 +58,7 @@ export default function EditarVenda() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [loadingVenda, setLoadingVenda] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   const [sedes, setSedes] = useState<{ id: number; nome: string }[]>([]);
   const [vendedores, setVendedores] = useState<{ id: number; nome: string }[]>(
@@ -123,13 +125,10 @@ export default function EditarVenda() {
   const onSubmit = async (data: FormData) => {
     try {
       await AtualizarVenda(vendaId, data);
-      setSuccessMessage("Venda atualizada com sucesso!");
-      setTimeout(() => {
-        router.push("/venda"); // Ajuste a rota conforme necessário
-      }, 2000);
-    } catch (err) {
-      setSubmitError("Erro ao atualizar venda. Tente novamente.");
-      console.error(err);
+      toast.success("Venda atualizada com sucesso!");
+    } catch (error) {
+      toast.error("Erro ao atualizar venda. Tente novamente mais tarde.");
+      console.error(error);
     }
   };
 
@@ -350,26 +349,26 @@ export default function EditarVenda() {
 
           {/* Fone - Apenas admin pode editar */}
           <Controller
-                      name="fone"
-                      control={control}
-                      render={({ field }) => (
-                        <div>
-                          <label className="block mb-1 text-sm font-medium text-muted-foreground">
-                            Fone {!isAdmin && "(Somente admin)"}
-                          </label>
-          
-                          <PatternFormat
-                            value={field.value || ""}
-                            onValueChange={(values) => field.onChange(values.value)}
-                            format="(##) #####-####"
-                            disabled={!isAdmin}
-                            mask="_"
-                            className="w-full p-2 border rounded-lg bg-background focus:ring-2 focus:ring-primary disabled:cursor-not-allowed"
-                            placeholder="(41) 99999-9999"
-                          />
-                        </div>
-                      )}
-                    />
+            name="fone"
+            control={control}
+            render={({ field }) => (
+              <div>
+                <label className="block mb-1 text-sm font-medium text-muted-foreground">
+                  Fone {!isAdmin && "(Somente admin)"}
+                </label>
+
+                <PatternFormat
+                  value={field.value || ""}
+                  onValueChange={(values) => field.onChange(values.value)}
+                  format="(##) #####-####"
+                  disabled={!isAdmin}
+                  mask="_"
+                  className="w-full p-2 border rounded-lg bg-background focus:ring-2 focus:ring-primary disabled:cursor-not-allowed"
+                  placeholder="(41) 99999-9999"
+                />
+              </div>
+            )}
+          />
 
           {/* Contato - Apenas admin pode editar */}
           <Controller
@@ -552,10 +551,13 @@ export default function EditarVenda() {
         <div className="flex gap-4">
           <button
             type="button"
-            onClick={() => router.push(`/agendamento/venda/${vendaId}`)}
+            onClick={() => {
+              setIsRedirecting(true);
+              router.push(`/agendamento/venda/${vendaId}`);
+            }}
             className="flex-1 bg-gray-200 text-gray-800 font-medium py-2 rounded-lg hover:bg-gray-300 transition"
           >
-            Agendamentos
+            {isRedirecting ? "Redirecionando..." : "Agendamentos"}
           </button>
           <button
             type="submit"

@@ -1,11 +1,12 @@
 "use client";
-import React, { useEffect } from "react";
+import React, { useState } from "react";
 import InputLabel from "../UI/InputLabel";
 import Button from "../UI/Button";
 import Link from "next/link";
 import { SubmitHandler, useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { Login } from "@/services/authService";
+import { toast } from "sonner";
 
 interface IFormValues {
   usuario: string;
@@ -20,13 +21,28 @@ export default function LoginFormCard() {
   } = useForm<IFormValues>();
 
   const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
 
   const onSubmit: SubmitHandler<IFormValues> = async (data) => {
     try {
+      setIsLoading(true);
+
       await Login(data);
-      router.push("/vendedor/novo");
-    } catch (error) {
+
+      toast.success("Logado com sucesso!");
+      await router.push("/vendedor/novo");
+    } catch (error: any) {
       console.error(error);
+
+      if (
+        error.message === "Falha ao fazer login. Verifique suas credenciais."
+      ) {
+        toast.error("Credenciais inválidas. Tente novamente.");
+      } else {
+        toast.error("Falha inesperada no login. Tente novamente mais tarde.");
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -41,16 +57,6 @@ export default function LoginFormCard() {
         onSubmit={handleSubmit(onSubmit)}
         className="space-y-5 text-gray-400"
       >
-        {/* <InputLabel
-                    text="Nome"
-                    id="name"
-                    type="text"
-                    placeholder="Seu nome"
-                    register={register}
-                    rules={{ required: "Digite seu nome" }}
-                    errorMesage={errors.name?.message}
-                /> */}
-
         <InputLabel
           text="Usuário"
           id="usuario"
@@ -77,18 +83,10 @@ export default function LoginFormCard() {
           errorMesage={errors.senha?.message}
         />
 
-        <Button>Login</Button>
+        <Button disabled={isLoading}>
+          {isLoading ? "Entrando..." : "Login"}
+        </Button>
       </form>
-
-      <div className="mt-6 flex items-center justify-center gap-4 text-gray-400 text-sm">
-        <Link href="#" className="hover:text-primary">
-          Esqueceu a senha?
-        </Link>
-        <span>•</span>
-        <Link href="#" className="hover:text-primary">
-          Criar conta
-        </Link>
-      </div>
     </div>
   );
 }

@@ -10,6 +10,8 @@ import { BuscarSedes } from "@/services/sedeService"; // supondo que exista
 import { CriarVenda } from "@/services/vendaService";
 import { useAuth } from "@/hooks/useAuth";
 import { PatternFormat } from "react-number-format";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 type FormData = {
   sedeId: number;
@@ -59,7 +61,7 @@ export default function NovaVenda() {
   const [condicoes, setCondicoes] = useState<{ id: number; nome: string }[]>(
     []
   );
-
+  const router = useRouter();
   useEffect(() => {
     const carregarListas = async () => {
       const [sedesRes, vendRes, servRes, condRes] = await Promise.all([
@@ -86,11 +88,12 @@ export default function NovaVenda() {
 
   const onSubmit = async (data: FormData) => {
     try {
-      await CriarVenda(data);
-      setSuccessMessage("Venda registrada com sucesso!");
-      reset();
-    } catch (err) {
-      setSubmitError("Erro ao registrar venda. Tente novamente.");
+      const venda = await CriarVenda(data);
+      toast.success("Venda registrada com sucesso!");
+      await router.push(`/venda/editar/${venda.id}`);
+    } catch (error) {
+      console.log(error);
+      toast.error("Erro ao registrar a venda. Tente novamente mais tarde.");
     }
   };
 
@@ -439,7 +442,8 @@ export default function NovaVenda() {
                   {...field}
                   options={statusOptions}
                   value={
-                    statusOptions.find((opt) => opt.value === field.value) || null
+                    statusOptions.find((opt) => opt.value === field.value) ||
+                    null
                   }
                   onChange={(option) => field.onChange(option?.value)}
                   placeholder="Selecione o status"

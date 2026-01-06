@@ -1,13 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  ArrowRight,
-  ArrowLeft,
-  Save,
-} from "lucide-react";
+import { ArrowRight, ArrowLeft, Save } from "lucide-react";
 import { BuscarUsuarios } from "@/services/authService";
 import { BuscarVendas, TransferirVendas } from "@/services/vendaService";
+import { toast } from "sonner";
 
 /* =======================
    TIPOS
@@ -32,18 +29,12 @@ const formatarContato = (valor?: string) => {
 
   // celular com DDD (11 dígitos) → (41) 99999-9999
   if (numeros.length === 11) {
-    return numeros.replace(
-      /(\d{2})(\d{5})(\d{4})/,
-      "($1) $2-$3"
-    );
+    return numeros.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3");
   }
 
   // telefone fixo com DDD (10 dígitos) → (41) 3333-3333
   if (numeros.length === 10) {
-    return numeros.replace(
-      /(\d{2})(\d{4})(\d{4})/,
-      "($1) $2-$3"
-    );
+    return numeros.replace(/(\d{2})(\d{4})(\d{4})/, "($1) $2-$3");
   }
 
   // fallback (caso venha incompleto)
@@ -53,7 +44,6 @@ const formatarContato = (valor?: string) => {
 /* =======================
    PLACEHOLDERS
 ======================= */
-
 
 /* =======================
    COMPONENTE
@@ -66,7 +56,6 @@ export default function TransferirVendasPage() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-
   const [vendasOrigem, setVendasOrigem] = useState<Venda[]>([]);
   const [vendasDestino, setVendasDestino] = useState<Venda[]>([]);
 
@@ -76,11 +65,10 @@ export default function TransferirVendasPage() {
   useEffect(() => {
     const carregarVendedores = async () => {
       setUsuarios((await BuscarUsuarios("pageSize=1000"))?.items || []);
-    }
+    };
     carregarVendedores();
-  }, [])
+  }, []);
 
-  useEffect(() => {
   const buscarVendas = async () => {
     try {
       // ===============================
@@ -121,69 +109,67 @@ export default function TransferirVendasPage() {
     }
   };
 
-  buscarVendas();
-}, [vendedorOrigem, vendedorDestino]);
-
-
+  useEffect(() => {
+    buscarVendas();
+  }, [vendedorOrigem, vendedorDestino]);
 
   /* =======================
      AÇÕES VISUAIS
   ======================= */
 
   const moverParaDestino = () => {
-    const selecionadas = vendasOrigem.filter(v =>
+    const selecionadas = vendasOrigem.filter((v) =>
       selecionadasOrigem.includes(v.id)
     );
 
-    setVendasOrigem(prev =>
-      prev.filter(v => !selecionadasOrigem.includes(v.id))
+    setVendasOrigem((prev) =>
+      prev.filter((v) => !selecionadasOrigem.includes(v.id))
     );
-    setVendasDestino(prev => [...prev, ...selecionadas]);
+    setVendasDestino((prev) => [...prev, ...selecionadas]);
     setSelecionadasOrigem([]);
   };
 
   const moverParaOrigem = () => {
-    const selecionadas = vendasDestino.filter(v =>
+    const selecionadas = vendasDestino.filter((v) =>
       selecionadasDestino.includes(v.id)
     );
 
-    setVendasDestino(prev =>
-      prev.filter(v => !selecionadasDestino.includes(v.id))
+    setVendasDestino((prev) =>
+      prev.filter((v) => !selecionadasDestino.includes(v.id))
     );
-    setVendasOrigem(prev => [...prev, ...selecionadas]);
+    setVendasOrigem((prev) => [...prev, ...selecionadas]);
     setSelecionadasDestino([]);
   };
 
   const salvarTransferencia = async () => {
-  // limpa mensagens anteriores
-  setSuccessMessage(null);
-  setSubmitError(null);
+    // limpa mensagens anteriores
+    setSuccessMessage(null);
+    setSubmitError(null);
 
-  if (!vendedorDestino || vendasDestino.length === 0) {
-    setSubmitError("Selecione o vendedor destino e ao menos uma venda.");
-    return;
-  }
+    if (!vendedorDestino || vendasDestino.length === 0) {
+      toast.error("Selecione o vendedor destino e ao menos uma venda.");
+      return;
+    }
 
-  try {
-    await TransferirVendas(
-      vendedorDestino,
-      vendasDestino.map(v => v.id)
-    );
+    try {
+      await TransferirVendas(
+        vendedorDestino,
+        vendasDestino.map((v) => v.id)
+      );
 
-    setSuccessMessage("Vendas transferidas com sucesso!");
+      toast.success("Vendas transferidas com sucesso!");
 
-    // 🔄 limpa listas após sucesso
-    setVendasOrigem([]);
-    setVendasDestino([]);
-    setSelecionadasOrigem([]);
-    setSelecionadasDestino([]);
-  } catch (error) {
-    console.error(error);
-    setSubmitError("Erro ao transferir vendas. Tente novamente.");
-  }
-};
-
-
+      // 🔄 limpa listas após sucesso
+      setVendasOrigem([]);
+      setVendasDestino([]);
+      setSelecionadasOrigem([]);
+      setSelecionadasDestino([]);
+      buscarVendas();
+    } catch (error) {
+      console.error(error);
+      toast.error("Erro ao transferir vendas. Tente novamente.");
+    }
+  };
 
   /* =======================
      UI
@@ -192,7 +178,6 @@ export default function TransferirVendasPage() {
   return (
     <div className="p-6 w-full h-full">
       <div className="max-w-7xl mx-auto bg-card border border-border rounded-xl p-6 space-y-6">
-
         <h1 className="text-2xl font-semibold text-center">
           Transferência de Leads
         </h1>
@@ -210,7 +195,7 @@ export default function TransferirVendasPage() {
               }}
             >
               <option value="">Selecione</option>
-              {usuarios.map(v => (
+              {usuarios.map((v) => (
                 <option key={v.id} value={v.id}>
                   {v.nome}
                 </option>
@@ -229,7 +214,7 @@ export default function TransferirVendasPage() {
               }}
             >
               <option value="">Selecione</option>
-              {usuarios.map(v => (
+              {usuarios.map((v) => (
                 <option key={v.id} value={v.id}>
                   {v.nome}
                 </option>
@@ -240,7 +225,6 @@ export default function TransferirVendasPage() {
 
         {/* TABELAS */}
         <div className="grid grid-cols-[1fr_auto_1fr] gap-4 items-center">
-
           {/* TABELA ORIGEM */}
           <TabelaVendas
             titulo="Vendas do Vendedor Origem"
@@ -253,7 +237,12 @@ export default function TransferirVendasPage() {
           <div className="flex flex-col gap-2">
             <button
               onClick={moverParaDestino}
-              disabled={selecionadasOrigem.length === 0 || (vendedorDestino == vendedorOrigem) || vendedorDestino == "" || vendedorOrigem == ""}
+              disabled={
+                selecionadasOrigem.length === 0 ||
+                vendedorDestino == vendedorOrigem ||
+                vendedorDestino == "" ||
+                vendedorOrigem == ""
+              }
               className="p-2 border rounded-lg hover:bg-muted disabled:opacity-50"
             >
               <ArrowRight />
@@ -261,7 +250,12 @@ export default function TransferirVendasPage() {
 
             <button
               onClick={moverParaOrigem}
-              disabled={selecionadasDestino.length === 0 || (vendedorDestino == vendedorOrigem) || vendedorDestino == "" || vendedorOrigem == ""}
+              disabled={
+                selecionadasDestino.length === 0 ||
+                vendedorDestino == vendedorOrigem ||
+                vendedorDestino == "" ||
+                vendedorOrigem == ""
+              }
               className="p-2 border rounded-lg hover:bg-muted disabled:opacity-50"
             >
               <ArrowLeft />
@@ -299,7 +293,6 @@ export default function TransferirVendasPage() {
             {submitError}
           </p>
         )}
-
       </div>
     </div>
   );
@@ -321,18 +314,14 @@ function TabelaVendas({
   setSelecionadas: React.Dispatch<React.SetStateAction<number[]>>;
 }) {
   const toggle = (id: number) => {
-    setSelecionadas(prev =>
-      prev.includes(id)
-        ? prev.filter(i => i !== id)
-        : [...prev, id]
+    setSelecionadas((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
     );
   };
 
   return (
     <div className="border border-border rounded-xl overflow-hidden">
-      <div className="bg-muted px-4 py-2 font-medium text-sm">
-        {titulo}
-      </div>
+      <div className="bg-muted px-4 py-2 font-medium text-sm">{titulo}</div>
 
       <table className="w-full text-sm">
         <thead>
@@ -344,11 +333,8 @@ function TabelaVendas({
         </thead>
         <tbody>
           {vendas.length > 0 ? (
-            vendas.map(v => (
-              <tr
-                key={v.id}
-                className="border-t hover:bg-muted/40"
-              >
+            vendas.map((v) => (
+              <tr key={v.id} className="border-t hover:bg-muted/40">
                 <td className="px-3 py-2">
                   <input
                     type="checkbox"

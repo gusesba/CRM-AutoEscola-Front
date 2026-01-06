@@ -18,6 +18,7 @@ export default function Home() {
 
   // 🔌 SOCKET GLOBAL
   useWhatsSocket("1", (data: { chatId: string; message: Message }) => {
+    console.log("Nova mensagem via socket");
     setChats((prev) => {
       const chatIndex = prev.findIndex((c) => c.id === data.chatId);
 

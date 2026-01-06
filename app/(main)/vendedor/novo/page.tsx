@@ -3,6 +3,7 @@
 import { CriarVendedor } from "@/services/authService";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 
 type FormData = {
   nome: string;
@@ -25,10 +26,11 @@ export default function NovoVendedor() {
   const onSubmit = async (data: FormData) => {
     try {
       await CriarVendedor(data);
-      setSuccessMessage("Vendedor adicionado com sucesso!");
+      toast.success("Vendedor adicionado com sucesso!");
       reset();
     } catch (err) {
-      setSubmitError("Erro ao adicionar vendedor. Tente novamente.");
+      console.log(err);
+      toast.error("Erro ao adicionar vendedor. Tente novamente mais tarde.");
     }
   };
 

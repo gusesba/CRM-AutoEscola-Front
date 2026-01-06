@@ -3,6 +3,7 @@
 import { CriarServico } from "@/services/servicoService";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 
 type FormData = {
   nome: string;
@@ -22,10 +23,11 @@ export default function NovoServico() {
   const onSubmit = async (data: FormData) => {
     try {
       await CriarServico(data);
-      setSuccessMessage("Serviço adicionado com sucesso!");
+      toast.success("Serviço adicionado com sucesso!");
       reset();
     } catch (err) {
-      setSubmitError("Erro ao adicionar serviço. Tente novamente.");
+      console.log(err);
+      toast.error("Erro ao adicionar serviço. Tente novamente.");
     }
   };
 

@@ -4,7 +4,8 @@ import { useRouter } from "next/navigation";
 import React from "react";
 
 export const Sidebar = () => {
-  const { user, isAdmin, loading } = useAuth();
+  const { isAdmin, loading } = useAuth();
+
   const router = useRouter();
   if (loading) {
     return (

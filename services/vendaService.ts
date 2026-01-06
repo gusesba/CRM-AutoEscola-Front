@@ -22,7 +22,7 @@ interface IVendaServicoDto {
 
 export const CriarVenda = async (data: IVendaServicoDto) => {
   try {
-    await apiFetch("/venda", {
+    return await apiFetch("/venda", {
       method: "POST",
       body: JSON.stringify({
         ...data,
@@ -34,7 +34,7 @@ export const CriarVenda = async (data: IVendaServicoDto) => {
         dataNascimento:
           data.dataNascimento === "" || data.dataNascimento == null
             ? null
-            : new Date(data.dataNascimento)
+            : new Date(data.dataNascimento),
       }),
     });
   } catch (error) {
@@ -76,7 +76,8 @@ export const AtualizarVenda = async (id: string, data: any) => {
     return await apiFetch(`/venda`, {
       method: "PUT",
       body: JSON.stringify({
-        id, ...data,
+        id,
+        ...data,
         valorVenda:
           data.valorVenda === "" || data.valorVenda == null
             ? null
@@ -85,7 +86,7 @@ export const AtualizarVenda = async (id: string, data: any) => {
         dataNascimento:
           data.dataNascimento === "" || data.dataNascimento == null
             ? null
-            : new Date(data.dataNascimento)
+            : new Date(data.dataNascimento),
       }),
     });
   } catch (error) {

@@ -3,6 +3,7 @@
 import { CriarSede } from "@/services/sedeService";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 
 type FormData = {
   nome: string;
@@ -22,10 +23,11 @@ export default function NovoSede() {
   const onSubmit = async (data: FormData) => {
     try {
       await CriarSede(data);
-      setSuccessMessage("Sede adicionado com sucesso!");
+      toast.success("Sede adicionado com sucesso!");
       reset();
     } catch (err) {
-      setSubmitError("Erro ao adicionar sede. Tente novamente.");
+      console.log(err);
+      toast.error("Erro ao adicionar sede. Tente novamente.");
     }
   };
 
