@@ -128,7 +128,7 @@ export const ChatWindow = React.memo(function ChatWindow({ chat }: Props) {
         "
       >
         {messages.map((msg) => (
-          <MessageBubble key={msg.id} text={msg.body} isMe={msg.fromMe} />
+          <MessageBubble key={msg.id} message={msg} />
         ))}
 
         {/* 🔽 Âncora */}
