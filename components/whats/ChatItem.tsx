@@ -33,7 +33,19 @@ function ChatItemComponent({ chat, isSelected, onSelect }: Props) {
       `}
     >
       {/* Avatar */}
-      <div className="w-12 h-12 rounded-full bg-gray-300 shrink-0" />
+      <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden">
+        {chat.profilePicUrl ? (
+          <img
+            src={chat.profilePicUrl}
+            alt={chat.name}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-gray-500">
+            {chat.name.charAt(0).toUpperCase()}
+          </div>
+        )}
+      </div>
 
       {/* Conteúdo */}
       <div className="flex-1 min-w-0">

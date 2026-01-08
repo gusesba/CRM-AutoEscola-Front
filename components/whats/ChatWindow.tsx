@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { Chat } from "@/types/chat";
 import { Message } from "@/types/messages";
 import { fetchMessages, sendMessage } from "@/services/whatsapp";
@@ -30,7 +30,8 @@ export const ChatWindow = React.memo(function ChatWindow({ chat }: Props) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [text, setText] = useState("");
-  const {user} = useAuth();
+  const { user } = useAuth();
+  const bottomRef = useRef<HTMLDivElement | null>(null);
 
   // 📥 Buscar mensagens ao trocar de chat
   useEffect(() => {
@@ -56,6 +57,12 @@ export const ChatWindow = React.memo(function ChatWindow({ chat }: Props) {
     });
     //@ts-ignore
   }, [chat?.lastMessage?.id]);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({
+      behavior: "smooth",
+    });
+  }, [messages]);
 
   // 📤 Enviar mensagem
   const handleSend = useCallback(async () => {
@@ -112,6 +119,9 @@ export const ChatWindow = React.memo(function ChatWindow({ chat }: Props) {
         {messages.map((msg) => (
           <MessageBubble key={msg.id} text={msg.body} isMe={msg.fromMe} />
         ))}
+
+        {/* 🔽 Âncora */}
+        <div ref={bottomRef} />
       </div>
 
       {/* Footer */}

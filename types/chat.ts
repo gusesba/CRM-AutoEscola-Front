@@ -3,7 +3,8 @@ export type Chat = {
   name: string;
   isGroup: boolean;
   unreadCount: number;
-  lastMessage: {
+  profilePicUrl?: string | null;
+  lastMessage?: {
     body: string;
     timestamp: number;
   } | null;
