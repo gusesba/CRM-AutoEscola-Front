@@ -68,15 +68,6 @@ export const ChatWindow = React.memo(function ChatWindow({ chat }: Props) {
   const handleSend = useCallback(async () => {
     if (!text.trim() || !chat) return;
 
-    const optimisticMessage: Message = {
-      id: crypto.randomUUID(),
-      body: text,
-      fromMe: true,
-      timestamp: Date.now() / 1000,
-      type: "chat",
-      hasMedia: false,
-    };
-
     // UX instantâneo
     setText("");
 
@@ -99,8 +90,28 @@ export const ChatWindow = React.memo(function ChatWindow({ chat }: Props) {
   return (
     <main className="flex-1 flex flex-col min-w-0">
       {/* Header */}
-      <header className="h-16 shrink-0 px-6 flex items-center border-b border-gray-200 bg-[#f7f8fa]">
-        <p className="font-medium text-gray-900">{chat.name}</p>
+      <header className="h-16 shrink-0 px-6 flex items-center gap-3 border-b border-gray-200 bg-[#f7f8fa]">
+        {/* Avatar */}
+        <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-300 shrink-0">
+          {chat.profilePicUrl ? (
+            <img
+              src={chat.profilePicUrl}
+              alt={chat.name}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-gray-500">
+              {chat.name.charAt(0).toUpperCase()}
+            </div>
+          )}
+        </div>
+
+        {/* Info */}
+        <div className="flex flex-col min-w-0">
+          <p className="font-medium text-gray-900 truncate">{chat.name}</p>
+          <span className="text-xs text-gray-500">Status aqui</span>
+          {/* depois dá pra ligar isso ao socket */}
+        </div>
       </header>
 
       {/* Mensagens */}
