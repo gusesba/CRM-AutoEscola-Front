@@ -12,5 +12,5 @@ export function useWhatsSocket(userId: string, onMessage: (data: any) => void) {
       socket.off("message", onMessage);
       socket.disconnect();
     };
-  }, [userId, onMessage]);
+  }, [userId]);
 }
