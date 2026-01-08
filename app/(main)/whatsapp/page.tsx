@@ -7,17 +7,20 @@ import { ChatList } from "@/components/whats/ChatList";
 import { ChatWindow } from "@/components/whats/ChatWindow";
 import { useWhatsSocket } from "@/hooks/useWhatsSocket";
 import { Message } from "@/types/messages";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Home() {
   const [chats, setChats] = useState<Chat[]>([]);
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
+  const { user } = useAuth();
 
   useEffect(() => {
-    getConversations("1").then(setChats).catch(console.error);
-  }, []);
+    if(user?.UserId)
+      getConversations(String(user?.UserId)).then(setChats).catch(console.error);
+  }, [user]);
 
   // 🔌 SOCKET GLOBAL
-  useWhatsSocket("1", (data: { chatId: string; message: Message }) => {
+  useWhatsSocket(String(user?.UserId), (data: { chatId: string; message: Message }) => {
     console.log("Nova mensagem via socket");
     setChats((prev) => {
       const chatIndex = prev.findIndex((c) => c.id === data.chatId);

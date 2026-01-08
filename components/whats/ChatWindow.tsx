@@ -6,6 +6,7 @@ import { Message } from "@/types/messages";
 import { fetchMessages, sendMessage } from "@/services/whatsapp";
 import { MessageBubble } from "./MessageBubble";
 import { MessageInput } from "./MessageInput";
+import { useAuth } from "@/hooks/useAuth";
 
 function lastMessageToMessage(
   last: NonNullable<Chat["lastMessage"]>,
@@ -29,6 +30,7 @@ export const ChatWindow = React.memo(function ChatWindow({ chat }: Props) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [text, setText] = useState("");
+  const {user} = useAuth();
 
   // 📥 Buscar mensagens ao trocar de chat
   useEffect(() => {
@@ -37,7 +39,7 @@ export const ChatWindow = React.memo(function ChatWindow({ chat }: Props) {
     setLoading(true);
     setMessages([]);
 
-    fetchMessages("1", chat.id)
+    fetchMessages(String(user?.UserId), chat.id)
       .then(setMessages)
       .finally(() => setLoading(false));
   }, [chat?.id]);
@@ -72,7 +74,7 @@ export const ChatWindow = React.memo(function ChatWindow({ chat }: Props) {
     setText("");
 
     try {
-      await sendMessage("1", chat.id, text);
+      await sendMessage(String(user?.UserId), chat.id, text);
     } catch (err) {
       console.error(err);
       // opcional: remover mensagem se falhar
