@@ -60,110 +60,129 @@ export function MessageInput({ value, onChange, onSend }: Props) {
     onSend(attachment?.file);
     onChange("");
     setAttachment(null);
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   }
 
   return (
-    <div className="w-full flex flex-col gap-2">
-      {/* 📦 Preview da mídia */}
-      {attachment && (
-        <div className="p-3 bg-white rounded-lg flex gap-3 items-center">
-          {attachment.type === "image" && (
-            <img
-              src={attachment.previewUrl}
-              className="w-24 h-24 object-cover rounded"
-            />
-          )}
+    <div className="w-full px-4 py-3 ">
+      <div className="max-w-full  rounded-xl flex flex-col gap-3">
+        {/* 📦 Preview da mídia — SEM SOBREPOR */}
+        {attachment && (
+          <div className="relative bg-white rounded-xl p-3 shadow-sm w-fit max-w-full mt-[-140px]">
+            {/* ❌ remover */}
+            <button
+              onClick={() => {
+                setAttachment(null);
 
-          {attachment.type === "video" && (
-            <video
-              src={attachment.previewUrl}
-              className="w-32 rounded"
-              controls
-            />
-          )}
+                if (fileInputRef.current) {
+                  fileInputRef.current.value = "";
+                }
+              }}
+              className="absolute top-2 right-2 text-gray-500 hover:text-red-500"
+            >
+              ✕
+            </button>
 
-          {attachment.type === "document" && (
-            <div className="flex items-center gap-2">
-              📄 <span>{attachment.file.name}</span>
+            {/* 📐 Área fixa */}
+            <div className="w-[220px] h-[100px] flex items-center justify-center bg-gray-100 rounded-lg overflow-hidden">
+              {attachment.type === "image" && (
+                <img
+                  src={attachment.previewUrl}
+                  className="max-w-full max-h-full object-contain"
+                />
+              )}
+
+              {attachment.type === "video" && (
+                <video
+                  src={attachment.previewUrl}
+                  controls
+                  className="max-w-full max-h-full object-contain"
+                />
+              )}
+
+              {attachment.type === "document" && (
+                <div className="flex flex-col items-center justify-center gap-2 text-gray-600">
+                  <span className="text-3xl">📄</span>
+                  <span className="text-xs text-center truncate w-40">
+                    {attachment.file.name}
+                  </span>
+                </div>
+              )}
             </div>
-          )}
+          </div>
+        )}
 
+        {/* 🔽 Barra de input (sempre embaixo) */}
+        <div className="flex items-end gap-2">
+          {/* 📎 */}
           <button
-            className="ml-auto text-sm text-red-500"
-            onClick={() => setAttachment(null)}
+            onClick={() => fileInputRef.current?.click()}
+            className="p-2 text-gray-600 hover:bg-black/5 rounded-full"
           >
-            Remover
+            <Paperclip size={20} />
           </button>
-        </div>
-      )}
 
-      {/* 🔽 Barra inferior */}
-      <div className="flex items-end gap-2">
-        {/* 📎 Anexo */}
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          className="p-2 text-gray-600 hover:bg-black/5 rounded-full"
-        >
-          <Paperclip size={20} />
-        </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            hidden
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleFileSelect(file);
+            }}
+          />
 
-        <input
-          ref={fileInputRef}
-          type="file"
-          hidden
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) handleFileSelect(file);
-          }}
-        />
-
-        {/* ✍️ Campo de texto */}
-        <div className="relative w-full">
-          <div
-            ref={previewRef}
-            className="
+          {/* ✍️ Input */}
+          <div className="relative flex-1">
+            <div
+              ref={previewRef}
+              className="
               w-full px-4 py-2 text-sm rounded-lg bg-white
               whitespace-pre-wrap break-words
-              text-gray-900 pointer-events-none
+              pointer-events-none
             "
-          >
-            {value ? (
-              formatWhatsText(value)
-            ) : (
-              <span className="text-gray-400">Digite uma mensagem</span>
-            )}
-          </div>
+            >
+              {value ? (
+                formatWhatsText(value)
+              ) : (
+                <span className="text-gray-400">Digite uma mensagem</span>
+              )}
+            </div>
 
-          <textarea
-            ref={textareaRef}
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                handleSend();
-              }
-            }}
-            rows={1}
-            className="
+            <textarea
+              ref={textareaRef}
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSend();
+                }
+              }}
+              rows={1}
+              className="
               absolute inset-0 w-full px-4 py-2 text-sm
               bg-transparent text-transparent caret-black
               resize-none outline-none
             "
-          />
-        </div>
+            />
+          </div>
 
-        {/* 🚀 Enviar / 🎤 Mic */}
-        <button
-          onClick={handleSend}
-          className="
+          {/* 🚀 */}
+          <button
+            onClick={handleSend}
+            className="
             p-2 rounded-full
             bg-[#25d366] text-white
             hover:bg-[#1ebe5d]
           "
-        >
-          {value || attachment ? <Send size={18} /> : <Mic size={18} />}
-        </button>
+          >
+            {value || attachment ? <Send size={18} /> : <Mic size={18} />}
+          </button>
+        </div>
       </div>
     </div>
   );
