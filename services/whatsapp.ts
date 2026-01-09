@@ -63,3 +63,16 @@ export async function sendMediaMessage(
     }
   );
 }
+
+export async function getWhatsLogin(userId: string) {
+  const res = await fetch(`http://localhost:3001/whatsapp/${userId}/login`, {
+    method: "GET",
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    throw new Error("Erro ao buscar status do WhatsApp");
+  }
+
+  return res.json();
+}

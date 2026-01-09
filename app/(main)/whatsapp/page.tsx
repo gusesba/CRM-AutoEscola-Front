@@ -1,82 +1,76 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { Chat } from "@/types/chat";
-import { getConversations } from "@/services/whatsapp";
-import { ChatList } from "@/components/whats/ChatList";
-import { ChatWindow } from "@/components/whats/ChatWindow";
-import { useWhatsSocket } from "@/hooks/useWhatsSocket";
-import { Message } from "@/types/messages";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { getWhatsLogin } from "@/services/whatsapp";
+import { WhatsLogin } from "./WhatsLogin";
+import Home from "./Whatsapp";
 
-export default function Home() {
-  const [chats, setChats] = useState<Chat[]>([]);
-  const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
+type Status = "loading" | "waiting" | "qr" | "connected" | "error";
+
+export default function WhatsPage() {
   const { user } = useAuth();
 
+  const [status, setStatus] = useState<Status>("loading");
+  const [qrCode, setQrCode] = useState<string | null>(null);
+
   useEffect(() => {
-    if(user?.UserId)
-      getConversations(String(user?.UserId)).then(setChats).catch(console.error);
+    if (!user?.UserId) return;
+
+    let interval: NodeJS.Timeout;
+
+    async function poll() {
+      try {
+        const res = await getWhatsLogin(String(user?.UserId));
+
+        if (res.status === "connected") {
+          setStatus("connected");
+          setQrCode(null);
+          clearInterval(interval);
+        }
+
+        if (res.status === "qr") {
+          setStatus("qr");
+          setQrCode(res.qrCode);
+        }
+
+        if (res.status === "waiting") {
+          setStatus("waiting");
+        }
+      } catch {
+        setStatus("error");
+      }
+    }
+
+    poll(); // primeira chamada imediata
+    interval = setInterval(poll, 5000);
+
+    return () => clearInterval(interval);
   }, [user]);
 
-  // 🔌 SOCKET GLOBAL
-  useWhatsSocket(String(user?.UserId), (data: { chatId: string; message: Message }) => {
-    console.log("Nova mensagem via socket");
-    setChats((prev) => {
-      const chatIndex = prev.findIndex((c) => c.id === data.chatId);
+  // 🟢 Whats conectado
+  if (status === "connected") {
+    return <Home />;
+  }
 
-      // chat ainda não existe (novo contato)
-      if (chatIndex === -1) return prev;
-
-      const chat = prev[chatIndex];
-      const isSelected = data.chatId === selectedChatId;
-
-      const updatedChat: Chat = {
-        ...chat,
-        lastMessage: data.message,
-        unreadCount: isSelected
-          ? chat.unreadCount
-          : (chat.unreadCount ?? 0) + 1,
-      };
-
-      // move o chat para o topo
-      const updated = [...prev];
-      updated.splice(chatIndex, 1);
-
-      return [updatedChat, ...updated];
-    });
-  });
-
-  const selectedChat = chats.find((c) => c.id === selectedChatId);
-
+  // 🔴 Login
   return (
     <div className="flex-1 bg-[#f0f2f5]">
       <div
         className="
           mx-auto
-          h-[calc(100vh-7rem)]   /* espaço p/ header global */
+          h-[calc(100vh-7rem)]
           max-w-[1400px]
           bg-white
           rounded-xl
           shadow-md
           flex
-          overflow-hidden
         "
       >
-        <ChatList
-          chats={chats}
-          selectedChatId={selectedChatId}
-          onSelect={(id) => {
-            setSelectedChatId(id);
-
-            // zera unread ao abrir
-            setChats((prev) =>
-              prev.map((c) => (c.id === id ? { ...c, unreadCount: 0 } : c))
-            );
-          }}
+        <WhatsLogin
+          qrCode={qrCode ?? undefined}
+          status={status === "qr" ? "qr" : "waiting"}
         />
-
-        <ChatWindow chat={selectedChat} />
       </div>
     </div>
   );
