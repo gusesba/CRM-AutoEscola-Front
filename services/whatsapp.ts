@@ -44,3 +44,22 @@ export async function sendMessage(
     body: JSON.stringify({ message }),
   });
 }
+
+export async function sendMediaMessage(
+  userId: string,
+  chatId: string,
+  file: File,
+  caption?: string
+) {
+  const form = new FormData();
+  form.append("file", file);
+  if (caption) form.append("caption", caption);
+
+  await fetch(
+    `http://localhost:3001/whatsapp/${userId}/messages/${chatId}/media`,
+    {
+      method: "POST",
+      body: form,
+    }
+  );
+}

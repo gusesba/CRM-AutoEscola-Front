@@ -3,7 +3,11 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { Chat } from "@/types/chat";
 import { Message } from "@/types/messages";
-import { fetchMessages, sendMessage } from "@/services/whatsapp";
+import {
+  fetchMessages,
+  sendMediaMessage,
+  sendMessage,
+} from "@/services/whatsapp";
 import { MessageBubble } from "./MessageBubble";
 import { MessageInput } from "./MessageInput";
 import { useAuth } from "@/hooks/useAuth";
@@ -65,19 +69,33 @@ export const ChatWindow = React.memo(function ChatWindow({ chat }: Props) {
   }, [messages]);
 
   // 📤 Enviar mensagem
-  const handleSend = useCallback(async () => {
-    if (!text.trim() || !chat) return;
+  const handleSend = useCallback(
+    async (file?: File) => {
+      if (!chat) return;
+      if (!text.trim() && !file) return;
 
-    // UX instantâneo
-    setText("");
+      const currentText = text;
 
-    try {
-      await sendMessage(String(user?.UserId), chat.id, text);
-    } catch (err) {
-      console.error(err);
-      // opcional: remover mensagem se falhar
-    }
-  }, [text, chat]);
+      // UX instantâneo
+      setText("");
+
+      try {
+        if (file) {
+          await sendMediaMessage(
+            String(user?.UserId),
+            chat.id,
+            file,
+            currentText // legenda
+          );
+        } else {
+          await sendMessage(String(user?.UserId), chat.id, currentText);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    },
+    [text, chat]
+  );
 
   if (!chat) {
     return (
