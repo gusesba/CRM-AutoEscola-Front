@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useCallback, useRef } from "react";
-import { Chat } from "@/types/chat";
+import { Chat, ChatStatusDto } from "@/types/chat";
 import { Message } from "@/types/messages";
 import {
   fetchMessages,
@@ -11,6 +11,8 @@ import {
 import { MessageBubble } from "./MessageBubble";
 import { MessageInput } from "./MessageInput";
 import { useAuth } from "@/hooks/useAuth";
+import { getChatStatus, vincularVendaWhats } from "@/services/vendaService";
+import { ChatVendaStatus } from "./ChatStatus";
 
 function lastMessageToMessage(
   last: NonNullable<Chat["lastMessage"]>,
@@ -34,19 +36,37 @@ export const ChatWindow = React.memo(function ChatWindow({ chat }: Props) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [text, setText] = useState("");
+  const [status, setStatus] = useState<ChatStatusDto | null>(null);
   const { user } = useAuth();
   const bottomRef = useRef<HTMLDivElement | null>(null);
+
+  const vincularVenda = async (vendaId: number) => {
+    const status = await vincularVendaWhats({
+      vendaId,
+      whatsappChatId: chat?.id || "",
+      whatsappUserId: String(user?.UserId),
+    });
+
+    setStatus(status);
+  };
 
   // 📥 Buscar mensagens ao trocar de chat
   useEffect(() => {
     if (!chat) return;
-
     setLoading(true);
     setMessages([]);
 
     fetchMessages(String(user?.UserId), chat.id)
       .then(setMessages)
       .finally(() => setLoading(false));
+  }, [chat?.id]);
+
+  useEffect(() => {
+    if (!chat) return;
+
+    getChatStatus(chat.id, String(user?.UserId))
+      .then(setStatus)
+      .catch(console.error);
   }, [chat?.id]);
 
   useEffect(() => {
@@ -130,6 +150,13 @@ export const ChatWindow = React.memo(function ChatWindow({ chat }: Props) {
           <span className="text-xs text-gray-500">Status aqui</span>
           {/* depois dá pra ligar isso ao socket */}
         </div>
+        {status && (
+          <ChatVendaStatus
+            status={status}
+            onVincular={vincularVenda}
+            chat={chat}
+          />
+        )}
       </header>
 
       {/* Mensagens */}

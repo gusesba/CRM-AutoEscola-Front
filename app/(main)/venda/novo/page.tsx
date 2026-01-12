@@ -11,7 +11,7 @@ import { CriarVenda } from "@/services/vendaService";
 import { useAuth } from "@/hooks/useAuth";
 import { PatternFormat } from "react-number-format";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 type FormData = {
   sedeId: number;
@@ -62,6 +62,15 @@ export default function NovaVenda() {
     []
   );
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const contatoParam = searchParams.get("contato");
+    if (contatoParam) {
+      setValue("contato", contatoParam);
+    }
+  }, [searchParams]);
+
   useEffect(() => {
     const carregarListas = async () => {
       const [sedesRes, vendRes, servRes, condRes] = await Promise.all([

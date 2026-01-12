@@ -1,6 +1,8 @@
+import { ChatStatusDto } from "@/types/chat";
 import { apiFetch } from "./api";
 
-interface IVendaServicoDto {
+export interface IVendaServicoDto {
+  id?: number;
   sedeId: number;
   vendedorId: number;
   cliente: string;
@@ -19,6 +21,12 @@ interface IVendaServicoDto {
   indicacao: string;
   dataNascimento: string;
 }
+
+type VincularVendaWhatsPayload = {
+  vendaId: number;
+  whatsappChatId: string;
+  whatsappUserId: string;
+};
 
 export const CriarVenda = async (data: IVendaServicoDto) => {
   try {
@@ -129,3 +137,36 @@ export const BuscarDashboard = async (parametros: string) => {
       : new Error("Erro inesperado ao buscar dashboard.");
   }
 };
+
+export async function getChatStatus(
+  chatId: string,
+  userId: string
+): Promise<ChatStatusDto> {
+  try {
+    return await apiFetch(
+      `/venda/whatsapp?whatsappChatId=${chatId}&whatsappUserId=${userId}`,
+      {
+        method: "GET",
+      }
+    );
+  } catch (error) {
+    console.error("Erro ao buscar Chat:", error);
+    throw error instanceof Error
+      ? error
+      : new Error("Erro inesperado ao buscar Chat.");
+  }
+}
+
+export async function vincularVendaWhats(payload: VincularVendaWhatsPayload) {
+  try {
+    return await apiFetch(`/venda/vincular`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  } catch (error) {
+    console.error("Erro ao vincular venda ao WhatsApp:", error);
+    throw error instanceof Error
+      ? error
+      : new Error("Erro inesperado ao vincular venda ao WhatsApp.");
+  }
+}

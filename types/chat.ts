@@ -1,3 +1,5 @@
+import { IVendaServicoDto } from "@/services/vendaService";
+
 export type Chat = {
   id: string;
   name: string;
@@ -8,4 +10,15 @@ export type Chat = {
     body: string;
     timestamp: number;
   } | null;
+};
+
+export enum WhatsStatusEnum {
+  Criado = 1,
+  NaoEncontrado = 2,
+  NaoCriado = 3,
+}
+
+export type ChatStatusDto = {
+  status: WhatsStatusEnum;
+  venda: IVendaServicoDto | null;
 };
