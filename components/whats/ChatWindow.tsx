@@ -40,6 +40,7 @@ export const ChatWindow = React.memo(function ChatWindow({ chat }: Props) {
   const [hasReachedStart, setHasReachedStart] = useState(false);
   const [text, setText] = useState("");
   const [status, setStatus] = useState<ChatStatusDto | null>(null);
+  const [showScrollToBottom, setShowScrollToBottom] = useState(false);
   const { user } = useAuth();
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
@@ -128,6 +129,7 @@ export const ChatWindow = React.memo(function ChatWindow({ chat }: Props) {
     bottomRef.current?.scrollIntoView({
       behavior: "smooth",
     });
+    setShowScrollToBottom(false);
   }, [messages]);
 
   // 📤 Enviar mensagem
@@ -163,13 +165,25 @@ export const ChatWindow = React.memo(function ChatWindow({ chat }: Props) {
   const handleScroll = useCallback(() => {
     const container = messagesContainerRef.current;
     if (!container || !chat) return;
-    if (loading || isFetchingMore || hasReachedStart) return;
+    if (loading || isFetchingMore) return;
 
-    if (container.scrollTop <= 20) {
+    const distanceFromBottom =
+      container.scrollHeight - container.scrollTop - container.clientHeight;
+    const isNearBottom = distanceFromBottom <= 120;
+    shouldAutoScrollRef.current = isNearBottom;
+    setShowScrollToBottom(!isNearBottom);
+
+    if (!hasReachedStart && container.scrollTop <= 20) {
       shouldAutoScrollRef.current = false;
       setLimit((prev) => prev + 50);
     }
   }, [loading, isFetchingMore, hasReachedStart, chat]);
+
+  const scrollToBottom = useCallback(() => {
+    shouldAutoScrollRef.current = true;
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    setShowScrollToBottom(false);
+  }, []);
 
   if (!chat) {
     return (
@@ -224,6 +238,7 @@ export const ChatWindow = React.memo(function ChatWindow({ chat }: Props) {
           flex
           flex-col
           gap-2
+          relative
         "
         ref={messagesContainerRef}
         onScroll={handleScroll}
@@ -241,6 +256,16 @@ export const ChatWindow = React.memo(function ChatWindow({ chat }: Props) {
 
         {/* 🔽 Âncora */}
         <div ref={bottomRef} />
+        {showScrollToBottom && (
+          <button
+            type="button"
+            onClick={scrollToBottom}
+            aria-label="Ir para a última mensagem"
+            className="absolute bottom-4 right-4 h-10 w-10 rounded-full border border-gray-200 bg-white text-gray-600 shadow-md transition hover:bg-gray-50"
+          >
+            <span className="text-lg leading-none">↓</span>
+          </button>
+        )}
       </div>
 
       {/* Footer */}
