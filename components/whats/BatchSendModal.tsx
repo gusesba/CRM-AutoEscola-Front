@@ -1,0 +1,328 @@
+"use client";
+
+import { useEffect, useMemo, useRef, useState } from "react";
+import { MessageBubble } from "@/components/whats/MessageBubble";
+import { MessageInput } from "@/components/whats/MessageInput";
+import {
+  buscarGruposWhatsapp,
+  GrupoWhatsapp,
+} from "@/services/whatsappGroupService";
+import { sendBatchMessages } from "@/services/whatsapp";
+import { Message } from "@/types/messages";
+
+type PreviewMessage = Message & {
+  file?: File;
+  previewUrl?: string;
+};
+
+type Props = {
+  userId: string;
+  onClose: () => void;
+};
+
+type BatchMediaItem = {
+  type: "media";
+  data: string;
+  mimetype: string;
+  filename?: string;
+  caption?: string;
+};
+
+type BatchTextItem = {
+  type: "text";
+  message: string;
+};
+
+type BatchItem = BatchMediaItem | BatchTextItem;
+
+const EMPTY_MESSAGE = "Digite uma mensagem para o preview.";
+
+function getMessageTypeFromFile(file: File): Message["type"] {
+  if (file.type.startsWith("image")) return "image";
+  if (file.type.startsWith("video")) return "video";
+  if (file.type.startsWith("audio")) return "audio";
+  return "document";
+}
+
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = typeof reader.result === "string" ? reader.result : "";
+      resolve(result);
+    };
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
+
+function normalizeBase64(dataUrl: string) {
+  const split = dataUrl.split(",");
+  return split.length > 1 ? split[1] : dataUrl;
+}
+
+export function BatchSendModal({ userId, onClose }: Props) {
+  const [groups, setGroups] = useState<GrupoWhatsapp[]>([]);
+  const [selectedGroupId, setSelectedGroupId] = useState<number | "">("");
+  const [previewMessages, setPreviewMessages] = useState<PreviewMessage[]>([]);
+  const [text, setText] = useState("");
+  const [loadingGroups, setLoadingGroups] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const bottomRef = useRef<HTMLDivElement | null>(null);
+
+  const selectedGroup = useMemo(
+    () => groups.find((group) => group.id === selectedGroupId) ?? null,
+    [groups, selectedGroupId]
+  );
+
+  useEffect(() => {
+    let mounted = true;
+    setLoadingGroups(true);
+    buscarGruposWhatsapp({ usuarioId: Number(userId) })
+      .then((data) => {
+        if (!mounted) return;
+        setGroups(data ?? []);
+      })
+      .catch((err) => {
+        console.error(err);
+        if (!mounted) return;
+        setError("Não foi possível carregar os grupos.");
+      })
+      .finally(() => {
+        if (!mounted) return;
+        setLoadingGroups(false);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [userId]);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [previewMessages]);
+
+  const handlePreviewSend = (file?: File) => {
+    if (!text.trim() && !file) return;
+
+    const timestamp = Math.floor(Date.now() / 1000);
+    const id = `preview-${timestamp}-${previewMessages.length}`;
+
+    if (file) {
+      const type = getMessageTypeFromFile(file);
+      const previewUrl =
+        type === "image" || type === "video" || type === "audio"
+          ? URL.createObjectURL(file)
+          : undefined;
+
+      setPreviewMessages((prev) => [
+        ...prev,
+        {
+          id,
+          body: text,
+          fromMe: true,
+          timestamp,
+          type,
+          hasMedia: true,
+          mediaUrl: previewUrl,
+          filename: file.name,
+          mimetype: file.type,
+          file,
+          previewUrl,
+        },
+      ]);
+      return;
+    }
+
+    setPreviewMessages((prev) => [
+      ...prev,
+      {
+        id,
+        body: text,
+        fromMe: true,
+        timestamp,
+        type: "chat",
+        hasMedia: false,
+      },
+    ]);
+  };
+
+  const handleSendBatch = async () => {
+    setError(null);
+
+    if (!selectedGroup) {
+      setError("Selecione um grupo para enviar.");
+      return;
+    }
+
+    if (previewMessages.length === 0) {
+      setError("Adicione mensagens ao preview antes de enviar.");
+      return;
+    }
+
+    const chatIds = selectedGroup.conversas
+      .map((conversa) => conversa.whatsappChatId)
+      .filter(Boolean);
+
+    if (chatIds.length === 0) {
+      setError("O grupo selecionado não possui conversas vinculadas.");
+      return;
+    }
+
+    setSending(true);
+
+    try {
+      const items: BatchItem[] = [];
+
+      for (const message of previewMessages) {
+        if (message.file) {
+          const dataUrl = await fileToBase64(message.file);
+          items.push({
+            type: "media",
+            data: normalizeBase64(dataUrl),
+            mimetype: message.file.type,
+            filename: message.file.name,
+            caption: message.body || undefined,
+          });
+        } else if (message.body.trim()) {
+          items.push({ type: "text", message: message.body });
+        }
+      }
+
+      if (items.length === 0) {
+        setError(EMPTY_MESSAGE);
+        return;
+      }
+
+      await sendBatchMessages(userId, chatIds, items);
+      setPreviewMessages([]);
+      setText("");
+      setSelectedGroupId("");
+      onClose();
+    } catch (err) {
+      console.error(err);
+      setError("Não foi possível enviar as mensagens.");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="w-full max-w-5xl rounded-2xl bg-white shadow-xl">
+        <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">
+              Envio em grupo
+            </h2>
+            <p className="text-xs text-gray-500">
+              Monte o preview e selecione o grupo para disparar.
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="rounded-full px-3 py-1 text-sm text-gray-500 hover:bg-gray-100"
+          >
+            Fechar
+          </button>
+        </div>
+
+        <div className="grid gap-6 p-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,0.9fr)]">
+          <section className="flex h-full min-h-[520px] flex-col overflow-hidden rounded-xl border border-gray-200 bg-white">
+            <header className="flex h-14 shrink-0 items-center gap-3 border-b border-gray-200 bg-[#f7f8fa] px-4">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#25d366]/10 text-[#25d366]">
+                WG
+              </div>
+              <div className="flex flex-col">
+                <span className="text-sm font-medium text-gray-900">
+                  Preview da conversa
+                </span>
+                <span className="text-xs text-gray-500">
+                  Mensagens que serão enviadas
+                </span>
+              </div>
+            </header>
+
+            <div className="flex-1 overflow-y-auto bg-[#efeae2] px-4 py-4">
+              {previewMessages.length === 0 ? (
+                <div className="flex h-full items-center justify-center text-sm text-gray-500">
+                  {EMPTY_MESSAGE}
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {previewMessages.map((message) => (
+                    <MessageBubble key={message.id} message={message} />
+                  ))}
+                  <div ref={bottomRef} />
+                </div>
+              )}
+            </div>
+
+            <footer className="shrink-0 border-t border-gray-200 bg-[#f7f8fa]">
+              <MessageInput
+                value={text}
+                onChange={setText}
+                onSend={handlePreviewSend}
+              />
+            </footer>
+          </section>
+
+          <aside className="flex flex-col gap-4">
+            <div className="rounded-xl border border-gray-200 bg-white p-4">
+              <label className="text-sm font-medium text-gray-700">
+                Grupo de envio
+              </label>
+              <select
+                value={selectedGroupId}
+                onChange={(event) =>
+                  setSelectedGroupId(
+                    event.target.value ? Number(event.target.value) : ""
+                  )
+                }
+                className="mt-2 w-full rounded-lg border border-gray-200 bg-white p-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#25d366]"
+              >
+                <option value="">Selecione um grupo</option>
+                {groups.map((group) => (
+                  <option key={group.id} value={group.id}>
+                    {group.nome}
+                  </option>
+                ))}
+              </select>
+              <div className="mt-3 text-xs text-gray-500">
+                {loadingGroups
+                  ? "Carregando grupos..."
+                  : selectedGroup
+                  ? `${selectedGroup.conversas?.length ?? 0} conversas vinculadas`
+                  : "Selecione um grupo para visualizar as conversas"}
+              </div>
+            </div>
+
+            {error && (
+              <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-600">
+                {error}
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={handleSendBatch}
+              disabled={sending}
+              className="w-full rounded-lg bg-[#25d366] px-4 py-2 text-sm font-semibold text-white hover:bg-[#1ebe5d] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {sending ? "Enviando..." : "Enviar mensagens em lote"}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setPreviewMessages([])}
+              className="w-full rounded-lg border border-gray-200 px-4 py-2 text-sm text-gray-600 hover:bg-gray-50"
+            >
+              Limpar preview
+            </button>
+          </aside>
+        </div>
+      </div>
+    </div>
+  );
+}

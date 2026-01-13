@@ -7,11 +7,25 @@ type Props = {
 
 const mediaUrl = "http://localhost:3001";
 
+function getMediaSrc(url?: string) {
+  if (!url) return "";
+  if (
+    url.startsWith("http://") ||
+    url.startsWith("https://") ||
+    url.startsWith("data:") ||
+    url.startsWith("blob:")
+  ) {
+    return url;
+  }
+
+  return `${mediaUrl}${url}`;
+}
+
 function ImageMessage({ message, className }: any) {
   return (
     <div className={`${className} p-1`}>
       <img
-        src={`${mediaUrl}${message.mediaUrl}`}
+        src={getMediaSrc(message.mediaUrl)}
         alt="imagem"
         className="
           rounded-md
@@ -20,7 +34,9 @@ function ImageMessage({ message, className }: any) {
           hover:opacity-90
           transition
         "
-        onClick={() => window.open(`${mediaUrl}${message.mediaUrl}`, "_blank")}
+        onClick={() =>
+          window.open(getMediaSrc(message.mediaUrl), "_blank")
+        }
       />
 
       {message.body && (
@@ -35,7 +51,7 @@ function VideoMessage({ message, className }: any) {
     <div className={`${className} p-1`}>
       <video
         controls
-        src={`${mediaUrl}${message.mediaUrl}`}
+        src={getMediaSrc(message.mediaUrl)}
         className="rounded-md max-w-full"
       />
       {message.body && <p className="mt-1">{message.body}</p>}
@@ -46,7 +62,7 @@ function VideoMessage({ message, className }: any) {
 function AudioMessage({ message, className }: any) {
   return (
     <div className={`${className} p-2`}>
-      <audio controls src={`${mediaUrl}${message.mediaUrl}`} />
+      <audio controls src={getMediaSrc(message.mediaUrl)} />
     </div>
   );
 }
@@ -54,7 +70,7 @@ function AudioMessage({ message, className }: any) {
 function StickerMessage({ message }: any) {
   return (
     <img
-      src={`${mediaUrl}${message.mediaUrl}`}
+      src={getMediaSrc(message.mediaUrl)}
       alt="sticker"
       className={`
         w-32 h-32 object-contain
@@ -70,7 +86,7 @@ function DocumentMessage({ message, className }: any) {
   return (
     <div className={`${className} flex flex-col gap-1`}>
       <a
-        href={`${mediaUrl}${message.mediaUrl}`}
+        href={getMediaSrc(message.mediaUrl)}
         target="_blank"
         rel="noopener noreferrer"
         className="
