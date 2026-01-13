@@ -35,10 +35,16 @@ type Props = {
 export const ChatWindow = React.memo(function ChatWindow({ chat }: Props) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
+  const [limit, setLimit] = useState(50);
+  const [hasReachedStart, setHasReachedStart] = useState(false);
   const [text, setText] = useState("");
   const [status, setStatus] = useState<ChatStatusDto | null>(null);
   const { user } = useAuth();
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const messagesContainerRef = useRef<HTMLDivElement | null>(null);
+  const shouldAutoScrollRef = useRef(true);
+  const pendingScrollHeightRef = useRef<number | null>(null);
 
   const vincularVenda = async (vendaId: number) => {
     const status = await vincularVendaWhats({
@@ -55,11 +61,36 @@ export const ChatWindow = React.memo(function ChatWindow({ chat }: Props) {
     if (!chat) return;
     setLoading(true);
     setMessages([]);
+    setLimit(50);
+    setHasReachedStart(false);
+    shouldAutoScrollRef.current = true;
 
-    fetchMessages(String(user?.UserId), chat.id)
-      .then(setMessages)
+    fetchMessages(String(user?.UserId), chat.id, 50)
+      .then((data) => {
+        setMessages(data);
+        setHasReachedStart(data.length < 50);
+      })
       .finally(() => setLoading(false));
   }, [chat?.id]);
+
+  useEffect(() => {
+    if (!chat) return;
+    if (limit === 50) return;
+
+    const container = messagesContainerRef.current;
+    const previousScrollHeight = container?.scrollHeight ?? 0;
+    pendingScrollHeightRef.current = previousScrollHeight;
+    setIsFetchingMore(true);
+
+    fetchMessages(String(user?.UserId), chat.id, limit)
+      .then((data) => {
+        setMessages(data);
+        setHasReachedStart(data.length < limit);
+      })
+      .finally(() => {
+        setIsFetchingMore(false);
+      });
+  }, [chat?.id, limit]);
 
   useEffect(() => {
     if (!chat) return;
@@ -77,12 +108,23 @@ export const ChatWindow = React.memo(function ChatWindow({ chat }: Props) {
       //@ts-ignore
       const exists = prev.some((m) => m.id === chat.lastMessage!.id);
       if (exists) return prev;
+      shouldAutoScrollRef.current = true;
       return [...prev, chat.lastMessage!];
     });
     //@ts-ignore
   }, [chat?.lastMessage?.id]);
 
   useEffect(() => {
+    if (pendingScrollHeightRef.current !== null) {
+      const container = messagesContainerRef.current;
+      if (container) {
+        const previousScrollHeight = pendingScrollHeightRef.current;
+        container.scrollTop = container.scrollHeight - previousScrollHeight;
+      }
+      pendingScrollHeightRef.current = null;
+      return;
+    }
+    if (!shouldAutoScrollRef.current) return;
     bottomRef.current?.scrollIntoView({
       behavior: "smooth",
     });
@@ -98,6 +140,7 @@ export const ChatWindow = React.memo(function ChatWindow({ chat }: Props) {
 
       // UX instantâneo
       setText("");
+      shouldAutoScrollRef.current = true;
 
       try {
         if (file) {
@@ -116,6 +159,17 @@ export const ChatWindow = React.memo(function ChatWindow({ chat }: Props) {
     },
     [text, chat]
   );
+
+  const handleScroll = useCallback(() => {
+    const container = messagesContainerRef.current;
+    if (!container || !chat) return;
+    if (loading || isFetchingMore || hasReachedStart) return;
+
+    if (container.scrollTop <= 20) {
+      shouldAutoScrollRef.current = false;
+      setLimit((prev) => prev + 50);
+    }
+  }, [loading, isFetchingMore, hasReachedStart, chat]);
 
   if (!chat) {
     return (
@@ -171,7 +225,16 @@ export const ChatWindow = React.memo(function ChatWindow({ chat }: Props) {
           flex-col
           gap-2
         "
+        ref={messagesContainerRef}
+        onScroll={handleScroll}
       >
+        {hasReachedStart && (
+          <div className="flex justify-center">
+            <div className="px-4 py-2 rounded-full bg-white text-gray-500 text-xs shadow">
+              início do chat
+            </div>
+          </div>
+        )}
         {messages.map((msg) => (
           <MessageBubble key={msg.id} message={msg} />
         ))}
