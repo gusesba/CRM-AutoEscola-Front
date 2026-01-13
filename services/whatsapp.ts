@@ -1,6 +1,19 @@
 import { Chat } from "@/types/chat";
 import { Message } from "@/types/messages";
 
+export type BatchMessageItem =
+  | {
+      type: "text";
+      message: string;
+    }
+  | {
+      type: "media";
+      data: string;
+      mimetype: string;
+      filename?: string;
+      caption?: string;
+    };
+
 export async function getConversations(userId: string): Promise<Chat[]> {
   const res = await fetch(
     `http://localhost:3001/whatsapp/${userId}/conversations`,
@@ -72,6 +85,24 @@ export async function getWhatsLogin(userId: string) {
 
   if (!res.ok) {
     throw new Error("Erro ao buscar status do WhatsApp");
+  }
+
+  return res.json();
+}
+
+export async function sendBatchMessages(
+  userId: string,
+  chatIds: string[],
+  items: BatchMessageItem[]
+) {
+  const res = await fetch(`http://localhost:3001/whatsapp/${userId}/messages/batch`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ chatIds, items }),
+  });
+
+  if (!res.ok) {
+    throw new Error("Erro ao enviar mensagens em lote");
   }
 
   return res.json();

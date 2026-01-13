@@ -5,6 +5,7 @@ import { Chat } from "@/types/chat";
 import { getConversations } from "@/services/whatsapp";
 import { ChatList } from "@/components/whats/ChatList";
 import { ChatWindow } from "@/components/whats/ChatWindow";
+import { BatchSendModal } from "@/components/whats/BatchSendModal";
 import { useWhatsSocket } from "@/hooks/useWhatsSocket";
 import { Message } from "@/types/messages";
 import { useAuth } from "@/hooks/useAuth";
@@ -33,6 +34,7 @@ export default function Home() {
   const [chats, setChats] = useState<Chat[]>([]);
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [loadingChats, setLoadingChats] = useState(false);
+  const [batchModalOpen, setBatchModalOpen] = useState(false);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -79,36 +81,53 @@ export default function Home() {
 
   return (
     <div className="flex-1 bg-[#f0f2f5]">
-      <div
-        className="
-          relative
-          mx-auto
-          h-[calc(100vh-7rem)]   /* espaço p/ header global */
-          max-w-[1400px]
-          bg-white
-          rounded-xl
-          shadow-md
-          flex
-          overflow-hidden
-        "
-      >
-        {loadingChats && <ChatsLoadingOverlay />}
+      <div className="mx-auto max-w-[1400px]">
+        <div className="flex items-center justify-end px-2 py-3">
+          <button
+            type="button"
+            onClick={() => setBatchModalOpen(true)}
+            className="rounded-lg bg-[#25d366] px-4 py-2 text-sm font-semibold text-white hover:bg-[#1ebe5d]"
+          >
+            Envio em grupo
+          </button>
+        </div>
 
-        <ChatList
-          chats={chats}
-          selectedChatId={selectedChatId}
-          onSelect={(id) => {
-            setSelectedChatId(id);
+        <div
+          className="
+            relative
+            h-[calc(100vh-9rem)]   /* espaço p/ header global + botão */
+            bg-white
+            rounded-xl
+            shadow-md
+            flex
+            overflow-hidden
+          "
+        >
+          {loadingChats && <ChatsLoadingOverlay />}
 
-            // zera unread ao abrir
-            setChats((prev) =>
-              prev.map((c) => (c.id === id ? { ...c, unreadCount: 0 } : c))
-            );
-          }}
-        />
+          <ChatList
+            chats={chats}
+            selectedChatId={selectedChatId}
+            onSelect={(id) => {
+              setSelectedChatId(id);
 
-        <ChatWindow chat={selectedChat} />
+              // zera unread ao abrir
+              setChats((prev) =>
+                prev.map((c) => (c.id === id ? { ...c, unreadCount: 0 } : c))
+              );
+            }}
+          />
+
+          <ChatWindow chat={selectedChat} />
+        </div>
       </div>
+
+      {batchModalOpen && user?.UserId && (
+        <BatchSendModal
+          userId={String(user.UserId)}
+          onClose={() => setBatchModalOpen(false)}
+        />
+      )}
     </div>
   );
 }
