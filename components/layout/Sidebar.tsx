@@ -52,6 +52,12 @@ export const Sidebar = () => {
           >
             Disparos
           </li>
+          <li
+            className="flex items-center gap-2 p-2 rounded hover:bg-gray-100 cursor-pointer"
+            onClick={() => router.push("/whatsapp/grupos")}
+          >
+            Grupos de WhatsApp
+          </li>
           {isAdmin && (
             <>
               <li

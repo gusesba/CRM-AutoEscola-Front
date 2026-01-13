@@ -1,0 +1,374 @@
+﻿"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { useRouter } from "next/navigation";
+import {
+  adicionarConversaAoGrupo,
+  buscarGruposWhatsapp,
+  criarGrupoWhatsapp,
+  excluirGrupoWhatsapp,
+  removerConversaGrupoWhatsapp,
+  GrupoWhatsapp,
+  GrupoWhatsappConversa,
+} from "@/services/whatsappGroupService";
+import { ChevronRight } from "lucide-react";
+
+const formatarConversa = (conversa: GrupoWhatsappConversa) => {
+  return conversa.venda?.cliente ?? "Cliente nao informado";
+};
+
+export default function GruposWhatsappPage() {
+  const router = useRouter();
+  const { user } = useAuth();
+  const [grupos, setGrupos] = useState<GrupoWhatsapp[]>([]);
+  const [filtroId, setFiltroId] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
+
+  const [novoGrupoNome, setNovoGrupoNome] = useState("");
+  const [criandoGrupo, setCriandoGrupo] = useState(false);
+
+  const [grupoSelecionado, setGrupoSelecionado] = useState<number | "">("");
+  const [vendaWhatsappId, setVendaWhatsappId] = useState("");
+  const [adicionando, setAdicionando] = useState(false);
+  const [excluindoGrupoId, setExcluindoGrupoId] = useState<number | null>(null);
+  const [removendoConversaKey, setRemovendoConversaKey] = useState<
+    string | null
+  >(null);
+
+  const gruposOrdenados = useMemo(() => {
+    return [...grupos].sort((a, b) => a.nome.localeCompare(b.nome));
+  }, [grupos]);
+
+  const carregarGrupos = async () => {
+    try {
+      setLoading(true);
+      setErro(null);
+      const id = filtroId.trim() ? Number(filtroId) : undefined;
+      const usuarioId = user?.UserId;
+      if (!usuarioId) return;
+      const data = await buscarGruposWhatsapp({
+        id,
+        usuarioId: Number(usuarioId),
+      });
+      setGrupos(data ?? []);
+    } catch (error) {
+      console.error(error);
+      setErro("NÃ£o foi possÃ­vel carregar os grupos.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!user?.UserId) return;
+    carregarGrupos();
+  }, [filtroId, user?.UserId]);
+
+  const handleCriarGrupo = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const nome = novoGrupoNome.trim();
+    if (!nome) return;
+    if (!user?.UserId) {
+      setErro("Usuario nao identificado.");
+      return;
+    }
+
+    try {
+      setCriandoGrupo(true);
+      await criarGrupoWhatsapp({ nome, usuarioId: Number(user.UserId) });
+      setNovoGrupoNome("");
+      await carregarGrupos();
+    } catch (error) {
+      console.error(error);
+      setErro("NÃ£o foi possÃ­vel criar o grupo.");
+    } finally {
+      setCriandoGrupo(false);
+    }
+  };
+
+  const handleAdicionarConversa = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!grupoSelecionado || !vendaWhatsappId.trim()) return;
+
+    try {
+      setAdicionando(true);
+      await adicionarConversaAoGrupo({
+        idGrupoWhats: Number(grupoSelecionado),
+        idVendaWhats: Number(vendaWhatsappId.trim()),
+      });
+      setVendaWhatsappId("");
+      await carregarGrupos();
+    } catch (error) {
+      console.error(error);
+      setErro("NÃ£o foi possÃ­vel adicionar a conversa.");
+    } finally {
+      setAdicionando(false);
+    }
+  };
+
+  const handleExcluirGrupo = async (grupoId: number) => {
+    const confirmado = window.confirm(
+      "Tem certeza que deseja excluir este grupo?"
+    );
+    if (!confirmado) return;
+
+    try {
+      setExcluindoGrupoId(grupoId);
+      await excluirGrupoWhatsapp(grupoId);
+      await carregarGrupos();
+    } catch (error) {
+      console.error(error);
+      setErro("Nao foi possivel excluir o grupo.");
+    } finally {
+      setExcluindoGrupoId(null);
+    }
+  };
+  const handleRemoverConversa = async (
+    grupoId: number,
+    vendaWhatsappId: number
+  ) => {
+    const confirmado = window.confirm(
+      "Tem certeza que deseja remover esta conversa do grupo?"
+    );
+    if (!confirmado) return;
+
+    const key = `${grupoId}-${vendaWhatsappId}`;
+
+    try {
+      setRemovendoConversaKey(key);
+      await removerConversaGrupoWhatsapp({
+        idGrupoWhats: grupoId,
+        idsVendaWhats: [vendaWhatsappId],
+      });
+      await carregarGrupos();
+    } catch (error) {
+      console.error(error);
+      setErro("Nao foi possivel remover a conversa.");
+    } finally {
+      setRemovendoConversaKey(null);
+    }
+  };
+
+  return (
+    <div className="flex flex-col items-center justify-center w-full p-6">
+      <div className="w-full h-[calc(100vh-7rem)] max-w-6xl bg-card border border-border rounded-xl shadow-right p-6 space-y-6 overflow-hidden">
+        <header className="space-y-2">
+          <h1 className="text-2xl font-semibold text-foreground text-center">
+            Grupos de WhatsApp
+          </h1>
+          <p className="text-sm text-muted-foreground text-center">
+            Visualize os grupos cadastrados, com as conversas vinculadas, e
+            gerencie novos envios.
+          </p>
+        </header>
+
+        <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <form
+            onSubmit={handleCriarGrupo}
+            className="border border-border rounded-lg p-4 space-y-3 bg-background"
+          >
+            <h2 className="text-base font-semibold text-foreground">
+              Criar novo grupo
+            </h2>
+            <label className="text-sm text-muted-foreground">
+              Nome do grupo
+              <input
+                value={novoGrupoNome}
+                onChange={(event) => setNovoGrupoNome(event.target.value)}
+                className="mt-2 w-full p-2 border rounded-lg bg-background text-sm focus:ring-2 focus:ring-primary outline-none transition mb-2"
+                placeholder="Informe o nome do grupo"
+              />
+            </label>
+            <button
+              type="submit"
+              disabled={criandoGrupo || !novoGrupoNome.trim()}
+              className="w-full bg-primary text-primary-foreground py-2 rounded-lg text-sm font-semibold hover:bg-primary/90 transition disabled:opacity-60"
+            >
+              {criandoGrupo ? "Criando..." : "Criar grupo"}
+            </button>
+          </form>
+
+          <form
+            onSubmit={handleAdicionarConversa}
+            className="border border-border rounded-lg p-4 space-y-3 bg-background"
+          >
+            <h2 className="text-base font-semibold text-foreground">
+              Adicionar conversa ao grupo
+            </h2>
+            <label className="text-sm text-muted-foreground">
+              Grupo
+              <select
+                value={grupoSelecionado}
+                onChange={(event) =>
+                  setGrupoSelecionado(
+                    event.target.value ? Number(event.target.value) : ""
+                  )
+                }
+                className="mt-2 w-full p-2 border rounded-lg bg-background text-sm focus:ring-2 focus:ring-primary outline-none transition"
+              >
+                <option value="">Selecione um grupo</option>
+                {gruposOrdenados.map((grupo) => (
+                  <option key={grupo.id} value={grupo.id}>
+                    {grupo.nome}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="text-sm text-muted-foreground">
+              ID da conversa (VendaWhatsapp)
+              <input
+                value={vendaWhatsappId}
+                onChange={(event) => setVendaWhatsappId(event.target.value)}
+                className="mt-2 w-full p-2 border rounded-lg bg-background text-sm focus:ring-2 focus:ring-primary outline-none transition mb-2"
+                placeholder="Informe o ID da conversa"
+                type="number"
+                min={1}
+              />
+            </label>
+            <button
+              type="submit"
+              disabled={
+                adicionando || !grupoSelecionado || !vendaWhatsappId.trim()
+              }
+              className="w-full bg-primary text-primary-foreground py-2 rounded-lg text-sm font-semibold hover:bg-primary/90 transition disabled:opacity-60"
+            >
+              {adicionando ? "Adicionando..." : "Adicionar conversa"}
+            </button>
+          </form>
+        </section>
+
+        <section className="space-y-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <label className="text-sm text-muted-foreground">
+              Buscar por ID do grupo
+              <input
+                value={filtroId}
+                onChange={(event) => setFiltroId(event.target.value)}
+                className="ml-2 mt-2 w-full sm:w-72 p-2 border rounded-lg bg-background text-sm focus:ring-2 focus:ring-primary outline-none transition"
+                placeholder="Digite o ID do grupo"
+                type="number"
+                min={1}
+              />
+            </label>
+            <button
+              type="button"
+              onClick={carregarGrupos}
+              className="bg-muted text-foreground px-4 py-2 rounded-lg text-sm hover:bg-muted/80 transition"
+            >
+              Atualizar lista
+            </button>
+          </div>
+
+          {erro && (
+            <div className="text-sm text-red-500 bg-red-50 border border-red-200 rounded-lg p-3">
+              {erro}
+            </div>
+          )}
+
+          <div className="space-y-4 max-h-[520px] overflow-y-auto pr-2 pb-10">
+            {loading ? (
+              <div className="text-center text-sm text-muted-foreground">
+                Carregando grupos...
+              </div>
+            ) : gruposOrdenados.length === 0 ? (
+              <div className="text-center text-sm text-muted-foreground">
+                Nenhum grupo encontrado.
+              </div>
+            ) : (
+              gruposOrdenados.map((grupo) => (
+                <div
+                  key={grupo.id}
+                  className="border border-border rounded-lg p-4 bg-background shadow-sm"
+                >
+                  <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold text-foreground">
+                        {grupo.nome}
+                      </h3>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs text-muted-foreground">
+                        {grupo.conversas?.length ?? 0} conversas vinculadas
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleExcluirGrupo(grupo.id)}
+                        disabled={excluindoGrupoId === grupo.id}
+                        className="text-xs font-semibold text-red-600 hover:text-red-700 transition disabled:opacity-60"
+                      >
+                        {excluindoGrupoId === grupo.id
+                          ? "Excluindo..."
+                          : "Excluir"}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="mt-3">
+                    {grupo.conversas && grupo.conversas.length > 0 ? (
+                      <ul className="space-y-2">
+                        {grupo.conversas.map((conversa) => (
+                          <li
+                            key={conversa.id}
+                            className="rounded-lg border border-border px-3 py-2 text-sm text-foreground"
+                          >
+                            <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                              <span>{formatarConversa(conversa)}</span>
+                            </div>
+                            <div className="mt-1 flex items-center justify-between gap-3 text-xs text-muted-foreground">
+                              <span>
+                                Contato: {conversa.venda?.contato ?? "N/A"} -
+                                Status: {conversa.venda?.status ?? "N/A"}
+                              </span>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handleRemoverConversa(
+                                      grupo.id,
+                                      conversa.vendaWhatsappId
+                                    )
+                                  }
+                                  disabled={
+                                    removendoConversaKey ===
+                                    `${grupo.id}-${conversa.vendaWhatsappId}`
+                                  }
+                                  className="text-xs font-semibold text-red-600 hover:text-red-700 transition disabled:opacity-60"
+                                >
+                                  {removendoConversaKey ===
+                                  `${grupo.id}-${conversa.vendaWhatsappId}`
+                                    ? "Removendo..."
+                                    : "Remover"}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    router.push(
+                                      `/venda/editar/${conversa.vendaId}`
+                                    )
+                                  }
+                                  className="inline-flex h-7 w-7 items-center justify-center rounded-sm bg-green-600 border border-border text-white cursor-pointer hover:bg-green-700 transition"
+                                  aria-label="Editar venda"
+                                >
+                                  <ChevronRight size={18} />
+                                </button>
+                              </div>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        Nenhuma conversa vinculada ao grupo.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </section>
+      </div>
+    </div>
+  );
+}
