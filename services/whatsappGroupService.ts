@@ -40,6 +40,14 @@ export async function buscarGruposWhatsapp(
   return await apiFetch(endpoint, { method: "GET" });
 }
 
+export async function buscarGruposWhatsappPorVenda(
+  vendaId: number | string
+): Promise<GrupoWhatsapp[]> {
+  return await apiFetch(`/venda/whatsapp/grupos/venda/${vendaId}`, {
+    method: "GET",
+  });
+}
+
 export async function criarGrupoWhatsapp(data: {
   nome: string;
   usuarioId: number;
