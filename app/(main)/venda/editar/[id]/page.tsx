@@ -14,6 +14,11 @@ import {
   BuscarVendaPorId,
   VendaChatVinculoDto,
 } from "@/services/vendaService";
+import {
+  buscarGruposWhatsappPorVenda,
+  GrupoWhatsapp,
+  removerConversaGrupoWhatsapp,
+} from "@/services/whatsappGroupService";
 import { useAuth } from "@/hooks/useAuth";
 import { PatternFormat } from "react-number-format";
 import { toast } from "sonner";
@@ -68,6 +73,10 @@ export default function EditarVenda() {
     useState<VendaChatVinculoDto | null>(null);
   const [loadingVinculo, setLoadingVinculo] = useState(true);
   const [vinculoError, setVinculoError] = useState<string | null>(null);
+  const [gruposWhatsapp, setGruposWhatsapp] = useState<GrupoWhatsapp[]>([]);
+  const [loadingGrupos, setLoadingGrupos] = useState(true);
+  const [gruposError, setGruposError] = useState<string | null>(null);
+  const [removendoGrupo, setRemovendoGrupo] = useState<number | null>(null);
 
   const [sedes, setSedes] = useState<{ id: number; nome: string }[]>([]);
   const [vendedores, setVendedores] = useState<{ id: number; nome: string }[]>(
@@ -130,10 +139,21 @@ export default function EditarVenda() {
         } finally {
           setLoadingVinculo(false);
         }
+
+        try {
+          const grupos = await buscarGruposWhatsappPorVenda(vendaId);
+          setGruposWhatsapp(grupos);
+        } catch (error) {
+          console.error(error);
+          setGruposError("Não foi possível carregar os grupos do WhatsApp.");
+        } finally {
+          setLoadingGrupos(false);
+        }
       } catch (err) {
         setLoadError("Erro ao carregar dados da venda.");
         console.error(err);
         setLoadingVinculo(false);
+        setLoadingGrupos(false);
       } finally {
         setLoadingVenda(false);
       }
@@ -173,6 +193,32 @@ export default function EditarVenda() {
     { value: 4, label: "Optou pela Concorrência" },
     { value: 5, label: "Não Enviar Mais" },
   ];
+
+  const handleRemoverGrupo = async (grupo: GrupoWhatsapp) => {
+    const idsVendaWhats = grupo.conversas
+      .filter((conversa) => conversa.vendaId === Number(vendaId))
+      .map((conversa) => conversa.vendaWhatsappId);
+
+    if (idsVendaWhats.length === 0) {
+      toast.error("Não foi possível identificar a conversa da venda.");
+      return;
+    }
+
+    try {
+      setRemovendoGrupo(grupo.id);
+      await removerConversaGrupoWhatsapp({
+        idGrupoWhats: grupo.id,
+        idsVendaWhats,
+      });
+      setGruposWhatsapp((prev) => prev.filter((item) => item.id !== grupo.id));
+      toast.success("Venda removida do grupo com sucesso!");
+    } catch (error) {
+      console.error(error);
+      toast.error("Erro ao remover venda do grupo.");
+    } finally {
+      setRemovendoGrupo(null);
+    }
+  };
 
   if (loadingVenda) {
     return (
@@ -228,6 +274,50 @@ export default function EditarVenda() {
             Lead não vinculado a nenhuma conversa
           </p>
         )}
+
+        <div className="border border-border rounded-lg p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-foreground">
+              Grupos do WhatsApp
+            </h2>
+          </div>
+
+          {loadingGrupos ? (
+            <p className="text-sm text-muted-foreground">Carregando grupos...</p>
+          ) : gruposError ? (
+            <p className="text-sm text-error">{gruposError}</p>
+          ) : gruposWhatsapp.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              Esta venda não participa de nenhum grupo.
+            </p>
+          ) : (
+            <ul className="space-y-2">
+              {gruposWhatsapp.map((grupo) => (
+                <li
+                  key={grupo.id}
+                  className="flex flex-col gap-2 rounded-md border border-border/60 px-3 py-2 md:flex-row md:items-center md:justify-between"
+                >
+                  <div>
+                    <p className="font-medium text-foreground">{grupo.nome}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {grupo.conversas.length} conversa(s) vinculada(s)
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoverGrupo(grupo)}
+                    disabled={removendoGrupo === grupo.id}
+                    className="rounded-md border border-red-500 px-3 py-1 text-sm font-medium text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {removendoGrupo === grupo.id
+                      ? "Removendo..."
+                      : "Remover do grupo"}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Sede */}
