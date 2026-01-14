@@ -37,7 +37,8 @@ type BatchTextItem = {
 type BatchItem = BatchMediaItem | BatchTextItem;
 
 const EMPTY_MESSAGE = "Digite uma mensagem para o preview.";
-const TEMPLATE_HELPERS = ["${PrimeiroNome}", "${NomeCompleto}"];
+const TEMPLATE_FIRST_NAME = "${PrimeiroNome}";
+const TEMPLATE_FULL_NAME = "${NomeCompleto}";
 
 function getMessageTypeFromFile(file: File): Message["type"] {
   if (file.type.startsWith("image")) return "image";
@@ -224,6 +225,10 @@ export function BatchSendModal({ userId, onClose }: Props) {
     );
   };
 
+  const handleInsertTemplate = (template: string) => {
+    setText((prev) => (prev ? `${prev} ${template}` : template));
+  };
+
   const handleSendBatch = async () => {
     setError(null);
 
@@ -347,6 +352,22 @@ export function BatchSendModal({ userId, onClose }: Props) {
             </div>
 
             <footer className="shrink-0 border-t border-gray-200 bg-[#f7f8fa]">
+              <div className="flex flex-wrap gap-2 px-4 pt-3">
+                <button
+                  type="button"
+                  onClick={() => handleInsertTemplate(TEMPLATE_FIRST_NAME)}
+                  className="rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-semibold text-gray-600 hover:bg-gray-50"
+                >
+                  Primeiro Nome
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleInsertTemplate(TEMPLATE_FULL_NAME)}
+                  className="rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-semibold text-gray-600 hover:bg-gray-50"
+                >
+                  Nome Completo
+                </button>
+              </div>
               <MessageInput
                 value={text}
                 onChange={setText}
@@ -382,12 +403,6 @@ export function BatchSendModal({ userId, onClose }: Props) {
                   : selectedGroup
                   ? `${selectedGroup.conversas?.length ?? 0} conversas vinculadas`
                   : "Selecione um grupo para visualizar as conversas"}
-              </div>
-              <div className="mt-3 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-700">
-                <p className="font-semibold">Parâmetros disponíveis</p>
-                <p className="mt-1">
-                  {TEMPLATE_HELPERS.join(", ")} (baseado em venda &gt; cliente)
-                </p>
               </div>
             </div>
 
