@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { Chat } from "@/types/chat";
 import { getConversations } from "@/services/whatsapp";
 import { ChatList } from "@/components/whats/ChatList";
@@ -10,11 +10,14 @@ import { useWhatsSocket } from "@/hooks/useWhatsSocket";
 import { Message } from "@/types/messages";
 import { useAuth } from "@/hooks/useAuth";
 import {
+  adicionarConversaAoGrupo,
+  buscarGruposWhatsapp,
   buscarGruposWhatsappPorChat,
   GrupoWhatsapp,
   removerConversaGrupoWhatsapp,
 } from "@/services/whatsappGroupService";
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { getChatStatus } from "@/services/vendaService";
+import { ChevronLeft, ChevronRight, Plus, X } from "lucide-react";
 
 function ChatsLoadingOverlay() {
   return (
@@ -45,6 +48,18 @@ export default function Home() {
   const [gruposChat, setGruposChat] = useState<GrupoWhatsapp[]>([]);
   const [loadingGruposChat, setLoadingGruposChat] = useState(false);
   const [removendoGrupoId, setRemovendoGrupoId] = useState<number | null>(null);
+  const [modalAdicionarGrupoOpen, setModalAdicionarGrupoOpen] = useState(false);
+  const [gruposDisponiveis, setGruposDisponiveis] = useState<GrupoWhatsapp[]>(
+    []
+  );
+  const [grupoSelecionadoId, setGrupoSelecionadoId] = useState<number | "">("");
+  const [adicionandoGrupo, setAdicionandoGrupo] = useState(false);
+  const [erroAdicionarGrupo, setErroAdicionarGrupo] = useState<string | null>(
+    null
+  );
+  const [carregandoGruposDisponiveis, setCarregandoGruposDisponiveis] =
+    useState(false);
+  const [vendaWhatsappId, setVendaWhatsappId] = useState<number | null>(null);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -118,6 +133,100 @@ export default function Home() {
       })
       .finally(() => setLoadingGruposChat(false));
   }, [selectedChatId]);
+
+  useEffect(() => {
+    if (!selectedChatId || !user?.UserId) {
+      setVendaWhatsappId(null);
+      return;
+    }
+
+    getChatStatus(selectedChatId, String(user.UserId))
+      .then((data) => {
+        setVendaWhatsappId(data?.venda?.vendaWhatsapp?.id ?? null);
+      })
+      .catch((error) => {
+        console.error(error);
+        setVendaWhatsappId(null);
+      });
+  }, [selectedChatId, user?.UserId]);
+
+  useEffect(() => {
+    if (!modalAdicionarGrupoOpen || !user?.UserId) return;
+
+    let mounted = true;
+    setErroAdicionarGrupo(null);
+    setCarregandoGruposDisponiveis(true);
+
+    buscarGruposWhatsapp({ usuarioId: Number(user.UserId) })
+      .then((data) => {
+        if (!mounted) return;
+        setGruposDisponiveis(data ?? []);
+      })
+      .catch((error) => {
+        console.error(error);
+        if (!mounted) return;
+        setErroAdicionarGrupo("Não foi possível carregar os grupos.");
+      })
+      .finally(() => {
+        if (!mounted) return;
+        setCarregandoGruposDisponiveis(false);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [modalAdicionarGrupoOpen, user?.UserId]);
+
+  const gruposParaAdicionar = useMemo(() => {
+    const gruposAssociados = new Set(gruposChat.map((grupo) => grupo.id));
+    return gruposDisponiveis.filter((grupo) => !gruposAssociados.has(grupo.id));
+  }, [gruposChat, gruposDisponiveis]);
+
+  const fecharModalAdicionarGrupo = () => {
+    setModalAdicionarGrupoOpen(false);
+    setGrupoSelecionadoId("");
+    setErroAdicionarGrupo(null);
+  };
+
+  const handleAdicionarGrupo = async () => {
+    if (!selectedChatId) return;
+
+    if (!vendaWhatsappId) {
+      setErroAdicionarGrupo(
+        "É necessário vincular a conversa a uma venda antes de adicionar ao grupo."
+      );
+      return;
+    }
+
+    if (!grupoSelecionadoId) {
+      setErroAdicionarGrupo("Selecione um grupo para adicionar.");
+      return;
+    }
+
+    try {
+      setAdicionandoGrupo(true);
+      setErroAdicionarGrupo(null);
+
+      await adicionarConversaAoGrupo({
+        idGrupoWhats: Number(grupoSelecionadoId),
+        idVendaWhats: vendaWhatsappId,
+      });
+
+      setLoadingGruposChat(true);
+      const gruposAtualizados = await buscarGruposWhatsappPorChat(
+        selectedChatId
+      );
+      setGruposChat(gruposAtualizados);
+      setGrupoChatIndex(0);
+      fecharModalAdicionarGrupo();
+    } catch (error) {
+      console.error(error);
+      setErroAdicionarGrupo("Não foi possível adicionar a conversa ao grupo.");
+    } finally {
+      setAdicionandoGrupo(false);
+      setLoadingGruposChat(false);
+    }
+  };
 
   const handleRemoverGrupoChat = async (grupo: GrupoWhatsapp) => {
     if (!selectedChatId) return;
@@ -200,6 +309,15 @@ export default function Home() {
                     </button>
                   </span>
                 ))}
+              <button
+                type="button"
+                onClick={() => setModalAdicionarGrupoOpen(true)}
+                disabled={!selectedChatId}
+                className="ml-1 inline-flex h-6 w-6 items-center justify-center rounded-full border border-gray-200 text-gray-500 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+                aria-label="Adicionar conversa ao grupo"
+              >
+                <Plus size={14} />
+              </button>
             </div>
             {grupoChatIndex < totalPaginasGrupoChat - 1 && (
               <button
@@ -259,6 +377,103 @@ export default function Home() {
           userId={String(user.UserId)}
           onClose={() => setBatchModalOpen(false)}
         />
+      )}
+
+      {modalAdicionarGrupoOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-lg rounded-2xl bg-white shadow-xl">
+            <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Adicionar ao grupo
+                </h2>
+                <p className="text-xs text-gray-500">
+                  Selecione o grupo para incluir esta conversa.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={fecharModalAdicionarGrupo}
+                className="rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 cursor-pointer"
+                aria-label="Fechar modal"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="space-y-4 px-6 py-5">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">
+                  Grupo
+                </label>
+                <select
+                  value={grupoSelecionadoId}
+                  onChange={(event) =>
+                    setGrupoSelecionadoId(
+                      event.target.value ? Number(event.target.value) : ""
+                    )
+                  }
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#25d366]"
+                  disabled={carregandoGruposDisponiveis}
+                >
+                  <option value="">Selecione um grupo</option>
+                  {gruposParaAdicionar.map((grupo) => (
+                    <option key={grupo.id} value={grupo.id}>
+                      {grupo.nome}
+                    </option>
+                  ))}
+                </select>
+                {carregandoGruposDisponiveis && (
+                  <p className="mt-1 text-xs text-gray-500">
+                    Carregando grupos...
+                  </p>
+                )}
+                {!carregandoGruposDisponiveis &&
+                  gruposParaAdicionar.length === 0 && (
+                    <p className="mt-1 text-xs text-gray-500">
+                      Não há grupos disponíveis para adicionar esta conversa.
+                    </p>
+                  )}
+              </div>
+
+              {!vendaWhatsappId && (
+                <p className="rounded-lg border border-yellow-200 bg-yellow-50 px-3 py-2 text-xs text-yellow-700">
+                  Vincule esta conversa a uma venda para habilitar a inclusão em
+                  grupos.
+                </p>
+              )}
+
+              {erroAdicionarGrupo && (
+                <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+                  {erroAdicionarGrupo}
+                </p>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-3 border-t border-gray-200 px-6 py-4">
+              <button
+                type="button"
+                onClick={fecharModalAdicionarGrupo}
+                className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50 cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleAdicionarGrupo}
+                disabled={
+                  adicionandoGrupo ||
+                  carregandoGruposDisponiveis ||
+                  !grupoSelecionadoId ||
+                  !vendaWhatsappId
+                }
+                className="rounded-lg bg-[#25d366] px-4 py-2 text-sm font-semibold text-white hover:bg-[#1ebe5d] disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
+              >
+                {adicionandoGrupo ? "Adicionando..." : "Adicionar"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
