@@ -24,7 +24,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { PatternFormat } from "react-number-format";
 import { toast } from "sonner";
-import { Plus, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, X } from "lucide-react";
 
 type FormData = {
   sedeId: number;
@@ -80,6 +80,8 @@ export default function EditarVenda() {
   const [loadingGrupos, setLoadingGrupos] = useState(true);
   const [gruposError, setGruposError] = useState<string | null>(null);
   const [removendoGrupo, setRemovendoGrupo] = useState<number | null>(null);
+  const [grupoChatIndex, setGrupoChatIndex] = useState(0);
+  const gruposChatPorPagina = 3;
   const [modalAdicionarGrupoOpen, setModalAdicionarGrupoOpen] = useState(false);
   const [gruposDisponiveis, setGruposDisponiveis] = useState<GrupoWhatsapp[]>(
     []
@@ -205,6 +207,16 @@ export default function EditarVenda() {
     carregarGruposDisponiveis();
   }, [modalAdicionarGrupoOpen, user?.UserId, gruposWhatsapp]);
 
+  useEffect(() => {
+    setGrupoChatIndex((prev) => {
+      const totalPaginas = Math.max(
+        1,
+        Math.ceil(gruposWhatsapp.length / gruposChatPorPagina)
+      );
+      return Math.min(prev, totalPaginas - 1);
+    });
+  }, [gruposWhatsapp.length]);
+
   const onSubmit = async (data: FormData) => {
     try {
       await AtualizarVenda(vendaId, data);
@@ -238,6 +250,11 @@ export default function EditarVenda() {
   ];
 
   const handleRemoverGrupo = async (grupo: GrupoWhatsapp) => {
+    const confirmado = window.confirm(
+      "Tem certeza que deseja remover esta venda do grupo?"
+    );
+    if (!confirmado) return;
+
     const idsVendaWhats = grupo.conversas
       .filter((conversa) => conversa.vendaId === Number(vendaId))
       .map((conversa) => conversa.vendaWhatsappId);
@@ -324,18 +341,101 @@ export default function EditarVenda() {
     );
   }
 
+  const totalPaginasGrupoChat = Math.ceil(
+    gruposWhatsapp.length / gruposChatPorPagina
+  );
+
+  const gruposChatPaginados = gruposWhatsapp.slice(
+    grupoChatIndex * gruposChatPorPagina,
+    (grupoChatIndex + 1) * gruposChatPorPagina
+  );
+
   return (
     <>
       <div className="w-full flex justify-center p-4">
-        <form
-          onSubmit={handleSubmit(onSubmit)}
-          onSubmitCapture={() => {
-            setSuccessMessage(null);
-            setSubmitError(null);
-          }}
-          className="bg-card border border-border rounded-xl p-8 shadow-md w-full max-w-6xl max-h-[80vh] overflow-y-auto space-y-6"
-          noValidate
-        >
+        <div className="w-full max-w-6xl space-y-4">
+          <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 shadow-sm">
+            <div className="flex flex-1 items-center gap-2 overflow-hidden">
+              {grupoChatIndex !== 0 && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setGrupoChatIndex((prev) => Math.max(0, prev - 1))
+                  }
+                  className="h-8 w-8 flex items-center justify-center rounded-full border border-gray-200 text-gray-500 disabled:opacity-40 cursor-pointer"
+                  aria-label="Ver grupos anteriores"
+                >
+                  <ChevronLeft size={18} />
+                </button>
+              )}
+              <div className="flex items-center gap-2 overflow-hidden">
+                {loadingGrupos && (
+                  <span className="text-xs text-gray-500">
+                    Carregando grupos...
+                  </span>
+                )}
+                {!loadingGrupos && gruposChatPaginados.length === 0 && (
+                  <span className="text-xs text-gray-500">
+                    Nenhum grupo associado
+                  </span>
+                )}
+                {!loadingGrupos &&
+                  gruposChatPaginados.map((grupo) => (
+                    <span
+                      key={grupo.id}
+                      className="inline-flex max-w-[160px] items-center gap-1 truncate rounded-full bg-green-600 pl-3 pr-2 py-1 text-xs font-semibold text-white"
+                      title={grupo.nome}
+                    >
+                      <span className="truncate">{grupo.nome}</span>
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          handleRemoverGrupo(grupo);
+                        }}
+                        disabled={removendoGrupo === grupo.id}
+                        className="ml-1 inline-flex h-4 w-4 items-center justify-center rounded-full text-red-200 transition hover:bg-red-500/70 hover:text-white disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
+                        aria-label={`Remover venda do grupo ${grupo.nome}`}
+                      >
+                        <X size={12} />
+                      </button>
+                    </span>
+                  ))}
+                <button
+                  type="button"
+                  onClick={() => setModalAdicionarGrupoOpen(true)}
+                  className="ml-1 inline-flex h-6 w-6 items-center justify-center rounded-full border border-gray-200 text-gray-500 transition hover:bg-gray-100 cursor-pointer"
+                  aria-label="Adicionar venda ao grupo"
+                >
+                  <Plus size={14} />
+                </button>
+              </div>
+              {grupoChatIndex < totalPaginasGrupoChat - 1 && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setGrupoChatIndex((prev) =>
+                      Math.min(totalPaginasGrupoChat - 1, prev + 1)
+                    )
+                  }
+                  className="h-8 w-8 flex items-center justify-center rounded-full border border-gray-200 text-gray-500 disabled:opacity-40 cursor-pointer"
+                  aria-label="Ver próximos grupos"
+                >
+                  <ChevronRight size={18} />
+                </button>
+              )}
+            </div>
+          </div>
+
+          <form
+            onSubmit={handleSubmit(onSubmit)}
+            onSubmitCapture={() => {
+              setSuccessMessage(null);
+              setSubmitError(null);
+            }}
+            className="bg-card border border-border rounded-xl p-8 shadow-md w-full max-h-[80vh] overflow-y-auto space-y-6"
+            noValidate
+          >
         <h1 className="text-2xl font-semibold text-center text-foreground mb-6">
           Editar Lead
         </h1>
@@ -356,62 +456,9 @@ export default function EditarVenda() {
           </p>
         )}
 
-        <div className="border border-border rounded-lg p-4 space-y-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <h2 className="text-lg font-semibold text-foreground">
-              Grupos do WhatsApp
-            </h2>
-            <button
-              type="button"
-              onClick={() => setModalAdicionarGrupoOpen(true)}
-              className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-1.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-100"
-            >
-              <Plus size={16} />
-              Adicionar ao grupo
-            </button>
-          </div>
-
-          {loadingGrupos ? (
-            <p className="text-sm text-muted-foreground">Carregando grupos...</p>
-          ) : gruposError ? (
-            <p className="text-sm text-error">{gruposError}</p>
-          ) : gruposWhatsapp.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Esta venda não participa de nenhum grupo.
-            </p>
-          ) : (
-            <ul className="flex flex-col gap-2">
-              {gruposWhatsapp.map((grupo) => (
-                <li
-                  key={grupo.id}
-                  className="flex flex-col gap-2 rounded-2xl bg-green-600 px-4 py-2 text-white shadow-sm sm:flex-row sm:items-center sm:justify-between"
-                >
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold">
-                      {grupo.nome}
-                    </p>
-                    <p className="text-xs text-white/80">
-                      {grupo.conversas.length} conversa(s) vinculada(s)
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => handleRemoverGrupo(grupo)}
-                    disabled={removendoGrupo === grupo.id}
-                    className="inline-flex h-7 w-7 items-center justify-center rounded-full text-red-100 transition hover:bg-red-500/70 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
-                    aria-label={`Remover venda do grupo ${grupo.nome}`}
-                  >
-                    {removendoGrupo === grupo.id ? (
-                      <span className="text-[10px] font-semibold">...</span>
-                    ) : (
-                      <X size={14} />
-                    )}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+        {gruposError && (
+          <p className="text-sm text-error">{gruposError}</p>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Sede */}
@@ -798,7 +845,8 @@ export default function EditarVenda() {
             {submitError}
           </p>
         )}
-      </form>
+          </form>
+        </div>
       </div>
 
       {modalAdicionarGrupoOpen && (
