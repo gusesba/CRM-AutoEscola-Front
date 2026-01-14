@@ -261,7 +261,7 @@ export default function GruposWhatsappPage() {
                 <select
                   value={vendaWhatsappId}
                   onChange={(event) => setVendaWhatsappId(event.target.value)}
-                  className="w-full p-2 border rounded-lg bg-background text-sm focus:ring-2 focus:ring-primary outline-none transition"
+                  className="w-full p-2 border rounded-lg bg-background text-sm focus:ring-2 focus:ring-primary outline-none transition mb-2"
                 >
                   <option value="">Selecione uma conversa</option>
                   {carregandoVinculos && (
