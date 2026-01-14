@@ -126,9 +126,7 @@ export default function EditarVenda() {
           setVendaChatVinculo(vinculo);
         } catch (error) {
           console.error(error);
-          setVinculoError(
-            "Não foi possível carregar o vínculo com WhatsApp."
-          );
+          setVinculoError("Não foi possível carregar o vínculo com WhatsApp.");
         } finally {
           setLoadingVinculo(false);
         }
@@ -212,27 +210,24 @@ export default function EditarVenda() {
         noValidate
       >
         <h1 className="text-2xl font-semibold text-center text-foreground mb-6">
-          Editar Venda
+          Editar Lead
         </h1>
 
-        <div className="rounded-lg border border-border bg-muted/20 p-4">
-          <p className="text-sm font-medium text-muted-foreground">
-            Vínculo com WhatsApp
+        {loadingVinculo ? (
+          <p className="text-sm text-muted-foreground mt-[-30px]">
+            Carregando vínculo...
           </p>
-          {loadingVinculo ? (
-            <p className="text-sm text-muted-foreground">
-              Carregando vínculo...
-            </p>
-          ) : vinculoError ? (
-            <p className="text-sm text-error">{vinculoError}</p>
-          ) : (
-            <p className="text-sm font-medium text-foreground">
-              {vendaChatVinculo?.vinculado
-                ? "Lead vinculado a uma conversa"
-                : "Lead não vinculado a nenhuma conversa"}
-            </p>
-          )}
-        </div>
+        ) : vinculoError ? (
+          <p className="text-sm text-error mt-[-30px]">{vinculoError}</p>
+        ) : vendaChatVinculo?.vinculado ? (
+          <p className="text-sm font-medium text-green-500 mt-[-30px]">
+            Lead vinculado a uma conversa
+          </p>
+        ) : (
+          <p className="text-sm font-medium text-red-500 mt-[-30px]">
+            Lead não vinculado a nenhuma conversa
+          </p>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Sede */}
