@@ -15,6 +15,8 @@ import {
   VendaChatVinculoDto,
 } from "@/services/vendaService";
 import {
+  adicionarConversaAoGrupo,
+  buscarGruposWhatsapp,
   buscarGruposWhatsappPorVenda,
   GrupoWhatsapp,
   removerConversaGrupoWhatsapp,
@@ -22,6 +24,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { PatternFormat } from "react-number-format";
 import { toast } from "sonner";
+import { Plus, X } from "lucide-react";
 
 type FormData = {
   sedeId: number;
@@ -54,7 +57,7 @@ export default function EditarVenda() {
   const vendaId = params.id as string;
 
   // TODO: Implementar lógica real de verificação de admin
-  const { isAdmin } = useAuth();
+  const { isAdmin, user } = useAuth();
 
   const {
     register,
@@ -77,6 +80,17 @@ export default function EditarVenda() {
   const [loadingGrupos, setLoadingGrupos] = useState(true);
   const [gruposError, setGruposError] = useState<string | null>(null);
   const [removendoGrupo, setRemovendoGrupo] = useState<number | null>(null);
+  const [modalAdicionarGrupoOpen, setModalAdicionarGrupoOpen] = useState(false);
+  const [gruposDisponiveis, setGruposDisponiveis] = useState<GrupoWhatsapp[]>(
+    []
+  );
+  const [carregandoGruposDisponiveis, setCarregandoGruposDisponiveis] =
+    useState(false);
+  const [grupoSelecionadoId, setGrupoSelecionadoId] = useState<number | "">("");
+  const [erroAdicionarGrupo, setErroAdicionarGrupo] = useState<string | null>(
+    null
+  );
+  const [adicionandoGrupo, setAdicionandoGrupo] = useState(false);
 
   const [sedes, setSedes] = useState<{ id: number; nome: string }[]>([]);
   const [vendedores, setVendedores] = useState<{ id: number; nome: string }[]>(
@@ -162,6 +176,35 @@ export default function EditarVenda() {
     carregarDados();
   }, [vendaId, reset]);
 
+  useEffect(() => {
+    if (!modalAdicionarGrupoOpen || !user?.UserId) return;
+
+    const carregarGruposDisponiveis = async () => {
+      try {
+        setCarregandoGruposDisponiveis(true);
+        setErroAdicionarGrupo(null);
+
+        const grupos = await buscarGruposWhatsapp({
+          usuarioId: Number(user.UserId),
+        });
+
+        const gruposAtuais = new Set(gruposWhatsapp.map((grupo) => grupo.id));
+        const disponiveis = (grupos ?? []).filter(
+          (grupo) => !gruposAtuais.has(grupo.id)
+        );
+
+        setGruposDisponiveis(disponiveis);
+      } catch (error) {
+        console.error(error);
+        setErroAdicionarGrupo("Não foi possível carregar os grupos.");
+      } finally {
+        setCarregandoGruposDisponiveis(false);
+      }
+    };
+
+    carregarGruposDisponiveis();
+  }, [modalAdicionarGrupoOpen, user?.UserId, gruposWhatsapp]);
+
   const onSubmit = async (data: FormData) => {
     try {
       await AtualizarVenda(vendaId, data);
@@ -220,6 +263,43 @@ export default function EditarVenda() {
     }
   };
 
+  const fecharModalAdicionarGrupo = () => {
+    setModalAdicionarGrupoOpen(false);
+    setGrupoSelecionadoId("");
+    setErroAdicionarGrupo(null);
+  };
+
+  const handleAdicionarGrupo = async () => {
+    if (!grupoSelecionadoId) {
+      setErroAdicionarGrupo("Selecione um grupo para adicionar.");
+      return;
+    }
+
+    if (!vendaChatVinculo?.vendaWhatsappId) {
+      setErroAdicionarGrupo(
+        "Vincule a conversa a esta venda para adicionar ao grupo."
+      );
+      return;
+    }
+
+    try {
+      setAdicionandoGrupo(true);
+      await adicionarConversaAoGrupo({
+        idGrupoWhats: Number(grupoSelecionadoId),
+        idVendaWhats: Number(vendaChatVinculo.vendaWhatsappId),
+      });
+      const gruposAtualizados = await buscarGruposWhatsappPorVenda(vendaId);
+      setGruposWhatsapp(gruposAtualizados);
+      fecharModalAdicionarGrupo();
+      toast.success("Venda adicionada ao grupo com sucesso!");
+    } catch (error) {
+      console.error(error);
+      setErroAdicionarGrupo("Não foi possível adicionar ao grupo.");
+    } finally {
+      setAdicionandoGrupo(false);
+    }
+  };
+
   if (loadingVenda) {
     return (
       <div className="w-full flex justify-center items-center min-h-[400px]">
@@ -245,16 +325,17 @@ export default function EditarVenda() {
   }
 
   return (
-    <div className="w-full flex justify-center p-4">
-      <form
-        onSubmit={handleSubmit(onSubmit)}
-        onSubmitCapture={() => {
-          setSuccessMessage(null);
-          setSubmitError(null);
-        }}
-        className="bg-card border border-border rounded-xl p-8 shadow-md w-full max-w-6xl max-h-[80vh] overflow-y-auto space-y-6"
-        noValidate
-      >
+    <>
+      <div className="w-full flex justify-center p-4">
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          onSubmitCapture={() => {
+            setSuccessMessage(null);
+            setSubmitError(null);
+          }}
+          className="bg-card border border-border rounded-xl p-8 shadow-md w-full max-w-6xl max-h-[80vh] overflow-y-auto space-y-6"
+          noValidate
+        >
         <h1 className="text-2xl font-semibold text-center text-foreground mb-6">
           Editar Lead
         </h1>
@@ -275,11 +356,19 @@ export default function EditarVenda() {
           </p>
         )}
 
-        <div className="border border-border rounded-lg p-4 space-y-3">
-          <div className="flex items-center justify-between">
+        <div className="border border-border rounded-lg p-4 space-y-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h2 className="text-lg font-semibold text-foreground">
               Grupos do WhatsApp
             </h2>
+            <button
+              type="button"
+              onClick={() => setModalAdicionarGrupoOpen(true)}
+              className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-1.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-100"
+            >
+              <Plus size={16} />
+              Adicionar ao grupo
+            </button>
           </div>
 
           {loadingGrupos ? (
@@ -291,15 +380,17 @@ export default function EditarVenda() {
               Esta venda não participa de nenhum grupo.
             </p>
           ) : (
-            <ul className="space-y-2">
+            <ul className="flex flex-col gap-2">
               {gruposWhatsapp.map((grupo) => (
                 <li
                   key={grupo.id}
-                  className="flex flex-col gap-2 rounded-md border border-border/60 px-3 py-2 md:flex-row md:items-center md:justify-between"
+                  className="flex flex-col gap-2 rounded-2xl bg-green-600 px-4 py-2 text-white shadow-sm sm:flex-row sm:items-center sm:justify-between"
                 >
-                  <div>
-                    <p className="font-medium text-foreground">{grupo.nome}</p>
-                    <p className="text-xs text-muted-foreground">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold">
+                      {grupo.nome}
+                    </p>
+                    <p className="text-xs text-white/80">
                       {grupo.conversas.length} conversa(s) vinculada(s)
                     </p>
                   </div>
@@ -307,11 +398,14 @@ export default function EditarVenda() {
                     type="button"
                     onClick={() => handleRemoverGrupo(grupo)}
                     disabled={removendoGrupo === grupo.id}
-                    className="rounded-md border border-red-500 px-3 py-1 text-sm font-medium text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="inline-flex h-7 w-7 items-center justify-center rounded-full text-red-100 transition hover:bg-red-500/70 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+                    aria-label={`Remover venda do grupo ${grupo.nome}`}
                   >
-                    {removendoGrupo === grupo.id
-                      ? "Removendo..."
-                      : "Remover do grupo"}
+                    {removendoGrupo === grupo.id ? (
+                      <span className="text-[10px] font-semibold">...</span>
+                    ) : (
+                      <X size={14} />
+                    )}
                   </button>
                 </li>
               ))}
@@ -705,6 +799,104 @@ export default function EditarVenda() {
           </p>
         )}
       </form>
-    </div>
+      </div>
+
+      {modalAdicionarGrupoOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-lg rounded-2xl bg-white shadow-xl">
+            <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Adicionar ao grupo
+                </h2>
+                <p className="text-xs text-gray-500">
+                  Selecione o grupo para incluir esta venda.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={fecharModalAdicionarGrupo}
+                className="rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600"
+                aria-label="Fechar modal"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="space-y-4 px-6 py-5">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">
+                  Grupo
+                </label>
+                <select
+                  value={grupoSelecionadoId}
+                  onChange={(event) =>
+                    setGrupoSelecionadoId(
+                      event.target.value ? Number(event.target.value) : ""
+                    )
+                  }
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#25d366]"
+                  disabled={carregandoGruposDisponiveis}
+                >
+                  <option value="">Selecione um grupo</option>
+                  {gruposDisponiveis.map((grupo) => (
+                    <option key={grupo.id} value={grupo.id}>
+                      {grupo.nome}
+                    </option>
+                  ))}
+                </select>
+                {carregandoGruposDisponiveis && (
+                  <p className="mt-1 text-xs text-gray-500">
+                    Carregando grupos...
+                  </p>
+                )}
+                {!carregandoGruposDisponiveis &&
+                  gruposDisponiveis.length === 0 && (
+                    <p className="mt-1 text-xs text-gray-500">
+                      Não há grupos disponíveis para adicionar esta venda.
+                    </p>
+                  )}
+              </div>
+
+              {!vendaChatVinculo?.vendaWhatsappId && (
+                <p className="rounded-lg border border-yellow-200 bg-yellow-50 px-3 py-2 text-xs text-yellow-700">
+                  Vincule a conversa a esta venda para habilitar a inclusão em
+                  grupos.
+                </p>
+              )}
+
+              {erroAdicionarGrupo && (
+                <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+                  {erroAdicionarGrupo}
+                </p>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-3 border-t border-gray-200 px-6 py-4">
+              <button
+                type="button"
+                onClick={fecharModalAdicionarGrupo}
+                className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleAdicionarGrupo}
+                disabled={
+                  adicionandoGrupo ||
+                  carregandoGruposDisponiveis ||
+                  !grupoSelecionadoId ||
+                  !vendaChatVinculo?.vendaWhatsappId
+                }
+                className="rounded-lg bg-[#25d366] px-4 py-2 text-sm font-semibold text-white hover:bg-[#1ebe5d] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {adicionandoGrupo ? "Adicionando..." : "Adicionar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
