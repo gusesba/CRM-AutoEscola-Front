@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import { ConfirmModal } from "@/components/ConfirmModal";
 import { Chat, ChatStatusDto, WhatsStatusEnum } from "@/types/chat";
 
 export function ChatVendaStatus({
@@ -13,27 +15,39 @@ export function ChatVendaStatus({
   onDesvincular: (vendaWhatsappId: number) => void;
   chat?: Chat;
 }) {
+  const [confirmarDesvinculo, setConfirmarDesvinculo] = useState(false);
+
   switch (status.status) {
     case WhatsStatusEnum.Criado:
       return (
-        <div className="flex items-center gap-2 text-xs text-green-600">
-          <span>✔ Vinculado ao lead {status.venda?.cliente}</span>
-          {status.venda?.vendaWhatsapp?.id && (
-            <button
-              className="underline hover:text-red-700"
-              onClick={() => {
-                const confirmou = window.confirm(
-                  "Essa ação remove o chat e o lead de todos os grupos de envio."
-                );
-                if (confirmou) {
-                  onDesvincular(status.venda!.vendaWhatsapp!.id);
-                }
-              }}
-            >
-              Remover vínculo
-            </button>
-          )}
-        </div>
+        <>
+          <div className="flex items-center gap-2 text-xs text-green-600">
+            <span>✔ Vinculado ao lead {status.venda?.cliente}</span>
+            {status.venda?.vendaWhatsapp?.id && (
+              <button
+                className="underline hover:text-red-700"
+                onClick={() => setConfirmarDesvinculo(true)}
+              >
+                Remover vínculo
+              </button>
+            )}
+          </div>
+
+          <ConfirmModal
+            open={confirmarDesvinculo}
+            title="Remover vínculo"
+            description="Essa ação remove o chat e o lead de todos os grupos de envio."
+            confirmLabel="Remover"
+            variant="danger"
+            onClose={() => setConfirmarDesvinculo(false)}
+            onConfirm={() => {
+              if (status.venda?.vendaWhatsapp?.id) {
+                onDesvincular(status.venda.vendaWhatsapp.id);
+              }
+              setConfirmarDesvinculo(false);
+            }}
+          />
+        </>
       );
 
     case WhatsStatusEnum.NaoEncontrado:
