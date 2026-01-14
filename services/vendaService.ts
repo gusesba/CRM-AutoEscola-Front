@@ -20,6 +20,12 @@ export interface IVendaServicoDto {
   valorVenda: string;
   indicacao: string;
   dataNascimento: string;
+  vendaWhatsapp?: {
+    id: number;
+    vendaId?: number;
+    whatsappChatId?: string;
+    whatsappUserId?: string;
+  } | null;
 }
 
 type VincularVendaWhatsPayload = {
@@ -168,5 +174,18 @@ export async function vincularVendaWhats(payload: VincularVendaWhatsPayload) {
     throw error instanceof Error
       ? error
       : new Error("Erro inesperado ao vincular venda ao WhatsApp.");
+  }
+}
+
+export async function desvincularVendaWhats(vendaWhatsappId: number) {
+  try {
+    return await apiFetch(`/venda/whatsapp/${vendaWhatsappId}`, {
+      method: "DELETE",
+    });
+  } catch (error) {
+    console.error("Erro ao desvincular venda do WhatsApp:", error);
+    throw error instanceof Error
+      ? error
+      : new Error("Erro inesperado ao desvincular venda do WhatsApp.");
   }
 }
