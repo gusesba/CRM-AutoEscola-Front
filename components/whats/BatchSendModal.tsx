@@ -37,6 +37,7 @@ type BatchTextItem = {
 type BatchItem = BatchMediaItem | BatchTextItem;
 
 const EMPTY_MESSAGE = "Digite uma mensagem para o preview.";
+const TEMPLATE_HELPERS = ["${PrimeiroNome}", "${NomeCompleto}"];
 
 function getMessageTypeFromFile(file: File): Message["type"] {
   if (file.type.startsWith("image")) return "image";
@@ -91,6 +92,14 @@ export function BatchSendModal({ userId, onClose }: Props) {
     });
     return Array.from(unique.values());
   }, [selectedGroup]);
+
+  const groupRecipientsByChatId = useMemo(() => {
+    const map = new Map<string, GrupoWhatsappConversa>();
+    groupRecipients.forEach((conversa) => {
+      map.set(conversa.whatsappChatId, conversa);
+    });
+    return map;
+  }, [groupRecipients]);
 
   useEffect(() => {
     let mounted = true;
@@ -232,6 +241,7 @@ export function BatchSendModal({ userId, onClose }: Props) {
 
     try {
       const items: BatchItem[] = [];
+      const paramsByChatId: Record<string, Record<string, string>> = {};
 
       for (const message of previewMessages) {
         if (message.file) {
@@ -253,7 +263,24 @@ export function BatchSendModal({ userId, onClose }: Props) {
         return;
       }
 
-      await sendBatchMessages(userId, Array.from(selectedRecipients), items);
+      Array.from(selectedRecipients).forEach((chatId) => {
+        const conversa = groupRecipientsByChatId.get(chatId);
+        const nomeCompleto = conversa?.venda?.cliente?.trim();
+        if (!nomeCompleto) return;
+
+        const primeiroNome = nomeCompleto.split(" ")[0];
+        paramsByChatId[chatId] = {
+          PrimeiroNome: primeiroNome,
+          NomeCompleto: nomeCompleto,
+        };
+      });
+
+      await sendBatchMessages(
+        userId,
+        Array.from(selectedRecipients),
+        items,
+        Object.keys(paramsByChatId).length ? paramsByChatId : undefined
+      );
       setPreviewMessages([]);
       setText("");
       setSelectedGroupId("");
@@ -355,6 +382,12 @@ export function BatchSendModal({ userId, onClose }: Props) {
                   : selectedGroup
                   ? `${selectedGroup.conversas?.length ?? 0} conversas vinculadas`
                   : "Selecione um grupo para visualizar as conversas"}
+              </div>
+              <div className="mt-3 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-700">
+                <p className="font-semibold">Parâmetros disponíveis</p>
+                <p className="mt-1">
+                  {TEMPLATE_HELPERS.join(", ")} (baseado em venda &gt; cliente)
+                </p>
               </div>
             </div>
 
