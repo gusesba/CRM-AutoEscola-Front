@@ -93,12 +93,13 @@ export async function getWhatsLogin(userId: string) {
 export async function sendBatchMessages(
   userId: string,
   chatIds: string[],
-  items: BatchMessageItem[]
+  items: BatchMessageItem[],
+  paramsByChatId?: Record<string, Record<string, string>>
 ) {
   const res = await fetch(`http://localhost:3001/whatsapp/${userId}/messages/batch`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ chatIds, items }),
+    body: JSON.stringify({ chatIds, items, paramsByChatId }),
   });
 
   if (!res.ok) {

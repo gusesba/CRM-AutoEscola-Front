@@ -37,6 +37,8 @@ type BatchTextItem = {
 type BatchItem = BatchMediaItem | BatchTextItem;
 
 const EMPTY_MESSAGE = "Digite uma mensagem para o preview.";
+const TEMPLATE_FIRST_NAME = "${PrimeiroNome}";
+const TEMPLATE_FULL_NAME = "${NomeCompleto}";
 
 function getMessageTypeFromFile(file: File): Message["type"] {
   if (file.type.startsWith("image")) return "image";
@@ -91,6 +93,14 @@ export function BatchSendModal({ userId, onClose }: Props) {
     });
     return Array.from(unique.values());
   }, [selectedGroup]);
+
+  const groupRecipientsByChatId = useMemo(() => {
+    const map = new Map<string, GrupoWhatsappConversa>();
+    groupRecipients.forEach((conversa) => {
+      map.set(conversa.whatsappChatId, conversa);
+    });
+    return map;
+  }, [groupRecipients]);
 
   useEffect(() => {
     let mounted = true;
@@ -215,6 +225,10 @@ export function BatchSendModal({ userId, onClose }: Props) {
     );
   };
 
+  const handleInsertTemplate = (template: string) => {
+    setText((prev) => (prev ? `${prev} ${template}` : template));
+  };
+
   const handleSendBatch = async () => {
     setError(null);
 
@@ -232,6 +246,7 @@ export function BatchSendModal({ userId, onClose }: Props) {
 
     try {
       const items: BatchItem[] = [];
+      const paramsByChatId: Record<string, Record<string, string>> = {};
 
       for (const message of previewMessages) {
         if (message.file) {
@@ -253,7 +268,24 @@ export function BatchSendModal({ userId, onClose }: Props) {
         return;
       }
 
-      await sendBatchMessages(userId, Array.from(selectedRecipients), items);
+      Array.from(selectedRecipients).forEach((chatId) => {
+        const conversa = groupRecipientsByChatId.get(chatId);
+        const nomeCompleto = conversa?.venda?.cliente?.trim();
+        if (!nomeCompleto) return;
+
+        const primeiroNome = nomeCompleto.split(" ")[0];
+        paramsByChatId[chatId] = {
+          PrimeiroNome: primeiroNome,
+          NomeCompleto: nomeCompleto,
+        };
+      });
+
+      await sendBatchMessages(
+        userId,
+        Array.from(selectedRecipients),
+        items,
+        Object.keys(paramsByChatId).length ? paramsByChatId : undefined
+      );
       setPreviewMessages([]);
       setText("");
       setSelectedGroupId("");
@@ -320,6 +352,22 @@ export function BatchSendModal({ userId, onClose }: Props) {
             </div>
 
             <footer className="shrink-0 border-t border-gray-200 bg-[#f7f8fa]">
+              <div className="flex flex-wrap gap-2 px-4 pt-3">
+                <button
+                  type="button"
+                  onClick={() => handleInsertTemplate(TEMPLATE_FIRST_NAME)}
+                  className="rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-semibold text-gray-600 hover:bg-gray-50"
+                >
+                  Primeiro Nome
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleInsertTemplate(TEMPLATE_FULL_NAME)}
+                  className="rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-semibold text-gray-600 hover:bg-gray-50"
+                >
+                  Nome Completo
+                </button>
+              </div>
               <MessageInput
                 value={text}
                 onChange={setText}
