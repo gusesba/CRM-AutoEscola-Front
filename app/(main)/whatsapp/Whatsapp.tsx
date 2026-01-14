@@ -9,6 +9,11 @@ import { BatchSendModal } from "@/components/whats/BatchSendModal";
 import { useWhatsSocket } from "@/hooks/useWhatsSocket";
 import { Message } from "@/types/messages";
 import { useAuth } from "@/hooks/useAuth";
+import {
+  buscarGruposWhatsappPorChat,
+  GrupoWhatsapp,
+} from "@/services/whatsappGroupService";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 function ChatsLoadingOverlay() {
   return (
@@ -35,6 +40,9 @@ export default function Home() {
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [loadingChats, setLoadingChats] = useState(false);
   const [batchModalOpen, setBatchModalOpen] = useState(false);
+  const [grupoChatIndex, setGrupoChatIndex] = useState(0);
+  const [gruposChat, setGruposChat] = useState<GrupoWhatsapp[]>([]);
+  const [loadingGruposChat, setLoadingGruposChat] = useState(false);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -78,11 +86,89 @@ export default function Home() {
   );
 
   const selectedChat = chats.find((c) => c.id === selectedChatId);
+  const gruposPorPagina = 3;
+  const gruposChatPaginados = gruposChat.slice(
+    grupoChatIndex * gruposPorPagina,
+    grupoChatIndex * gruposPorPagina + gruposPorPagina
+  );
+  const totalPaginasGrupoChat = Math.max(
+    1,
+    Math.ceil(gruposChat.length / gruposPorPagina)
+  );
+
+  useEffect(() => {
+    if (!selectedChatId) {
+      setGruposChat([]);
+      setGrupoChatIndex(0);
+      return;
+    }
+
+    setLoadingGruposChat(true);
+    buscarGruposWhatsappPorChat(selectedChatId)
+      .then((data) => {
+        setGruposChat(data);
+        setGrupoChatIndex(0);
+      })
+      .catch((error) => {
+        console.error(error);
+        setGruposChat([]);
+        setGrupoChatIndex(0);
+      })
+      .finally(() => setLoadingGruposChat(false));
+  }, [selectedChatId]);
 
   return (
     <div className="flex-1 bg-[#f0f2f5]">
       <div className="mx-auto max-w-[1400px] mt-[-30px]">
-        <div className="flex items-center justify-end px-2 py-3">
+        <div className="flex flex-wrap items-center gap-3 px-2 py-3">
+          <div className="flex flex-1 items-center gap-2 overflow-hidden">
+            {grupoChatIndex !== 0 && (
+              <button
+                type="button"
+                onClick={() =>
+                  setGrupoChatIndex((prev) => Math.max(0, prev - 1))
+                }
+                className="h-8 w-8 flex items-center justify-center rounded-full border border-gray-200 text-gray-500 disabled:opacity-40"
+              >
+                <ChevronLeft size={18} />
+              </button>
+            )}
+            <div className="flex items-center gap-2 overflow-hidden">
+              {loadingGruposChat && (
+                <span className="text-xs text-gray-500">
+                  Carregando grupos...
+                </span>
+              )}
+              {!loadingGruposChat && gruposChatPaginados.length === 0 && (
+                <span className="text-xs text-gray-500">
+                  Nenhum grupo associado
+                </span>
+              )}
+              {!loadingGruposChat &&
+                gruposChatPaginados.map((grupo) => (
+                  <span
+                    key={grupo.id}
+                    className="max-w-[140px] truncate rounded-full bg-green-600 px-3 py-1 text-xs font-semibold text-white"
+                    title={grupo.nome}
+                  >
+                    {grupo.nome}
+                  </span>
+                ))}
+            </div>
+            {grupoChatIndex < totalPaginasGrupoChat - 1 && (
+              <button
+                type="button"
+                onClick={() =>
+                  setGrupoChatIndex((prev) =>
+                    Math.min(totalPaginasGrupoChat - 1, prev + 1)
+                  )
+                }
+                className="h-8 w-8 flex items-center justify-center rounded-full border border-gray-200 text-gray-500 disabled:opacity-40"
+              >
+                <ChevronRight size={18} />
+              </button>
+            )}
+          </div>
           <button
             type="button"
             onClick={() => setBatchModalOpen(true)}
