@@ -12,6 +12,7 @@ import {
   AtualizarVenda,
   BuscarVendaChatVinculo,
   BuscarVendaPorId,
+  desvincularVendaWhats,
   VendaChatVinculoDto,
 } from "@/services/vendaService";
 import {
@@ -93,6 +94,7 @@ export default function EditarVenda() {
     null
   );
   const [adicionandoGrupo, setAdicionandoGrupo] = useState(false);
+  const [desvinculandoChat, setDesvinculandoChat] = useState(false);
 
   const [sedes, setSedes] = useState<{ id: number; nome: string }[]>([]);
   const [vendedores, setVendedores] = useState<{ id: number; nome: string }[]>(
@@ -317,6 +319,38 @@ export default function EditarVenda() {
     }
   };
 
+  const handleDesvincularConversa = async () => {
+    if (!vendaChatVinculo?.vendaWhatsappId) return;
+
+    const confirmado = window.confirm(
+      "Essa ação remove o lead de todos os grupos de envio."
+    );
+
+    if (!confirmado) return;
+
+    try {
+      setDesvinculandoChat(true);
+      await desvincularVendaWhats(Number(vendaChatVinculo.vendaWhatsappId));
+      setVendaChatVinculo((prev) =>
+        prev
+          ? {
+              ...prev,
+              vinculado: false,
+              vendaWhatsappId: null,
+              whatsappChatId: null,
+            }
+          : prev
+      );
+      setGruposWhatsapp([]);
+      toast.success("Vínculo removido com sucesso!");
+    } catch (error) {
+      console.error(error);
+      toast.error("Erro ao remover vínculo da conversa.");
+    } finally {
+      setDesvinculandoChat(false);
+    }
+  };
+
   if (loadingVenda) {
     return (
       <div className="w-full flex justify-center items-center min-h-[400px]">
@@ -447,9 +481,17 @@ export default function EditarVenda() {
             ) : vinculoError ? (
               <p className="text-sm text-error mt-[-30px]">{vinculoError}</p>
             ) : vendaChatVinculo?.vinculado ? (
-              <p className="text-sm font-medium text-green-500 mt-[-30px]">
-                Lead vinculado a uma conversa
-              </p>
+              <div className="mt-[-30px] flex flex-wrap items-center gap-2 text-sm font-medium text-green-500">
+                <span>Lead vinculado a uma conversa</span>
+                <button
+                  type="button"
+                  onClick={handleDesvincularConversa}
+                  disabled={desvinculandoChat}
+                  className="text-xs font-semibold text-red-500 underline transition hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {desvinculandoChat ? "Desvinculando..." : "Desvincular"}
+                </button>
+              </div>
             ) : (
               <p className="text-sm font-medium text-red-500 mt-[-30px]">
                 Lead não vinculado a nenhuma conversa
