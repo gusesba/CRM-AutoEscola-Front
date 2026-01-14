@@ -179,9 +179,7 @@ export default function Home() {
 
   const gruposParaAdicionar = useMemo(() => {
     const gruposAssociados = new Set(gruposChat.map((grupo) => grupo.id));
-    return gruposDisponiveis.filter(
-      (grupo) => !gruposAssociados.has(grupo.id)
-    );
+    return gruposDisponiveis.filter((grupo) => !gruposAssociados.has(grupo.id));
   }, [gruposChat, gruposDisponiveis]);
 
   const fecharModalAdicionarGrupo = () => {
@@ -396,7 +394,7 @@ export default function Home() {
               <button
                 type="button"
                 onClick={fecharModalAdicionarGrupo}
-                className="rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600"
+                className="rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 cursor-pointer"
                 aria-label="Fechar modal"
               >
                 <X size={18} />
@@ -456,7 +454,7 @@ export default function Home() {
               <button
                 type="button"
                 onClick={fecharModalAdicionarGrupo}
-                className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50"
+                className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50 cursor-pointer"
               >
                 Cancelar
               </button>
@@ -469,7 +467,7 @@ export default function Home() {
                   !grupoSelecionadoId ||
                   !vendaWhatsappId
                 }
-                className="rounded-lg bg-[#25d366] px-4 py-2 text-sm font-semibold text-white hover:bg-[#1ebe5d] disabled:cursor-not-allowed disabled:opacity-60"
+                className="rounded-lg bg-[#25d366] px-4 py-2 text-sm font-semibold text-white hover:bg-[#1ebe5d] disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
               >
                 {adicionandoGrupo ? "Adicionando..." : "Adicionar"}
               </button>
