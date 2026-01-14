@@ -5,6 +5,7 @@ import { Chat } from "@/types/chat";
 import { getConversations } from "@/services/whatsapp";
 import { ChatList } from "@/components/whats/ChatList";
 import { ChatWindow } from "@/components/whats/ChatWindow";
+import { ConfirmModal } from "@/components/ConfirmModal";
 import { BatchSendModal } from "@/components/whats/BatchSendModal";
 import { useWhatsSocket } from "@/hooks/useWhatsSocket";
 import { Message } from "@/types/messages";
@@ -48,6 +49,8 @@ export default function Home() {
   const [gruposChat, setGruposChat] = useState<GrupoWhatsapp[]>([]);
   const [loadingGruposChat, setLoadingGruposChat] = useState(false);
   const [removendoGrupoId, setRemovendoGrupoId] = useState<number | null>(null);
+  const [grupoChatParaRemover, setGrupoChatParaRemover] =
+    useState<GrupoWhatsapp | null>(null);
   const [modalAdicionarGrupoOpen, setModalAdicionarGrupoOpen] = useState(false);
   const [gruposDisponiveis, setGruposDisponiveis] = useState<GrupoWhatsapp[]>(
     []
@@ -228,35 +231,42 @@ export default function Home() {
     }
   };
 
-  const handleRemoverGrupoChat = async (grupo: GrupoWhatsapp) => {
+  const handleRemoverGrupoChat = (grupo: GrupoWhatsapp) => {
     if (!selectedChatId) return;
+    setGrupoChatParaRemover(grupo);
+  };
 
-    const confirmado = window.confirm(
-      "Tem certeza que deseja remover esta conversa do grupo?"
-    );
-    if (!confirmado) return;
+  const confirmarRemoverGrupoChat = async () => {
+    if (!selectedChatId || !grupoChatParaRemover) {
+      setGrupoChatParaRemover(null);
+      return;
+    }
 
-    const idsVendaWhats = grupo.conversas
+    const idsVendaWhats = grupoChatParaRemover.conversas
       .filter((conversa) => conversa.whatsappChatId === selectedChatId)
       .map((conversa) => conversa.vendaWhatsappId);
 
     if (idsVendaWhats.length === 0) {
       window.alert("Não foi possível identificar a conversa vinculada.");
+      setGrupoChatParaRemover(null);
       return;
     }
 
     try {
-      setRemovendoGrupoId(grupo.id);
+      setRemovendoGrupoId(grupoChatParaRemover.id);
       await removerConversaGrupoWhatsapp({
-        idGrupoWhats: grupo.id,
+        idGrupoWhats: grupoChatParaRemover.id,
         idsVendaWhats,
       });
-      setGruposChat((prev) => prev.filter((item) => item.id !== grupo.id));
+      setGruposChat((prev) =>
+        prev.filter((item) => item.id !== grupoChatParaRemover.id)
+      );
     } catch (error) {
       console.error(error);
       window.alert("Não foi possível remover a conversa do grupo.");
     } finally {
       setRemovendoGrupoId(null);
+      setGrupoChatParaRemover(null);
     }
   };
 
@@ -475,6 +485,16 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        open={!!grupoChatParaRemover}
+        title="Remover conversa do grupo"
+        description="Tem certeza que deseja remover esta conversa do grupo?"
+        confirmLabel="Remover"
+        variant="danger"
+        onClose={() => setGrupoChatParaRemover(null)}
+        onConfirm={confirmarRemoverGrupoChat}
+      />
     </div>
   );
 }

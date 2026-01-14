@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { ConfirmModal } from "@/components/ConfirmModal";
 import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
 import {
@@ -42,6 +43,11 @@ export default function GruposWhatsappPage() {
   const [removendoConversaKey, setRemovendoConversaKey] = useState<
     string | null
   >(null);
+  const [confirmacaoAberta, setConfirmacaoAberta] = useState<{
+    tipo: "excluir-grupo" | "remover-conversa";
+    grupoId: number;
+    vendaWhatsappId?: number;
+  } | null>(null);
 
   const gruposOrdenados = useMemo(() => {
     return [...grupos].sort((a, b) => a.nome.localeCompare(b.nome));
@@ -140,12 +146,11 @@ export default function GruposWhatsappPage() {
     }
   };
 
-  const handleExcluirGrupo = async (grupoId: number) => {
-    const confirmado = window.confirm(
-      "Tem certeza que deseja excluir este grupo?"
-    );
-    if (!confirmado) return;
+  const handleExcluirGrupo = (grupoId: number) => {
+    setConfirmacaoAberta({ tipo: "excluir-grupo", grupoId });
+  };
 
+  const confirmarExcluirGrupo = async (grupoId: number) => {
     try {
       setExcluindoGrupoId(grupoId);
       await excluirGrupoWhatsapp(grupoId);
@@ -157,15 +162,21 @@ export default function GruposWhatsappPage() {
       setExcluindoGrupoId(null);
     }
   };
-  const handleRemoverConversa = async (
+  const handleRemoverConversa = (
     grupoId: number,
     vendaWhatsappId: number
   ) => {
-    const confirmado = window.confirm(
-      "Tem certeza que deseja remover esta conversa do grupo?"
-    );
-    if (!confirmado) return;
+    setConfirmacaoAberta({
+      tipo: "remover-conversa",
+      grupoId,
+      vendaWhatsappId,
+    });
+  };
 
+  const confirmarRemoverConversa = async (
+    grupoId: number,
+    vendaWhatsappId: number
+  ) => {
     const key = `${grupoId}-${vendaWhatsappId}`;
 
     try {
@@ -424,6 +435,37 @@ export default function GruposWhatsappPage() {
           </div>
         </section>
       </div>
+
+      <ConfirmModal
+        open={confirmacaoAberta?.tipo === "excluir-grupo"}
+        title="Excluir grupo"
+        description="Tem certeza que deseja excluir este grupo?"
+        confirmLabel="Excluir"
+        variant="danger"
+        onClose={() => setConfirmacaoAberta(null)}
+        onConfirm={() => {
+          if (!confirmacaoAberta) return;
+          confirmarExcluirGrupo(confirmacaoAberta.grupoId);
+          setConfirmacaoAberta(null);
+        }}
+      />
+
+      <ConfirmModal
+        open={confirmacaoAberta?.tipo === "remover-conversa"}
+        title="Remover conversa do grupo"
+        description="Tem certeza que deseja remover esta conversa do grupo?"
+        confirmLabel="Remover"
+        variant="danger"
+        onClose={() => setConfirmacaoAberta(null)}
+        onConfirm={() => {
+          if (!confirmacaoAberta || !confirmacaoAberta.vendaWhatsappId) return;
+          confirmarRemoverConversa(
+            confirmacaoAberta.grupoId,
+            confirmacaoAberta.vendaWhatsappId
+          );
+          setConfirmacaoAberta(null);
+        }}
+      />
     </div>
   );
 }

@@ -23,6 +23,7 @@ import {
   removerConversaGrupoWhatsapp,
 } from "@/services/whatsappGroupService";
 import { useAuth } from "@/hooks/useAuth";
+import { ConfirmModal } from "@/components/ConfirmModal";
 import { PatternFormat } from "react-number-format";
 import { toast } from "sonner";
 import { ChevronLeft, ChevronRight, Plus, X } from "lucide-react";
@@ -95,6 +96,10 @@ export default function EditarVenda() {
   );
   const [adicionandoGrupo, setAdicionandoGrupo] = useState(false);
   const [desvinculandoChat, setDesvinculandoChat] = useState(false);
+  const [confirmacaoAberta, setConfirmacaoAberta] = useState<{
+    tipo: "remover-grupo" | "desvincular-conversa";
+    grupo?: GrupoWhatsapp;
+  } | null>(null);
 
   const [sedes, setSedes] = useState<{ id: number; nome: string }[]>([]);
   const [vendedores, setVendedores] = useState<{ id: number; nome: string }[]>(
@@ -251,12 +256,11 @@ export default function EditarVenda() {
     { value: 5, label: "Não Enviar Mais" },
   ];
 
-  const handleRemoverGrupo = async (grupo: GrupoWhatsapp) => {
-    const confirmado = window.confirm(
-      "Tem certeza que deseja remover esta venda do grupo?"
-    );
-    if (!confirmado) return;
+  const handleRemoverGrupo = (grupo: GrupoWhatsapp) => {
+    setConfirmacaoAberta({ tipo: "remover-grupo", grupo });
+  };
 
+  const confirmarRemoverGrupo = async (grupo: GrupoWhatsapp) => {
     const idsVendaWhats = grupo.conversas
       .filter((conversa) => conversa.vendaId === Number(vendaId))
       .map((conversa) => conversa.vendaWhatsappId);
@@ -319,15 +323,13 @@ export default function EditarVenda() {
     }
   };
 
-  const handleDesvincularConversa = async () => {
+  const handleDesvincularConversa = () => {
     if (!vendaChatVinculo?.vendaWhatsappId) return;
+    setConfirmacaoAberta({ tipo: "desvincular-conversa" });
+  };
 
-    const confirmado = window.confirm(
-      "Essa ação remove o lead de todos os grupos de envio."
-    );
-
-    if (!confirmado) return;
-
+  const confirmarDesvincularConversa = async () => {
+    if (!vendaChatVinculo?.vendaWhatsappId) return;
     try {
       setDesvinculandoChat(true);
       await desvincularVendaWhats(Number(vendaChatVinculo.vendaWhatsappId));
@@ -988,6 +990,33 @@ export default function EditarVenda() {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        open={confirmacaoAberta?.tipo === "remover-grupo"}
+        title="Remover venda do grupo"
+        description="Tem certeza que deseja remover esta venda do grupo?"
+        confirmLabel="Remover"
+        variant="danger"
+        onClose={() => setConfirmacaoAberta(null)}
+        onConfirm={() => {
+          if (!confirmacaoAberta?.grupo) return;
+          confirmarRemoverGrupo(confirmacaoAberta.grupo);
+          setConfirmacaoAberta(null);
+        }}
+      />
+
+      <ConfirmModal
+        open={confirmacaoAberta?.tipo === "desvincular-conversa"}
+        title="Remover vínculo da conversa"
+        description="Essa ação remove o lead de todos os grupos de envio."
+        confirmLabel="Remover"
+        variant="danger"
+        onClose={() => setConfirmacaoAberta(null)}
+        onConfirm={() => {
+          confirmarDesvincularConversa();
+          setConfirmacaoAberta(null);
+        }}
+      />
     </>
   );
 }
