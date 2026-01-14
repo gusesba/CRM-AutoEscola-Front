@@ -153,7 +153,7 @@ export default function GruposWhatsappPage() {
 
   return (
     <div className="flex flex-col items-center justify-center w-full p-6">
-      <div className="w-full h-[calc(100vh-7rem)] max-w-6xl bg-card border border-border rounded-xl shadow-right p-6 space-y-6 overflow-hidden">
+      <div className="w-full h-[calc(100vh-7rem)] max-w-6xl bg-card border border-border rounded-xl shadow-right p-6 flex flex-col gap-6 min-h-0">
         <header className="space-y-2">
           <h1 className="text-2xl font-semibold text-foreground text-center">
             Grupos de WhatsApp
@@ -239,7 +239,7 @@ export default function GruposWhatsappPage() {
           </form>
         </section>
 
-        <section className="space-y-4">
+        <section className="flex flex-col gap-4 flex-1 min-h-0">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <label className="text-sm text-muted-foreground">
               Buscar por ID do grupo
@@ -267,7 +267,7 @@ export default function GruposWhatsappPage() {
             </div>
           )}
 
-          <div className="space-y-4 max-h-[520px] overflow-y-auto pr-2 pb-10">
+          <div className="space-y-4 flex-1 min-h-0 overflow-y-auto pr-2">
             {loading ? (
               <div className="text-center text-sm text-muted-foreground">
                 Carregando grupos...
