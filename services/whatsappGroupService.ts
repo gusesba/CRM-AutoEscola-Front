@@ -19,6 +19,17 @@ export type GrupoWhatsapp = {
   conversas: GrupoWhatsappConversa[];
 };
 
+export type VendaWhatsappVinculo = {
+  id: number;
+  vendaId: number;
+  whatsappChatId: string;
+  whatsappUserId: string;
+  venda?: {
+    cliente: string;
+    contato: string;
+  } | null;
+};
+
 export type BuscarGruposWhatsappParams = {
   id?: number;
   usuarioId?: number;
@@ -36,6 +47,23 @@ export async function buscarGruposWhatsapp(
   const endpoint = queryString
     ? `/venda/whatsapp/grupos?${queryString}`
     : "/venda/whatsapp/grupos";
+
+  return await apiFetch(endpoint, { method: "GET" });
+}
+
+export async function buscarVinculosWhatsapp(
+  pesquisa?: string
+): Promise<VendaWhatsappVinculo[]> {
+  const query = new URLSearchParams();
+
+  if (pesquisa?.trim()) {
+    query.append("Pesquisa", pesquisa.trim());
+  }
+
+  const queryString = query.toString();
+  const endpoint = queryString
+    ? `/venda/whatsapp/vinculos?${queryString}`
+    : "/venda/whatsapp/vinculos";
 
   return await apiFetch(endpoint, { method: "GET" });
 }
