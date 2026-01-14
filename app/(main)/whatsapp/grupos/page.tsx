@@ -6,11 +6,13 @@ import { useRouter } from "next/navigation";
 import {
   adicionarConversaAoGrupo,
   buscarGruposWhatsapp,
+  buscarVinculosWhatsapp,
   criarGrupoWhatsapp,
   excluirGrupoWhatsapp,
   removerConversaGrupoWhatsapp,
   GrupoWhatsapp,
   GrupoWhatsappConversa,
+  VendaWhatsappVinculo,
 } from "@/services/whatsappGroupService";
 import { ChevronRight } from "lucide-react";
 
@@ -31,6 +33,10 @@ export default function GruposWhatsappPage() {
 
   const [grupoSelecionado, setGrupoSelecionado] = useState<number | "">("");
   const [vendaWhatsappId, setVendaWhatsappId] = useState("");
+  const [pesquisaVinculo, setPesquisaVinculo] = useState("");
+  const [vinculos, setVinculos] = useState<VendaWhatsappVinculo[]>([]);
+  const [carregandoVinculos, setCarregandoVinculos] = useState(false);
+  const [erroVinculos, setErroVinculos] = useState<string | null>(null);
   const [adicionando, setAdicionando] = useState(false);
   const [excluindoGrupoId, setExcluindoGrupoId] = useState<number | null>(null);
   const [removendoConversaKey, setRemovendoConversaKey] = useState<
@@ -65,6 +71,32 @@ export default function GruposWhatsappPage() {
     if (!user?.UserId) return;
     carregarGrupos();
   }, [filtroId, user?.UserId]);
+
+  useEffect(() => {
+    let ativo = true;
+    const timer = setTimeout(async () => {
+      try {
+        setCarregandoVinculos(true);
+        setErroVinculos(null);
+        const data = await buscarVinculosWhatsapp(pesquisaVinculo);
+        if (!ativo) return;
+        setVinculos(data ?? []);
+      } catch (error) {
+        console.error(error);
+        if (!ativo) return;
+        setErroVinculos("Não foi possível carregar as conversas.");
+      } finally {
+        if (ativo) {
+          setCarregandoVinculos(false);
+        }
+      }
+    }, 400);
+
+    return () => {
+      ativo = false;
+      clearTimeout(timer);
+    };
+  }, [pesquisaVinculo]);
 
   const handleCriarGrupo = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -217,15 +249,38 @@ export default function GruposWhatsappPage() {
               </select>
             </label>
             <label className="text-sm text-muted-foreground">
-              ID da conversa (VendaWhatsapp)
-              <input
-                value={vendaWhatsappId}
-                onChange={(event) => setVendaWhatsappId(event.target.value)}
-                className="mt-2 w-full p-2 border rounded-lg bg-background text-sm focus:ring-2 focus:ring-primary outline-none transition mb-2"
-                placeholder="Informe o ID da conversa"
-                type="number"
-                min={1}
-              />
+              Conversa (VendaWhatsapp)
+              <div className="mt-2 space-y-2">
+                <input
+                  value={pesquisaVinculo}
+                  onChange={(event) => setPesquisaVinculo(event.target.value)}
+                  className="w-full p-2 border rounded-lg bg-background text-sm focus:ring-2 focus:ring-primary outline-none transition"
+                  placeholder="Pesquisar conversa"
+                  type="text"
+                />
+                <select
+                  value={vendaWhatsappId}
+                  onChange={(event) => setVendaWhatsappId(event.target.value)}
+                  className="w-full p-2 border rounded-lg bg-background text-sm focus:ring-2 focus:ring-primary outline-none transition"
+                >
+                  <option value="">Selecione uma conversa</option>
+                  {carregandoVinculos && (
+                    <option disabled value="">
+                      Carregando conversas...
+                    </option>
+                  )}
+                  {!carregandoVinculos &&
+                    vinculos.map((vinculo) => (
+                      <option key={vinculo.id} value={vinculo.id}>
+                        {vinculo.venda?.cliente ?? "Cliente não informado"} -{" "}
+                        {vinculo.venda?.contato ?? "Contato não informado"}
+                      </option>
+                    ))}
+                </select>
+                {erroVinculos && (
+                  <span className="text-xs text-red-500">{erroVinculos}</span>
+                )}
+              </div>
             </label>
             <button
               type="submit"
