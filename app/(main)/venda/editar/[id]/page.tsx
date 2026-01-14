@@ -354,7 +354,7 @@ export default function EditarVenda() {
     <>
       <div className="w-full flex justify-center p-4">
         <div className="w-full max-w-6xl space-y-4">
-          <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 shadow-sm">
+          <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 shadow-sm mt-[-30px]">
             <div className="flex flex-1 items-center gap-2 overflow-hidden">
               {grupoChatIndex !== 0 && (
                 <button
@@ -433,418 +433,419 @@ export default function EditarVenda() {
               setSuccessMessage(null);
               setSubmitError(null);
             }}
-            className="bg-card border border-border rounded-xl p-8 shadow-md w-full max-h-[80vh] overflow-y-auto space-y-6"
+            className="bg-card border border-border rounded-xl p-8 shadow-md w-full max-h-[calc(100vh-11rem)] overflow-y-auto space-y-6"
             noValidate
           >
-        <h1 className="text-2xl font-semibold text-center text-foreground mb-6">
-          Editar Lead
-        </h1>
+            <h1 className="text-2xl font-semibold text-center text-foreground mb-6">
+              Editar Lead
+            </h1>
 
-        {loadingVinculo ? (
-          <p className="text-sm text-muted-foreground mt-[-30px]">
-            Carregando vínculo...
-          </p>
-        ) : vinculoError ? (
-          <p className="text-sm text-error mt-[-30px]">{vinculoError}</p>
-        ) : vendaChatVinculo?.vinculado ? (
-          <p className="text-sm font-medium text-green-500 mt-[-30px]">
-            Lead vinculado a uma conversa
-          </p>
-        ) : (
-          <p className="text-sm font-medium text-red-500 mt-[-30px]">
-            Lead não vinculado a nenhuma conversa
-          </p>
-        )}
-
-        {gruposError && (
-          <p className="text-sm text-error">{gruposError}</p>
-        )}
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {/* Sede */}
-          <Controller
-            name="sedeId"
-            control={control}
-            rules={{ required: "Selecione a sede." }}
-            render={({ field, fieldState }) => (
-              <div>
-                <label className="block mb-1 text-sm font-medium text-muted-foreground">
-                  Sede
-                </label>
-                <Select<OptionType, false>
-                  {...field}
-                  options={sedes.map((s) => ({ value: s.id, label: s.nome }))}
-                  value={
-                    sedes
-                      .map((s) => ({ value: s.id, label: s.nome }))
-                      .find((opt) => opt.value === field.value) || null
-                  }
-                  onChange={(option) => field.onChange(option?.value)}
-                  placeholder="Selecione a sede"
-                  isClearable
-                  classNamePrefix="react-select"
-                />
-                {fieldState.error && (
-                  <p className="text-error text-sm mt-1">
-                    {fieldState.error.message}
-                  </p>
-                )}
-              </div>
-            )}
-          />
-
-          {/* Vendedor - Apenas admin pode editar */}
-          <Controller
-            name="vendedorId"
-            control={control}
-            rules={{ required: "Selecione o vendedor." }}
-            render={({ field, fieldState }) => (
-              <div className={`${!isAdmin && "cursor-not-allowed"}`}>
-                <label className="block mb-1 text-sm font-medium text-muted-foreground">
-                  Vendedor {!isAdmin && "(Somente admin)"}
-                </label>
-                <Select<OptionType, false>
-                  {...field}
-                  value={
-                    vendedores
-                      .map((s) => ({ value: s.id, label: s.nome }))
-                      .find((opt) => opt.value === field.value) || null
-                  }
-                  options={vendedores.map((v) => ({
-                    value: v.id,
-                    label: v.nome,
-                  }))}
-                  onChange={(option) => field.onChange(option?.value)}
-                  placeholder="Selecione o vendedor"
-                  isClearable
-                  isDisabled={!isAdmin}
-                  classNamePrefix="react-select"
-                />
-                {fieldState.error && (
-                  <p className="text-error text-sm mt-1">
-                    {fieldState.error.message}
-                  </p>
-                )}
-              </div>
-            )}
-          />
-
-          {/* Cliente - Apenas admin pode editar */}
-          <div className="md:col-span-2 lg:col-span-1">
-            <label className="block mb-1 text-sm font-medium text-muted-foreground">
-              Cliente {!isAdmin && "(Somente admin)"}
-            </label>
-            <input
-              {...register("cliente", {
-                required: "O nome do cliente é obrigatório.",
-              })}
-              className="w-full p-2 border rounded-lg bg-background focus:ring-2 focus:ring-primary disabled:opacity-60 disabled:cursor-not-allowed"
-              placeholder="Nome do cliente"
-              disabled={!isAdmin}
-            />
-            {errors.cliente && (
-              <p className="text-error text-sm mt-1">
-                {errors.cliente.message}
+            {loadingVinculo ? (
+              <p className="text-sm text-muted-foreground mt-[-30px]">
+                Carregando vínculo...
+              </p>
+            ) : vinculoError ? (
+              <p className="text-sm text-error mt-[-30px]">{vinculoError}</p>
+            ) : vendaChatVinculo?.vinculado ? (
+              <p className="text-sm font-medium text-green-500 mt-[-30px]">
+                Lead vinculado a uma conversa
+              </p>
+            ) : (
+              <p className="text-sm font-medium text-red-500 mt-[-30px]">
+                Lead não vinculado a nenhuma conversa
               </p>
             )}
-          </div>
 
-          {/* Gênero */}
-          <Controller
-            name="genero"
-            control={control}
-            render={({ field }) => (
-              <div>
+            {gruposError && <p className="text-sm text-error">{gruposError}</p>}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {/* Sede */}
+              <Controller
+                name="sedeId"
+                control={control}
+                rules={{ required: "Selecione a sede." }}
+                render={({ field, fieldState }) => (
+                  <div>
+                    <label className="block mb-1 text-sm font-medium text-muted-foreground">
+                      Sede
+                    </label>
+                    <Select<OptionType, false>
+                      {...field}
+                      options={sedes.map((s) => ({
+                        value: s.id,
+                        label: s.nome,
+                      }))}
+                      value={
+                        sedes
+                          .map((s) => ({ value: s.id, label: s.nome }))
+                          .find((opt) => opt.value === field.value) || null
+                      }
+                      onChange={(option) => field.onChange(option?.value)}
+                      placeholder="Selecione a sede"
+                      isClearable
+                      classNamePrefix="react-select"
+                    />
+                    {fieldState.error && (
+                      <p className="text-error text-sm mt-1">
+                        {fieldState.error.message}
+                      </p>
+                    )}
+                  </div>
+                )}
+              />
+
+              {/* Vendedor - Apenas admin pode editar */}
+              <Controller
+                name="vendedorId"
+                control={control}
+                rules={{ required: "Selecione o vendedor." }}
+                render={({ field, fieldState }) => (
+                  <div className={`${!isAdmin && "cursor-not-allowed"}`}>
+                    <label className="block mb-1 text-sm font-medium text-muted-foreground">
+                      Vendedor {!isAdmin && "(Somente admin)"}
+                    </label>
+                    <Select<OptionType, false>
+                      {...field}
+                      value={
+                        vendedores
+                          .map((s) => ({ value: s.id, label: s.nome }))
+                          .find((opt) => opt.value === field.value) || null
+                      }
+                      options={vendedores.map((v) => ({
+                        value: v.id,
+                        label: v.nome,
+                      }))}
+                      onChange={(option) => field.onChange(option?.value)}
+                      placeholder="Selecione o vendedor"
+                      isClearable
+                      isDisabled={!isAdmin}
+                      classNamePrefix="react-select"
+                    />
+                    {fieldState.error && (
+                      <p className="text-error text-sm mt-1">
+                        {fieldState.error.message}
+                      </p>
+                    )}
+                  </div>
+                )}
+              />
+
+              {/* Cliente - Apenas admin pode editar */}
+              <div className="md:col-span-2 lg:col-span-1">
                 <label className="block mb-1 text-sm font-medium text-muted-foreground">
-                  Gênero
+                  Cliente {!isAdmin && "(Somente admin)"}
                 </label>
-                <Select<OptionType, false>
-                  {...field}
-                  options={generoOptions}
-                  value={
-                    generoOptions
-                      .map((s) => ({ value: s.value, label: s.label }))
-                      .find((opt) => opt.value === field.value) || null
-                  }
-                  onChange={(option) => field.onChange(option?.value)}
-                  placeholder="Selecione o gênero"
-                  isClearable
-                  classNamePrefix="react-select"
-                />
-              </div>
-            )}
-          />
-
-          {/* Origem */}
-          <Controller
-            name="origem"
-            control={control}
-            render={({ field }) => (
-              <div>
-                <label className="block mb-1 text-sm font-medium text-muted-foreground">
-                  Origem
-                </label>
-                <Select<OptionType, false>
-                  {...field}
-                  options={origemOptions}
-                  value={
-                    origemOptions
-                      .map((s) => ({ value: s.value, label: s.label }))
-                      .find((opt) => opt.value === field.value) || null
-                  }
-                  onChange={(option) => field.onChange(option?.value)}
-                  placeholder="Selecione a origem"
-                  isClearable
-                  classNamePrefix="react-select"
-                />
-              </div>
-            )}
-          />
-
-          {/* Contatos */}
-          <div>
-            <label className="block mb-1 text-sm font-medium text-muted-foreground">
-              Email
-            </label>
-            <input
-              {...register("email")}
-              type="email"
-              className="w-full p-2 border rounded-lg bg-background focus:ring-2 focus:ring-primary"
-              placeholder="exemplo@email.com"
-            />
-          </div>
-
-          {/* Fone - Apenas admin pode editar */}
-          <Controller
-            name="fone"
-            control={control}
-            render={({ field }) => (
-              <div>
-                <label className="block mb-1 text-sm font-medium text-muted-foreground">
-                  Fone {!isAdmin && "(Somente admin)"}
-                </label>
-
-                <PatternFormat
-                  value={field.value || ""}
-                  onValueChange={(values) => field.onChange(values.value)}
-                  format="(##) #####-####"
+                <input
+                  {...register("cliente", {
+                    required: "O nome do cliente é obrigatório.",
+                  })}
+                  className="w-full p-2 border rounded-lg bg-background focus:ring-2 focus:ring-primary disabled:opacity-60 disabled:cursor-not-allowed"
+                  placeholder="Nome do cliente"
                   disabled={!isAdmin}
-                  mask="_"
-                  className="w-full p-2 border rounded-lg bg-background focus:ring-2 focus:ring-primary disabled:cursor-not-allowed"
-                  placeholder="(41) 99999-9999"
                 />
+                {errors.cliente && (
+                  <p className="text-error text-sm mt-1">
+                    {errors.cliente.message}
+                  </p>
+                )}
               </div>
-            )}
-          />
 
-          {/* Contato - Apenas admin pode editar */}
-          <Controller
-            name="contato"
-            control={control}
-            render={({ field }) => (
+              {/* Gênero */}
+              <Controller
+                name="genero"
+                control={control}
+                render={({ field }) => (
+                  <div>
+                    <label className="block mb-1 text-sm font-medium text-muted-foreground">
+                      Gênero
+                    </label>
+                    <Select<OptionType, false>
+                      {...field}
+                      options={generoOptions}
+                      value={
+                        generoOptions
+                          .map((s) => ({ value: s.value, label: s.label }))
+                          .find((opt) => opt.value === field.value) || null
+                      }
+                      onChange={(option) => field.onChange(option?.value)}
+                      placeholder="Selecione o gênero"
+                      isClearable
+                      classNamePrefix="react-select"
+                    />
+                  </div>
+                )}
+              />
+
+              {/* Origem */}
+              <Controller
+                name="origem"
+                control={control}
+                render={({ field }) => (
+                  <div>
+                    <label className="block mb-1 text-sm font-medium text-muted-foreground">
+                      Origem
+                    </label>
+                    <Select<OptionType, false>
+                      {...field}
+                      options={origemOptions}
+                      value={
+                        origemOptions
+                          .map((s) => ({ value: s.value, label: s.label }))
+                          .find((opt) => opt.value === field.value) || null
+                      }
+                      onChange={(option) => field.onChange(option?.value)}
+                      placeholder="Selecione a origem"
+                      isClearable
+                      classNamePrefix="react-select"
+                    />
+                  </div>
+                )}
+              />
+
+              {/* Contatos */}
               <div>
                 <label className="block mb-1 text-sm font-medium text-muted-foreground">
-                  Contato (Telefone) {!isAdmin && "(Somente admin)"}
+                  Email
                 </label>
-
-                <PatternFormat
-                  value={field.value || ""}
-                  onValueChange={(values) => field.onChange(values.value)}
-                  format="(##) #####-####"
-                  disabled={!isAdmin}
-                  mask="_"
-                  className="w-full p-2 border rounded-lg bg-background focus:ring-2 focus:ring-primary disabled:cursor-not-allowed"
-                  placeholder="(41) 99999-9999"
+                <input
+                  {...register("email")}
+                  type="email"
+                  className="w-full p-2 border rounded-lg bg-background focus:ring-2 focus:ring-primary"
+                  placeholder="exemplo@email.com"
                 />
               </div>
-            )}
-          />
 
-          {/* Indicação */}
-          <div>
-            <label className="block mb-1 text-sm font-medium text-muted-foreground">
-              Indicação
-            </label>
-            <input
-              {...register("indicacao")}
-              className="w-full p-2 border rounded-lg bg-background focus:ring-2 focus:ring-primary"
-              placeholder="Quem indicou?"
-            />
-          </div>
+              {/* Fone - Apenas admin pode editar */}
+              <Controller
+                name="fone"
+                control={control}
+                render={({ field }) => (
+                  <div>
+                    <label className="block mb-1 text-sm font-medium text-muted-foreground">
+                      Fone {!isAdmin && "(Somente admin)"}
+                    </label>
 
-          {/* Como conheceu / Motivo */}
-          <div>
-            <label className="block mb-1 text-sm font-medium text-muted-foreground">
-              Como conheceu
-            </label>
-            <input
-              {...register("comoConheceu")}
-              className="w-full p-2 border rounded-lg bg-background focus:ring-2 focus:ring-primary"
-            />
-          </div>
+                    <PatternFormat
+                      value={field.value || ""}
+                      onValueChange={(values) => field.onChange(values.value)}
+                      format="(##) #####-####"
+                      disabled={!isAdmin}
+                      mask="_"
+                      className="w-full p-2 border rounded-lg bg-background focus:ring-2 focus:ring-primary disabled:cursor-not-allowed"
+                      placeholder="(41) 99999-9999"
+                    />
+                  </div>
+                )}
+              />
 
-          <div>
-            <label className="block mb-1 text-sm font-medium text-muted-foreground">
-              Motivo da escolha
-            </label>
-            <input
-              {...register("motivoEscolha")}
-              className="w-full p-2 border rounded-lg bg-background focus:ring-2 focus:ring-primary"
-            />
-          </div>
+              {/* Contato - Apenas admin pode editar */}
+              <Controller
+                name="contato"
+                control={control}
+                render={({ field }) => (
+                  <div>
+                    <label className="block mb-1 text-sm font-medium text-muted-foreground">
+                      Contato (Telefone) {!isAdmin && "(Somente admin)"}
+                    </label>
 
-          {/* Serviço */}
-          <Controller
-            name="servicoId"
-            control={control}
-            render={({ field }) => (
+                    <PatternFormat
+                      value={field.value || ""}
+                      onValueChange={(values) => field.onChange(values.value)}
+                      format="(##) #####-####"
+                      disabled={!isAdmin}
+                      mask="_"
+                      className="w-full p-2 border rounded-lg bg-background focus:ring-2 focus:ring-primary disabled:cursor-not-allowed"
+                      placeholder="(41) 99999-9999"
+                    />
+                  </div>
+                )}
+              />
+
+              {/* Indicação */}
               <div>
                 <label className="block mb-1 text-sm font-medium text-muted-foreground">
-                  Serviço
+                  Indicação
                 </label>
-                <Select<OptionType, false>
-                  {...field}
-                  options={servicos.map((s) => ({
-                    value: s.id,
-                    label: s.nome,
-                  }))}
-                  value={
-                    servicos
-                      .map((s) => ({ value: s.id, label: s.nome }))
-                      .find((opt) => opt.value === field.value) || null
-                  }
-                  onChange={(option) => field.onChange(option?.value)}
-                  placeholder="Selecione o serviço"
-                  isClearable
-                  classNamePrefix="react-select"
+                <input
+                  {...register("indicacao")}
+                  className="w-full p-2 border rounded-lg bg-background focus:ring-2 focus:ring-primary"
+                  placeholder="Quem indicou?"
                 />
               </div>
-            )}
-          />
 
-          {/* Condição de venda */}
-          <Controller
-            name="condicaoVendaId"
-            control={control}
-            render={({ field }) => (
+              {/* Como conheceu / Motivo */}
               <div>
                 <label className="block mb-1 text-sm font-medium text-muted-foreground">
-                  Condição de Venda
+                  Como conheceu
                 </label>
-                <Select<OptionType, false>
-                  {...field}
-                  options={condicoes.map((c) => ({
-                    value: c.id,
-                    label: c.nome,
-                  }))}
-                  value={
-                    condicoes
-                      .map((s) => ({ value: s.id, label: s.nome }))
-                      .find((opt) => opt.value === field.value) || null
-                  }
-                  onChange={(option) => field.onChange(option?.value)}
-                  placeholder="Selecione a condição"
-                  isClearable
-                  classNamePrefix="react-select"
+                <input
+                  {...register("comoConheceu")}
+                  className="w-full p-2 border rounded-lg bg-background focus:ring-2 focus:ring-primary"
                 />
               </div>
-            )}
-          />
 
-          {/* Status */}
-          <Controller
-            name="status"
-            control={control}
-            render={({ field }) => (
               <div>
                 <label className="block mb-1 text-sm font-medium text-muted-foreground">
-                  Status
+                  Motivo da escolha
                 </label>
-                <Select<OptionType, false>
-                  {...field}
-                  options={statusOptions}
-                  value={
-                    statusOptions
-                      .map((s) => ({ value: s.value, label: s.label }))
-                      .find((opt) => opt.value === field.value) || null
-                  }
-                  onChange={(option) => field.onChange(option?.value)}
-                  placeholder="Selecione o status"
-                  isClearable
-                  classNamePrefix="react-select"
+                <input
+                  {...register("motivoEscolha")}
+                  className="w-full p-2 border rounded-lg bg-background focus:ring-2 focus:ring-primary"
                 />
               </div>
+
+              {/* Serviço */}
+              <Controller
+                name="servicoId"
+                control={control}
+                render={({ field }) => (
+                  <div>
+                    <label className="block mb-1 text-sm font-medium text-muted-foreground">
+                      Serviço
+                    </label>
+                    <Select<OptionType, false>
+                      {...field}
+                      options={servicos.map((s) => ({
+                        value: s.id,
+                        label: s.nome,
+                      }))}
+                      value={
+                        servicos
+                          .map((s) => ({ value: s.id, label: s.nome }))
+                          .find((opt) => opt.value === field.value) || null
+                      }
+                      onChange={(option) => field.onChange(option?.value)}
+                      placeholder="Selecione o serviço"
+                      isClearable
+                      classNamePrefix="react-select"
+                    />
+                  </div>
+                )}
+              />
+
+              {/* Condição de venda */}
+              <Controller
+                name="condicaoVendaId"
+                control={control}
+                render={({ field }) => (
+                  <div>
+                    <label className="block mb-1 text-sm font-medium text-muted-foreground">
+                      Condição de Venda
+                    </label>
+                    <Select<OptionType, false>
+                      {...field}
+                      options={condicoes.map((c) => ({
+                        value: c.id,
+                        label: c.nome,
+                      }))}
+                      value={
+                        condicoes
+                          .map((s) => ({ value: s.id, label: s.nome }))
+                          .find((opt) => opt.value === field.value) || null
+                      }
+                      onChange={(option) => field.onChange(option?.value)}
+                      placeholder="Selecione a condição"
+                      isClearable
+                      classNamePrefix="react-select"
+                    />
+                  </div>
+                )}
+              />
+
+              {/* Status */}
+              <Controller
+                name="status"
+                control={control}
+                render={({ field }) => (
+                  <div>
+                    <label className="block mb-1 text-sm font-medium text-muted-foreground">
+                      Status
+                    </label>
+                    <Select<OptionType, false>
+                      {...field}
+                      options={statusOptions}
+                      value={
+                        statusOptions
+                          .map((s) => ({ value: s.value, label: s.label }))
+                          .find((opt) => opt.value === field.value) || null
+                      }
+                      onChange={(option) => field.onChange(option?.value)}
+                      placeholder="Selecione o status"
+                      isClearable
+                      classNamePrefix="react-select"
+                    />
+                  </div>
+                )}
+              />
+
+              {/* Valor da venda */}
+              <div>
+                <label className="block mb-1 text-sm font-medium text-muted-foreground">
+                  Valor da Venda
+                </label>
+                <input
+                  {...register("valorVenda")}
+                  type="number"
+                  step="0.01"
+                  className="w-full p-2 border rounded-lg bg-background focus:ring-2 focus:ring-primary"
+                  placeholder="R$"
+                />
+              </div>
+
+              <div>
+                <label className="block mb-1 text-sm font-medium text-muted-foreground">
+                  Data de Nascimento
+                </label>
+                <input
+                  type="date"
+                  {...register("dataNascimento")}
+                  className="w-full p-2 border rounded-lg bg-background focus:ring-2 focus:ring-primary"
+                />
+              </div>
+
+              {/* Observações */}
+              <div className="md:col-span-1 lg:col-span-2">
+                <label className="block mb-1 text-sm font-medium text-muted-foreground">
+                  Observações
+                </label>
+                <textarea
+                  {...register("obs")}
+                  className="w-full p-2 border rounded-lg bg-background focus:ring-2 focus:ring-primary"
+                  rows={3}
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-4">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsRedirecting(true);
+                  router.push(`/agendamento/venda/${vendaId}`);
+                }}
+                className="flex-1 bg-gray-200 text-gray-800 font-medium py-2 rounded-lg hover:bg-gray-300 transition"
+              >
+                {isRedirecting ? "Redirecionando..." : "Agendamentos"}
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="flex-1 bg-primary text-primary-foreground font-medium py-2 rounded-lg hover:opacity-90 transition disabled:opacity-60"
+              >
+                {isSubmitting ? "Salvando..." : "Atualizar"}
+              </button>
+            </div>
+
+            {successMessage && (
+              <p className="text-green-600 text-center font-medium mt-2">
+                {successMessage}
+              </p>
             )}
-          />
-
-          {/* Valor da venda */}
-          <div>
-            <label className="block mb-1 text-sm font-medium text-muted-foreground">
-              Valor da Venda
-            </label>
-            <input
-              {...register("valorVenda")}
-              type="number"
-              step="0.01"
-              className="w-full p-2 border rounded-lg bg-background focus:ring-2 focus:ring-primary"
-              placeholder="R$"
-            />
-          </div>
-
-          <div>
-            <label className="block mb-1 text-sm font-medium text-muted-foreground">
-              Data de Nascimento
-            </label>
-            <input
-              type="date"
-              {...register("dataNascimento")}
-              className="w-full p-2 border rounded-lg bg-background focus:ring-2 focus:ring-primary"
-            />
-          </div>
-
-          {/* Observações */}
-          <div className="md:col-span-1 lg:col-span-2">
-            <label className="block mb-1 text-sm font-medium text-muted-foreground">
-              Observações
-            </label>
-            <textarea
-              {...register("obs")}
-              className="w-full p-2 border rounded-lg bg-background focus:ring-2 focus:ring-primary"
-              rows={3}
-            />
-          </div>
-        </div>
-
-        <div className="flex gap-4">
-          <button
-            type="button"
-            onClick={() => {
-              setIsRedirecting(true);
-              router.push(`/agendamento/venda/${vendaId}`);
-            }}
-            className="flex-1 bg-gray-200 text-gray-800 font-medium py-2 rounded-lg hover:bg-gray-300 transition"
-          >
-            {isRedirecting ? "Redirecionando..." : "Agendamentos"}
-          </button>
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="flex-1 bg-primary text-primary-foreground font-medium py-2 rounded-lg hover:opacity-90 transition disabled:opacity-60"
-          >
-            {isSubmitting ? "Salvando..." : "Atualizar"}
-          </button>
-        </div>
-
-        {successMessage && (
-          <p className="text-green-600 text-center font-medium mt-2">
-            {successMessage}
-          </p>
-        )}
-        {submitError && (
-          <p className="text-error text-center font-medium mt-2">
-            {submitError}
-          </p>
-        )}
+            {submitError && (
+              <p className="text-error text-center font-medium mt-2">
+                {submitError}
+              </p>
+            )}
           </form>
         </div>
       </div>
