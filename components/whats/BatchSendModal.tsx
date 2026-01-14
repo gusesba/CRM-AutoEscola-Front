@@ -6,6 +6,7 @@ import { MessageInput } from "@/components/whats/MessageInput";
 import {
   buscarGruposWhatsapp,
   GrupoWhatsapp,
+  GrupoWhatsappConversa,
 } from "@/services/whatsappGroupService";
 import { sendBatchMessages } from "@/services/whatsapp";
 import { Message } from "@/types/messages";
@@ -69,12 +70,27 @@ export function BatchSendModal({ userId, onClose }: Props) {
   const [loadingGroups, setLoadingGroups] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [recipientsModalOpen, setRecipientsModalOpen] = useState(false);
+  const [selectedRecipients, setSelectedRecipients] = useState<Set<string>>(
+    new Set()
+  );
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   const selectedGroup = useMemo(
     () => groups.find((group) => group.id === selectedGroupId) ?? null,
     [groups, selectedGroupId]
   );
+
+  const groupRecipients = useMemo(() => {
+    if (!selectedGroup) return [];
+    const unique = new Map<string, GrupoWhatsappConversa>();
+    selectedGroup.conversas.forEach((conversa) => {
+      if (conversa.whatsappChatId) {
+        unique.set(conversa.whatsappChatId, conversa);
+      }
+    });
+    return Array.from(unique.values());
+  }, [selectedGroup]);
 
   useEffect(() => {
     let mounted = true;
@@ -102,6 +118,11 @@ export function BatchSendModal({ userId, onClose }: Props) {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [previewMessages]);
+
+  useEffect(() => {
+    setRecipientsModalOpen(false);
+    setSelectedRecipients(new Set());
+  }, [selectedGroupId]);
 
   const handlePreviewSend = (file?: File) => {
     if (!text.trim() && !file) return;
@@ -148,7 +169,7 @@ export function BatchSendModal({ userId, onClose }: Props) {
     ]);
   };
 
-  const handleSendBatch = async () => {
+  const handleOpenRecipientsModal = () => {
     setError(null);
 
     if (!selectedGroup) {
@@ -161,12 +182,49 @@ export function BatchSendModal({ userId, onClose }: Props) {
       return;
     }
 
-    const chatIds = selectedGroup.conversas
-      .map((conversa) => conversa.whatsappChatId)
-      .filter(Boolean);
+    const chatIds = groupRecipients.map((conversa) => conversa.whatsappChatId);
 
     if (chatIds.length === 0) {
       setError("O grupo selecionado não possui conversas vinculadas.");
+      return;
+    }
+
+    setSelectedRecipients(new Set(chatIds));
+    setRecipientsModalOpen(true);
+  };
+
+  const handleToggleRecipient = (chatId: string) => {
+    setSelectedRecipients((prev) => {
+      const next = new Set(prev);
+      if (next.has(chatId)) {
+        next.delete(chatId);
+      } else {
+        next.add(chatId);
+      }
+      return next;
+    });
+  };
+
+  const handleSelectAllRecipients = (selectAll: boolean) => {
+    if (!selectAll) {
+      setSelectedRecipients(new Set());
+      return;
+    }
+    setSelectedRecipients(
+      new Set(groupRecipients.map((conversa) => conversa.whatsappChatId))
+    );
+  };
+
+  const handleSendBatch = async () => {
+    setError(null);
+
+    if (!selectedGroup) {
+      setError("Selecione um grupo para enviar.");
+      return;
+    }
+
+    if (selectedRecipients.size === 0) {
+      setError("Selecione pelo menos um participante para o envio.");
       return;
     }
 
@@ -195,10 +253,12 @@ export function BatchSendModal({ userId, onClose }: Props) {
         return;
       }
 
-      await sendBatchMessages(userId, chatIds, items);
+      await sendBatchMessages(userId, Array.from(selectedRecipients), items);
       setPreviewMessages([]);
       setText("");
       setSelectedGroupId("");
+      setRecipientsModalOpen(false);
+      setSelectedRecipients(new Set());
       onClose();
     } catch (err) {
       console.error(err);
@@ -306,7 +366,7 @@ export function BatchSendModal({ userId, onClose }: Props) {
 
             <button
               type="button"
-              onClick={handleSendBatch}
+              onClick={handleOpenRecipientsModal}
               disabled={sending}
               className="w-full rounded-lg bg-[#25d366] px-4 py-2 text-sm font-semibold text-white hover:bg-[#1ebe5d] disabled:cursor-not-allowed disabled:opacity-60"
             >
@@ -323,6 +383,111 @@ export function BatchSendModal({ userId, onClose }: Props) {
           </aside>
         </div>
       </div>
+
+      {recipientsModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-xl rounded-2xl bg-white shadow-xl">
+            <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
+              <div>
+                <h3 className="text-base font-semibold text-gray-900">
+                  Selecionar participantes
+                </h3>
+                <p className="text-xs text-gray-500">
+                  Escolha quem receberá as mensagens do grupo.
+                </p>
+              </div>
+              <button
+                onClick={() => setRecipientsModalOpen(false)}
+                className="rounded-full px-3 py-1 text-sm text-gray-500 hover:bg-gray-100"
+              >
+                Fechar
+              </button>
+            </div>
+
+            <div className="max-h-[360px] overflow-y-auto px-6 py-4">
+              <div className="flex flex-wrap items-center justify-between gap-2 pb-3 text-xs text-gray-500">
+                <span>
+                  {selectedRecipients.size} de {groupRecipients.length}{" "}
+                  selecionados
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleSelectAllRecipients(true)}
+                    className="rounded-full border border-gray-200 px-3 py-1 text-xs text-gray-600 hover:bg-gray-50"
+                  >
+                    Selecionar todos
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSelectAllRecipients(false)}
+                    className="rounded-full border border-gray-200 px-3 py-1 text-xs text-gray-600 hover:bg-gray-50"
+                  >
+                    Limpar seleção
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                {groupRecipients.map((conversa) => {
+                  const cliente = conversa.venda?.cliente;
+                  const contato = conversa.venda?.contato;
+                  const label = cliente || contato || `Conversa ${conversa.vendaWhatsappId}`;
+                  const secondary = cliente ? contato : null;
+                  return (
+                    <label
+                      key={conversa.whatsappChatId}
+                      className="flex items-center justify-between gap-3 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700"
+                    >
+                      <div className="flex flex-col">
+                        <span className="font-medium text-gray-900">
+                          {label}
+                        </span>
+                        {secondary && (
+                          <span className="text-xs text-gray-500">
+                            {secondary}
+                          </span>
+                        )}
+                        <span className="text-xs text-gray-400">
+                          ID chat: {conversa.whatsappChatId}
+                        </span>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={selectedRecipients.has(
+                          conversa.whatsappChatId
+                        )}
+                        onChange={() =>
+                          handleToggleRecipient(conversa.whatsappChatId)
+                        }
+                        className="h-4 w-4 accent-[#25d366]"
+                      />
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 border-t border-gray-200 px-6 py-4">
+              <button
+                type="button"
+                onClick={() => setRecipientsModalOpen(false)}
+                className="rounded-lg border border-gray-200 px-4 py-2 text-sm text-gray-600 hover:bg-gray-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleSendBatch}
+                disabled={sending || selectedRecipients.size === 0}
+                className="rounded-lg bg-[#25d366] px-4 py-2 text-sm font-semibold text-white hover:bg-[#1ebe5d] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {sending ? "Enviando..." : "Confirmar envio"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
