@@ -7,6 +7,15 @@ type Props = {
 
 const mediaUrl = "http://localhost:3001";
 
+function formatTime(timestamp?: number) {
+  if (!timestamp) return "";
+  const date = new Date(timestamp * 1000);
+  return date.toLocaleTimeString("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 function getMediaSrc(url?: string) {
   if (!url) return "";
   if (
@@ -21,9 +30,23 @@ function getMediaSrc(url?: string) {
   return `${mediaUrl}${url}`;
 }
 
+function MessageTime({ message }: { message: Message }) {
+  const time = formatTime(message.timestamp);
+  if (!time) return null;
+  return (
+    <span
+      className={`mt-1 text-[10px] text-gray-500 ${
+        message.fromMe ? "self-end" : "self-start"
+      }`}
+    >
+      {time}
+    </span>
+  );
+}
+
 function ImageMessage({ message, className }: any) {
   return (
-    <div className={`${className} p-1`}>
+    <div className={`${className} p-1 flex flex-col`}>
       <img
         src={getMediaSrc(message.mediaUrl)}
         alt="imagem"
@@ -42,41 +65,48 @@ function ImageMessage({ message, className }: any) {
       {message.body && (
         <p className="mt-1 text-sm">{formatWhatsText(message.body)}</p>
       )}
+      <MessageTime message={message} />
     </div>
   );
 }
 
 function VideoMessage({ message, className }: any) {
   return (
-    <div className={`${className} p-1`}>
+    <div className={`${className} p-1 flex flex-col`}>
       <video
         controls
         src={getMediaSrc(message.mediaUrl)}
         className="rounded-md max-w-full"
       />
       {message.body && <p className="mt-1">{message.body}</p>}
+      <MessageTime message={message} />
     </div>
   );
 }
 
 function AudioMessage({ message, className }: any) {
   return (
-    <div className={`${className} p-2`}>
+    <div className={`${className} p-2 flex flex-col`}>
       <audio controls src={getMediaSrc(message.mediaUrl)} />
+      <MessageTime message={message} />
     </div>
   );
 }
 
 function StickerMessage({ message }: any) {
   return (
-    <img
-      src={getMediaSrc(message.mediaUrl)}
-      alt="sticker"
-      className={`
-        w-32 h-32 object-contain
-        ${message.fromMe ? "self-end" : "self-start"}
-      `}
-    />
+    <div
+      className={`flex flex-col ${
+        message.fromMe ? "self-end" : "self-start"
+      }`}
+    >
+      <img
+        src={getMediaSrc(message.mediaUrl)}
+        alt="sticker"
+        className="w-32 h-32 object-contain"
+      />
+      <MessageTime message={message} />
+    </div>
   );
 }
 
@@ -111,12 +141,14 @@ function DocumentMessage({ message, className }: any) {
           {formatWhatsText(message.body)}
         </p>
       )}
+      <MessageTime message={message} />
     </div>
   );
 }
 
 export function MessageBubble({ message }: Props) {
-  const base = "max-w-[70%] rounded-lg text-sm whitespace-pre-wrap break-words";
+  const base =
+    "max-w-[70%] rounded-lg text-sm whitespace-pre-wrap break-words flex flex-col";
 
   const bubble = message.fromMe
     ? "bg-[#d9fdd3] self-end"
@@ -149,6 +181,7 @@ export function MessageBubble({ message }: Props) {
       return (
         <div className={`${base} ${bubble} px-3 py-2`}>
           {formatWhatsText(message.body)}
+          <MessageTime message={message} />
         </div>
       );
   }

@@ -14,6 +14,37 @@ import { useAuth } from "@/hooks/useAuth";
 import { getChatStatus, vincularVendaWhats } from "@/services/vendaService";
 import { ChatVendaStatus } from "./ChatStatus";
 
+function isSameDay(firstTimestamp: number, secondTimestamp: number) {
+  const firstDate = new Date(firstTimestamp * 1000);
+  const secondDate = new Date(secondTimestamp * 1000);
+  return (
+    firstDate.getFullYear() === secondDate.getFullYear() &&
+    firstDate.getMonth() === secondDate.getMonth() &&
+    firstDate.getDate() === secondDate.getDate()
+  );
+}
+
+function formatDayLabel(timestamp: number) {
+  const date = new Date(timestamp * 1000);
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(today.getDate() - 1);
+
+  if (isSameDay(date.getTime() / 1000, today.getTime() / 1000)) {
+    return "Hoje";
+  }
+
+  if (isSameDay(date.getTime() / 1000, yesterday.getTime() / 1000)) {
+    return "Ontem";
+  }
+
+  return date.toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+}
+
 function lastMessageToMessage(
   last: NonNullable<Chat["lastMessage"]>,
   chatId: string
@@ -246,22 +277,36 @@ export const ChatWindow = React.memo(function ChatWindow({ chat }: Props) {
             </div>
           </div>
         )}
-        {messages.map((msg) => (
-          <MessageBubble key={msg.id} message={msg} />
-        ))}
+        {messages.map((msg, index) => {
+          const previousMessage = messages[index - 1];
+          const showDaySeparator =
+            !previousMessage ||
+            !isSameDay(previousMessage.timestamp, msg.timestamp);
+          return (
+            <React.Fragment key={msg.id}>
+              {showDaySeparator && (
+                <div className="flex justify-center">
+                  <div className="px-4 py-1 rounded-full bg-white/80 text-gray-600 text-xs shadow">
+                    {formatDayLabel(msg.timestamp)}
+                  </div>
+                </div>
+              )}
+              <MessageBubble message={msg} />
+            </React.Fragment>
+          );
+        })}
 
         {/* 🔽 Âncora */}
         <div ref={bottomRef} />
-       
       </div>
 
       <button
-            type="button"
-            onClick={scrollToBottom}
-            aria-label="Ir para a última mensagem"
-            className="absolute bottom-[80px] right-[30px] h-10 w-10 rounded-full border border-gray-200 bg-white text-gray-600 shadow-md transition hover:bg-gray-50"
-          >
-            <span className="text-lg leading-none">↓</span>
+        type="button"
+        onClick={scrollToBottom}
+        aria-label="Ir para a última mensagem"
+        className="absolute bottom-[80px] right-[30px] h-10 w-10 rounded-full border border-gray-200 bg-white text-gray-600 shadow-md transition hover:bg-gray-50"
+      >
+        <span className="text-lg leading-none">↓</span>
       </button>
 
       {/* Footer */}
