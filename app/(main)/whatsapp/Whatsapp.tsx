@@ -162,7 +162,7 @@ export default function Home() {
                 onClick={() =>
                   setGrupoChatIndex((prev) => Math.max(0, prev - 1))
                 }
-                className="h-8 w-8 flex items-center justify-center rounded-full border border-gray-200 text-gray-500 disabled:opacity-40"
+                className="h-8 w-8 flex items-center justify-center rounded-full border border-gray-200 text-gray-500 disabled:opacity-40 cursor-pointer"
               >
                 <ChevronLeft size={18} />
               </button>
@@ -193,7 +193,7 @@ export default function Home() {
                         handleRemoverGrupoChat(grupo);
                       }}
                       disabled={removendoGrupoId === grupo.id}
-                      className="ml-1 inline-flex h-4 w-4 items-center justify-center rounded-full text-red-200 transition hover:bg-red-500/70 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+                      className="ml-1 inline-flex h-4 w-4 items-center justify-center rounded-full text-red-200 transition hover:bg-red-500/70 hover:text-white disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
                       aria-label={`Remover conversa do grupo ${grupo.nome}`}
                     >
                       <X size={12} />
@@ -209,7 +209,7 @@ export default function Home() {
                     Math.min(totalPaginasGrupoChat - 1, prev + 1)
                   )
                 }
-                className="h-8 w-8 flex items-center justify-center rounded-full border border-gray-200 text-gray-500 disabled:opacity-40"
+                className="h-8 w-8 flex items-center justify-center rounded-full border border-gray-200 text-gray-500 disabled:opacity-40 cursor-pointer"
               >
                 <ChevronRight size={18} />
               </button>
@@ -218,7 +218,7 @@ export default function Home() {
           <button
             type="button"
             onClick={() => setBatchModalOpen(true)}
-            className="rounded-lg bg-[#25d366] px-4 py-2 text-sm font-semibold text-white hover:bg-[#1ebe5d]"
+            className="rounded-lg bg-[#25d366] px-4 py-2 text-sm font-semibold text-white hover:bg-[#1ebe5d] cursor-pointer"
           >
             Envio em grupo
           </button>
