@@ -13,6 +13,7 @@ import {
   buscarGruposWhatsappPorChat,
   GrupoWhatsapp,
 } from "@/services/whatsappGroupService";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 function ChatsLoadingOverlay() {
   return (
@@ -119,19 +120,20 @@ export default function Home() {
   return (
     <div className="flex-1 bg-[#f0f2f5]">
       <div className="mx-auto max-w-[1400px] mt-[-30px]">
-        <div className="flex flex-wrap items-center justify-between gap-3 px-2 py-3">
+        <div className="flex flex-wrap items-center gap-3 px-2 py-3">
           <div className="flex flex-1 items-center gap-2 overflow-hidden">
-            <button
-              type="button"
-              onClick={() =>
-                setGrupoChatIndex((prev) => Math.max(0, prev - 1))
-              }
-              disabled={grupoChatIndex === 0}
-              className="h-8 w-8 flex items-center justify-center rounded-full border border-gray-200 text-gray-500 disabled:opacity-40"
-            >
-              {"<"}
-            </button>
-            <div className="flex flex-1 items-center gap-2 overflow-hidden">
+            {grupoChatIndex !== 0 && (
+              <button
+                type="button"
+                onClick={() =>
+                  setGrupoChatIndex((prev) => Math.max(0, prev - 1))
+                }
+                className="h-8 w-8 flex items-center justify-center rounded-full border border-gray-200 text-gray-500 disabled:opacity-40"
+              >
+                <ChevronLeft size={18} />
+              </button>
+            )}
+            <div className="flex items-center gap-2 overflow-hidden">
               {loadingGruposChat && (
                 <span className="text-xs text-gray-500">
                   Carregando grupos...
@@ -146,25 +148,26 @@ export default function Home() {
                 gruposChatPaginados.map((grupo) => (
                   <span
                     key={grupo.id}
-                    className="max-w-[140px] truncate rounded-full bg-[#1f5d3a] px-3 py-1 text-xs font-semibold text-white"
+                    className="max-w-[140px] truncate rounded-full bg-green-600 px-3 py-1 text-xs font-semibold text-white"
                     title={grupo.nome}
                   >
                     {grupo.nome}
                   </span>
                 ))}
             </div>
-            <button
-              type="button"
-              onClick={() =>
-                setGrupoChatIndex((prev) =>
-                  Math.min(totalPaginasGrupoChat - 1, prev + 1)
-                )
-              }
-              disabled={grupoChatIndex >= totalPaginasGrupoChat - 1}
-              className="h-8 w-8 flex items-center justify-center rounded-full border border-gray-200 text-gray-500 disabled:opacity-40"
-            >
-              {">"}
-            </button>
+            {grupoChatIndex < totalPaginasGrupoChat - 1 && (
+              <button
+                type="button"
+                onClick={() =>
+                  setGrupoChatIndex((prev) =>
+                    Math.min(totalPaginasGrupoChat - 1, prev + 1)
+                  )
+                }
+                className="h-8 w-8 flex items-center justify-center rounded-full border border-gray-200 text-gray-500 disabled:opacity-40"
+              >
+                <ChevronRight size={18} />
+              </button>
+            )}
           </div>
           <button
             type="button"

@@ -51,7 +51,7 @@ export async function buscarGruposWhatsappPorVenda(
 export async function buscarGruposWhatsappPorChat(
   whatsappChatId: string
 ): Promise<GrupoWhatsapp[]> {
-  return await apiFetch(`/whatsapp/grupos/chat/${whatsappChatId}`, {
+  return await apiFetch(`/venda/whatsapp/grupos/chat/${whatsappChatId}`, {
     method: "GET",
   });
 }
