@@ -114,7 +114,7 @@ function DocumentMessage({ message, className }: any) {
   const fileName = message.fileName || "Documento";
 
   return (
-    <div className={`${className} flex flex-col gap-1`}>
+    <div className={`${className} p-1 flex flex-col gap-1`}>
       <a
         href={getMediaSrc(message.mediaUrl)}
         target="_blank"
