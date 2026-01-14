@@ -40,7 +40,6 @@ export const ChatWindow = React.memo(function ChatWindow({ chat }: Props) {
   const [hasReachedStart, setHasReachedStart] = useState(false);
   const [text, setText] = useState("");
   const [status, setStatus] = useState<ChatStatusDto | null>(null);
-  const [showScrollToBottom, setShowScrollToBottom] = useState(false);
   const { user } = useAuth();
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
@@ -129,7 +128,6 @@ export const ChatWindow = React.memo(function ChatWindow({ chat }: Props) {
     bottomRef.current?.scrollIntoView({
       behavior: "smooth",
     });
-    setShowScrollToBottom(false);
   }, [messages]);
 
   // 📤 Enviar mensagem
@@ -171,7 +169,6 @@ export const ChatWindow = React.memo(function ChatWindow({ chat }: Props) {
       container.scrollHeight - container.scrollTop - container.clientHeight;
     const isNearBottom = distanceFromBottom <= 120;
     shouldAutoScrollRef.current = isNearBottom;
-    setShowScrollToBottom(!isNearBottom);
 
     if (!hasReachedStart && container.scrollTop <= 20) {
       shouldAutoScrollRef.current = false;
@@ -182,7 +179,6 @@ export const ChatWindow = React.memo(function ChatWindow({ chat }: Props) {
   const scrollToBottom = useCallback(() => {
     shouldAutoScrollRef.current = true;
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-    setShowScrollToBottom(false);
   }, []);
 
   if (!chat) {
@@ -256,17 +252,17 @@ export const ChatWindow = React.memo(function ChatWindow({ chat }: Props) {
 
         {/* 🔽 Âncora */}
         <div ref={bottomRef} />
-        {showScrollToBottom && (
-          <button
+       
+      </div>
+
+      <button
             type="button"
             onClick={scrollToBottom}
             aria-label="Ir para a última mensagem"
-            className="absolute bottom-4 right-4 h-10 w-10 rounded-full border border-gray-200 bg-white text-gray-600 shadow-md transition hover:bg-gray-50"
+            className="absolute bottom-[80px] right-[30px] h-10 w-10 rounded-full border border-gray-200 bg-white text-gray-600 shadow-md transition hover:bg-gray-50"
           >
             <span className="text-lg leading-none">↓</span>
-          </button>
-        )}
-      </div>
+      </button>
 
       {/* Footer */}
       <footer className="h-16 shrink-0 px-6 flex items-center gap-3 border-t border-gray-200 bg-[#f7f8fa]">
