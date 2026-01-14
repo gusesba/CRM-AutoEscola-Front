@@ -11,7 +11,11 @@ import {
 import { MessageBubble } from "./MessageBubble";
 import { MessageInput } from "./MessageInput";
 import { useAuth } from "@/hooks/useAuth";
-import { getChatStatus, vincularVendaWhats } from "@/services/vendaService";
+import {
+  desvincularVendaWhats,
+  getChatStatus,
+  vincularVendaWhats,
+} from "@/services/vendaService";
 import { ChatVendaStatus } from "./ChatStatus";
 
 function isSameDay(firstTimestamp: number, secondTimestamp: number) {
@@ -85,6 +89,16 @@ export const ChatWindow = React.memo(function ChatWindow({ chat }: Props) {
     });
 
     setStatus(status);
+  };
+
+  const desvincularVenda = async (vendaWhatsappId: number) => {
+    await desvincularVendaWhats(vendaWhatsappId);
+    if (!chat) return;
+    const updatedStatus = await getChatStatus(
+      chat.id,
+      String(user?.UserId)
+    );
+    setStatus(updatedStatus);
   };
 
   // 📥 Buscar mensagens ao trocar de chat
@@ -249,6 +263,7 @@ export const ChatWindow = React.memo(function ChatWindow({ chat }: Props) {
           <ChatVendaStatus
             status={status}
             onVincular={vincularVenda}
+            onDesvincular={desvincularVenda}
             chat={chat}
           />
         )}

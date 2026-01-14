@@ -1,24 +1,34 @@
 "use client";
 
 import { Chat, ChatStatusDto, WhatsStatusEnum } from "@/types/chat";
-import { useRouter } from "next/navigation";
 
 export function ChatVendaStatus({
   status,
   onVincular,
+  onDesvincular,
   chat,
 }: {
   status: ChatStatusDto;
   onVincular: (vendaId: number) => void;
+  onDesvincular: (vendaWhatsappId: number) => void;
   chat?: Chat;
 }) {
-  const router = useRouter();
   switch (status.status) {
     case WhatsStatusEnum.Criado:
       return (
-        <span className="text-xs text-green-600">
-          ✔ Vinculado ao lead {status.venda?.cliente}
-        </span>
+        <div className="flex items-center gap-2 text-xs text-green-600">
+          <span>✔ Vinculado ao lead {status.venda?.cliente}</span>
+          {status.venda?.vendaWhatsapp?.id && (
+            <button
+              className="underline hover:text-red-700"
+              onClick={() => {
+                onDesvincular(status.venda!.vendaWhatsapp!.id);
+              }}
+            >
+              Remover vínculo
+            </button>
+          )}
+        </div>
       );
 
     case WhatsStatusEnum.NaoEncontrado:
