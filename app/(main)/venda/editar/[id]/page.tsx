@@ -8,7 +8,12 @@ import { BuscarUsuarios } from "@/services/authService";
 import { BuscarCondicaoVendas } from "@/services/condicaoVendaService";
 import { BuscarServicos } from "@/services/servicoService";
 import { BuscarSedes } from "@/services/sedeService";
-import { BuscarVendaPorId, AtualizarVenda } from "@/services/vendaService";
+import {
+  AtualizarVenda,
+  BuscarVendaChatVinculo,
+  BuscarVendaPorId,
+  VendaChatVinculoDto,
+} from "@/services/vendaService";
 import { useAuth } from "@/hooks/useAuth";
 import { PatternFormat } from "react-number-format";
 import { toast } from "sonner";
@@ -59,6 +64,10 @@ export default function EditarVenda() {
   const [loadingVenda, setLoadingVenda] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isRedirecting, setIsRedirecting] = useState(false);
+  const [vendaChatVinculo, setVendaChatVinculo] =
+    useState<VendaChatVinculoDto | null>(null);
+  const [loadingVinculo, setLoadingVinculo] = useState(true);
+  const [vinculoError, setVinculoError] = useState<string | null>(null);
 
   const [sedes, setSedes] = useState<{ id: number; nome: string }[]>([]);
   const [vendedores, setVendedores] = useState<{ id: number; nome: string }[]>(
@@ -111,9 +120,20 @@ export default function EditarVenda() {
         } else {
           setLoadError("Venda não encontrada.");
         }
+
+        try {
+          const vinculo = await BuscarVendaChatVinculo(vendaId);
+          setVendaChatVinculo(vinculo);
+        } catch (error) {
+          console.error(error);
+          setVinculoError("Não foi possível carregar o vínculo com WhatsApp.");
+        } finally {
+          setLoadingVinculo(false);
+        }
       } catch (err) {
         setLoadError("Erro ao carregar dados da venda.");
         console.error(err);
+        setLoadingVinculo(false);
       } finally {
         setLoadingVenda(false);
       }
@@ -190,8 +210,24 @@ export default function EditarVenda() {
         noValidate
       >
         <h1 className="text-2xl font-semibold text-center text-foreground mb-6">
-          Editar Venda
+          Editar Lead
         </h1>
+
+        {loadingVinculo ? (
+          <p className="text-sm text-muted-foreground mt-[-30px]">
+            Carregando vínculo...
+          </p>
+        ) : vinculoError ? (
+          <p className="text-sm text-error mt-[-30px]">{vinculoError}</p>
+        ) : vendaChatVinculo?.vinculado ? (
+          <p className="text-sm font-medium text-green-500 mt-[-30px]">
+            Lead vinculado a uma conversa
+          </p>
+        ) : (
+          <p className="text-sm font-medium text-red-500 mt-[-30px]">
+            Lead não vinculado a nenhuma conversa
+          </p>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Sede */}

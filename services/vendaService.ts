@@ -28,6 +28,13 @@ export interface IVendaServicoDto {
   } | null;
 }
 
+export interface VendaChatVinculoDto {
+  vendaId: number;
+  vinculado: boolean;
+  vendaWhatsappId?: number | null;
+  whatsappChatId?: string | null;
+}
+
 type VincularVendaWhatsPayload = {
   vendaId: number;
   whatsappChatId: string;
@@ -187,5 +194,18 @@ export async function desvincularVendaWhats(vendaWhatsappId: number) {
     throw error instanceof Error
       ? error
       : new Error("Erro inesperado ao desvincular venda do WhatsApp.");
+  }
+}
+
+export async function BuscarVendaChatVinculo(vendaId: string | number) {
+  try {
+    return await apiFetch(`/venda/whatsapp/vinculo/${vendaId}`, {
+      method: "GET",
+    });
+  } catch (error) {
+    console.error("Erro ao buscar vínculo da venda com WhatsApp:", error);
+    throw error instanceof Error
+      ? error
+      : new Error("Erro inesperado ao buscar vínculo da venda.");
   }
 }
