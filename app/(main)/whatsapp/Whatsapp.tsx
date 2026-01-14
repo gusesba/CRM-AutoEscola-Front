@@ -12,8 +12,9 @@ import { useAuth } from "@/hooks/useAuth";
 import {
   buscarGruposWhatsappPorChat,
   GrupoWhatsapp,
+  removerConversaGrupoWhatsapp,
 } from "@/services/whatsappGroupService";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, X } from "lucide-react";
 
 function ChatsLoadingOverlay() {
   return (
@@ -43,6 +44,7 @@ export default function Home() {
   const [grupoChatIndex, setGrupoChatIndex] = useState(0);
   const [gruposChat, setGruposChat] = useState<GrupoWhatsapp[]>([]);
   const [loadingGruposChat, setLoadingGruposChat] = useState(false);
+  const [removendoGrupoId, setRemovendoGrupoId] = useState<number | null>(null);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -117,6 +119,38 @@ export default function Home() {
       .finally(() => setLoadingGruposChat(false));
   }, [selectedChatId]);
 
+  const handleRemoverGrupoChat = async (grupo: GrupoWhatsapp) => {
+    if (!selectedChatId) return;
+
+    const confirmado = window.confirm(
+      "Tem certeza que deseja remover esta conversa do grupo?"
+    );
+    if (!confirmado) return;
+
+    const idsVendaWhats = grupo.conversas
+      .filter((conversa) => conversa.whatsappChatId === selectedChatId)
+      .map((conversa) => conversa.vendaWhatsappId);
+
+    if (idsVendaWhats.length === 0) {
+      window.alert("Não foi possível identificar a conversa vinculada.");
+      return;
+    }
+
+    try {
+      setRemovendoGrupoId(grupo.id);
+      await removerConversaGrupoWhatsapp({
+        idGrupoWhats: grupo.id,
+        idsVendaWhats,
+      });
+      setGruposChat((prev) => prev.filter((item) => item.id !== grupo.id));
+    } catch (error) {
+      console.error(error);
+      window.alert("Não foi possível remover a conversa do grupo.");
+    } finally {
+      setRemovendoGrupoId(null);
+    }
+  };
+
   return (
     <div className="flex-1 bg-[#f0f2f5]">
       <div className="mx-auto max-w-[1400px] mt-[-30px]">
@@ -148,10 +182,22 @@ export default function Home() {
                 gruposChatPaginados.map((grupo) => (
                   <span
                     key={grupo.id}
-                    className="max-w-[140px] truncate rounded-full bg-green-600 px-3 py-1 text-xs font-semibold text-white"
+                    className="inline-flex max-w-[160px] items-center gap-1 truncate rounded-full bg-green-600 pl-3 pr-2 py-1 text-xs font-semibold text-white"
                     title={grupo.nome}
                   >
-                    {grupo.nome}
+                    <span className="truncate">{grupo.nome}</span>
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        handleRemoverGrupoChat(grupo);
+                      }}
+                      disabled={removendoGrupoId === grupo.id}
+                      className="ml-1 inline-flex h-4 w-4 items-center justify-center rounded-full text-red-200 transition hover:bg-red-500/70 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+                      aria-label={`Remover conversa do grupo ${grupo.nome}`}
+                    >
+                      <X size={12} />
+                    </button>
                   </span>
                 ))}
             </div>
