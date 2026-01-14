@@ -22,7 +22,12 @@ export function ChatVendaStatus({
             <button
               className="underline hover:text-red-700"
               onClick={() => {
-                onDesvincular(status.venda!.vendaWhatsapp!.id);
+                const confirmou = window.confirm(
+                  "Essa ação remove o chat e o lead de todos os grupos de envio."
+                );
+                if (confirmou) {
+                  onDesvincular(status.venda!.vendaWhatsapp!.id);
+                }
               }}
             >
               Remover vínculo
