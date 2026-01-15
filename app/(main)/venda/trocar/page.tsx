@@ -84,7 +84,7 @@ export default function TransferirVendasPage() {
         }
 
         const paramsOrigem = new URLSearchParams();
-        paramsOrigem.append("Vendedor", vendedorDestino.toString());
+        paramsOrigem.append("VendedorId", vendedorDestino.toString());
         paramsOrigem.append("Status", "1"); // AgendarContato
         paramsOrigem.append("Status", "3"); // StandBy
         paramsOrigem.append("page", "1");
@@ -211,8 +211,8 @@ export default function TransferirVendasPage() {
                 vendedorOrigemModo === "transferidos"
                   ? "transferidos"
                   : vendedorOrigemId
-                    ? `normal-${vendedorOrigemId}`
-                    : ""
+                  ? `normal-${vendedorOrigemId}`
+                  : ""
               }
               onChange={(e) => {
                 const value = e.target.value;
