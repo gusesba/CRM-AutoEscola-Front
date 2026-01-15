@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Chat } from "@/types/chat";
 import { getConversations } from "@/services/whatsapp";
 import { ChatList } from "@/components/whats/ChatList";
@@ -10,6 +10,7 @@ import { BatchSendModal } from "@/components/whats/BatchSendModal";
 import { useWhatsSocket } from "@/hooks/useWhatsSocket";
 import { Message } from "@/types/messages";
 import { useAuth } from "@/hooks/useAuth";
+import { BuscarUsuarios } from "@/services/authService";
 import {
   adicionarConversaAoGrupo,
   buscarGruposWhatsapp,
@@ -68,20 +69,82 @@ export default function Home({ onDisconnect, disconnecting }: HomeProps) {
   const [carregandoGruposDisponiveis, setCarregandoGruposDisponiveis] =
     useState(false);
   const [vendaWhatsappId, setVendaWhatsappId] = useState<number | null>(null);
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
+  const [usuarios, setUsuarios] = useState<
+    { id: number; nome: string; usuario: string; status: number }[]
+  >([]);
+  const [loadingUsuarios, setLoadingUsuarios] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState("");
 
   useEffect(() => {
     if (!user?.UserId) return;
+    setSelectedUserId((current) => current || String(user.UserId));
+  }, [user?.UserId]);
+
+  const activeUserId = useMemo(() => {
+    if (!user?.UserId) return "";
+    if (!isAdmin) return String(user.UserId);
+    return selectedUserId || String(user.UserId);
+  }, [isAdmin, selectedUserId, user?.UserId]);
+
+  const usuariosParaSelecao = useMemo(() => {
+    const lista = [...usuarios];
+    if (user?.UserId) {
+      const userId = String(user.UserId);
+      const existe = lista.some((item) => String(item.id) === userId);
+      if (!existe) {
+        lista.unshift({
+          id: Number(user.UserId),
+          nome: user.Name || "Meu usuário",
+          usuario: user.User || "",
+          status: 1,
+        });
+      }
+    }
+    return lista;
+  }, [usuarios, user?.Name, user?.User, user?.UserId]);
+
+  useEffect(() => {
+    if (!isAdmin || !user?.UserId) return;
+    let mounted = true;
+    setLoadingUsuarios(true);
+    const params = new URLSearchParams({
+      page: "1",
+      pageSize: "200",
+      orderBy: "nome",
+      orderDirection: "asc",
+    });
+
+    BuscarUsuarios(params.toString())
+      .then((data) => {
+        if (!mounted) return;
+        setUsuarios(data.items ?? []);
+      })
+      .catch(console.error)
+      .finally(() => {
+        if (!mounted) return;
+        setLoadingUsuarios(false);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [isAdmin, user?.UserId]);
+
+  useEffect(() => {
+    if (!activeUserId) return;
     setLoadingChats(true);
-    getConversations(String(user?.UserId))
+    setSelectedChatId(null);
+    setChats([]);
+    getConversations(activeUserId)
       .then(setChats)
       .catch(console.error)
       .finally(() => setLoadingChats(false));
-  }, [user]);
+  }, [activeUserId]);
 
   // 🔌 SOCKET GLOBAL
   useWhatsSocket(
-    String(user?.UserId),
+    activeUserId,
     (data: { chatId: string; message: Message }) => {
       console.log("Nova mensagem via socket");
       setChats((prev) => {
@@ -143,12 +206,12 @@ export default function Home({ onDisconnect, disconnecting }: HomeProps) {
   }, [selectedChatId]);
 
   useEffect(() => {
-    if (!selectedChatId || !user?.UserId) {
+    if (!selectedChatId || !activeUserId) {
       setVendaWhatsappId(null);
       return;
     }
 
-    getChatStatus(selectedChatId, String(user.UserId))
+    getChatStatus(selectedChatId, activeUserId)
       .then((data) => {
         setVendaWhatsappId(data?.venda?.vendaWhatsapp?.id ?? null);
       })
@@ -156,16 +219,16 @@ export default function Home({ onDisconnect, disconnecting }: HomeProps) {
         console.error(error);
         setVendaWhatsappId(null);
       });
-  }, [selectedChatId, user?.UserId]);
+  }, [selectedChatId, activeUserId]);
 
   useEffect(() => {
-    if (!modalAdicionarGrupoOpen || !user?.UserId) return;
+    if (!modalAdicionarGrupoOpen || !activeUserId) return;
 
     let mounted = true;
     setErroAdicionarGrupo(null);
     setCarregandoGruposDisponiveis(true);
 
-    buscarGruposWhatsapp({ usuarioId: Number(user.UserId) })
+    buscarGruposWhatsapp({ usuarioId: Number(activeUserId) })
       .then((data) => {
         if (!mounted) return;
         setGruposDisponiveis(data ?? []);
@@ -183,7 +246,7 @@ export default function Home({ onDisconnect, disconnecting }: HomeProps) {
     return () => {
       mounted = false;
     };
-  }, [modalAdicionarGrupoOpen, user?.UserId]);
+  }, [modalAdicionarGrupoOpen, activeUserId]);
 
   const gruposParaAdicionar = useMemo(() => {
     const gruposAssociados = new Set(gruposChat.map((grupo) => grupo.id));
@@ -348,6 +411,29 @@ export default function Home({ onDisconnect, disconnecting }: HomeProps) {
               </button>
             )}
           </div>
+          {isAdmin && (
+            <div className="flex flex-col gap-1 min-w-[220px]">
+              <label className="text-xs font-semibold text-gray-600">
+                Conversas de
+              </label>
+              <select
+                value={selectedUserId}
+                onChange={(event) => setSelectedUserId(event.target.value)}
+                disabled={loadingUsuarios}
+                className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#25d366] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {loadingUsuarios && (
+                  <option value="">Carregando usuários...</option>
+                )}
+                {!loadingUsuarios &&
+                  usuariosParaSelecao.map((usuario) => (
+                    <option key={usuario.id} value={String(usuario.id)}>
+                      {usuario.nome} ({usuario.usuario})
+                    </option>
+                  ))}
+              </select>
+            </div>
+          )}
           <button
             type="button"
             onClick={() => setBatchModalOpen(true)}
@@ -391,13 +477,13 @@ export default function Home({ onDisconnect, disconnecting }: HomeProps) {
             }}
           />
 
-          <ChatWindow chat={selectedChat} />
+          <ChatWindow chat={selectedChat} whatsappUserId={activeUserId} />
         </div>
       </div>
 
-      {batchModalOpen && user?.UserId && (
+      {batchModalOpen && activeUserId && (
         <BatchSendModal
-          userId={String(user.UserId)}
+          userId={activeUserId}
           onClose={() => setBatchModalOpen(false)}
         />
       )}
