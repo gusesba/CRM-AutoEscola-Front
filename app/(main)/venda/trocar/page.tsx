@@ -49,9 +49,13 @@ const formatarContato = (valor?: string) => {
    COMPONENTE
 ======================= */
 
+const DESTINO_TRANSFERIDOS = "transferidos-origem";
+
 export default function TransferirVendasPage() {
   const [vendedorOrigem, setVendedorOrigem] = useState<number | "">("");
-  const [vendedorDestino, setVendedorDestino] = useState<number | "">("");
+  const [vendedorDestino, setVendedorDestino] = useState<
+    number | "" | typeof DESTINO_TRANSFERIDOS
+  >("");
   const [usuarios, setUsuarios] = useState<Vendedor[]>([]);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -92,15 +96,33 @@ export default function TransferirVendasPage() {
       // VENDAS DO VENDEDOR DESTINO
       // ===============================
       if (vendedorDestino) {
-        const paramsDestino = new URLSearchParams();
-        paramsDestino.append("VendedorAtualId", vendedorDestino.toString());
-        paramsDestino.append("Status", "1");
-        paramsDestino.append("Status", "3");
-        paramsDestino.append("page", "1");
-        paramsDestino.append("pageSize", "1000");
+        if (vendedorDestino === DESTINO_TRANSFERIDOS) {
+          if (!vendedorOrigem) {
+            setVendasDestino([]);
+            return;
+          }
 
-        const responseDestino = await BuscarVendas(paramsDestino.toString());
-        setVendasDestino(responseDestino?.items || []);
+          const paramsDestino = new URLSearchParams();
+          paramsDestino.append("VendedorId", vendedorOrigem.toString());
+          paramsDestino.append("Status", "1");
+          paramsDestino.append("Status", "3");
+          paramsDestino.append("page", "1");
+          paramsDestino.append("pageSize", "1000");
+          paramsDestino.append("NaoVendedorAtual", vendedorOrigem.toString());
+
+          const responseDestino = await BuscarVendas(paramsDestino.toString());
+          setVendasDestino(responseDestino?.items || []);
+        } else {
+          const paramsDestino = new URLSearchParams();
+          paramsDestino.append("VendedorAtualId", vendedorDestino.toString());
+          paramsDestino.append("Status", "1");
+          paramsDestino.append("Status", "3");
+          paramsDestino.append("page", "1");
+          paramsDestino.append("pageSize", "1000");
+
+          const responseDestino = await BuscarVendas(paramsDestino.toString());
+          setVendasDestino(responseDestino?.items || []);
+        }
       } else {
         setVendasDestino([]);
       }
@@ -148,6 +170,11 @@ export default function TransferirVendasPage() {
 
     if (!vendedorDestino || vendasDestino.length === 0) {
       toast.error("Selecione o vendedor destino e ao menos uma venda.");
+      return;
+    }
+
+    if (vendedorDestino === DESTINO_TRANSFERIDOS) {
+      toast.error("Selecione um vendedor destino válido.");
       return;
     }
 
@@ -209,11 +236,20 @@ export default function TransferirVendasPage() {
               className="w-full p-2 border rounded-lg bg-background"
               value={vendedorDestino}
               onChange={(e) => {
-                setVendedorDestino(Number(e.target.value));
+                const value = e.target.value;
+                if (value === DESTINO_TRANSFERIDOS || value === "") {
+                  setVendedorDestino(value as typeof DESTINO_TRANSFERIDOS | "");
+                  return;
+                }
+
+                setVendedorDestino(Number(value));
                 // 🔌 Placeholder: buscar vendas do vendedor destino
               }}
             >
               <option value="">Selecione</option>
+              <option value={DESTINO_TRANSFERIDOS} disabled={!vendedorOrigem}>
+                Leads transferidos do vendedor origem
+              </option>
               {usuarios.map((v) => (
                 <option key={v.id} value={v.id}>
                   {v.nome}
@@ -241,6 +277,7 @@ export default function TransferirVendasPage() {
                 selecionadasOrigem.length === 0 ||
                 vendedorDestino == vendedorOrigem ||
                 vendedorDestino == "" ||
+                vendedorDestino === DESTINO_TRANSFERIDOS ||
                 vendedorOrigem == ""
               }
               className="p-2 border rounded-lg hover:bg-muted disabled:opacity-50"
@@ -254,6 +291,7 @@ export default function TransferirVendasPage() {
                 selecionadasDestino.length === 0 ||
                 vendedorDestino == vendedorOrigem ||
                 vendedorDestino == "" ||
+                vendedorDestino === DESTINO_TRANSFERIDOS ||
                 vendedorOrigem == ""
               }
               className="p-2 border rounded-lg hover:bg-muted disabled:opacity-50"
