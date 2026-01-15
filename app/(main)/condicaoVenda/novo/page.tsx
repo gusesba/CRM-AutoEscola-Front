@@ -27,7 +27,7 @@ export default function NovoCondicaoVenda() {
       reset();
     } catch (err) {
       console.log(err);
-      toast.error("Erro ao adicionar condição venda. Tente novamente.");
+      // toast.error("Erro ao adicionar condição venda. Tente novamente.");
     }
   };
 

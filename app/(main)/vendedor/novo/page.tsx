@@ -30,7 +30,7 @@ export default function NovoVendedor() {
       reset();
     } catch (err) {
       console.log(err);
-      toast.error("Erro ao adicionar vendedor. Tente novamente mais tarde.");
+      // toast.error("Erro ao adicionar vendedor. Tente novamente mais tarde.");
     }
   };
 

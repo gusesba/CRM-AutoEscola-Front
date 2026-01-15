@@ -229,7 +229,7 @@ export default function EditarVenda() {
       await AtualizarVenda(vendaId, data);
       toast.success("Venda atualizada com sucesso!");
     } catch (error) {
-      toast.error("Erro ao atualizar venda. Tente novamente mais tarde.");
+      // toast.error("Erro ao atualizar venda. Tente novamente mais tarde.");
       console.error(error);
     }
   };
@@ -280,7 +280,7 @@ export default function EditarVenda() {
       toast.success("Venda removida do grupo com sucesso!");
     } catch (error) {
       console.error(error);
-      toast.error("Erro ao remover venda do grupo.");
+      // toast.error("Erro ao remover venda do grupo.");
     } finally {
       setRemovendoGrupo(null);
     }
@@ -347,7 +347,7 @@ export default function EditarVenda() {
       toast.success("Vínculo removido com sucesso!");
     } catch (error) {
       console.error(error);
-      toast.error("Erro ao remover vínculo da conversa.");
+      // toast.error("Erro ao remover vínculo da conversa.");
     } finally {
       setDesvinculandoChat(false);
     }

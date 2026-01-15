@@ -27,7 +27,7 @@ export default function NovoSede() {
       reset();
     } catch (err) {
       console.log(err);
-      toast.error("Erro ao adicionar sede. Tente novamente.");
+      // toast.error("Erro ao adicionar sede. Tente novamente.");
     }
   };
 

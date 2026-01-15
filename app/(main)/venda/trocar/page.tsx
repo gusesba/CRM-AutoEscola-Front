@@ -167,7 +167,7 @@ export default function TransferirVendasPage() {
       buscarVendas();
     } catch (error) {
       console.error(error);
-      toast.error("Erro ao transferir vendas. Tente novamente.");
+      // toast.error("Erro ao transferir vendas. Tente novamente.");
     }
   };
 
