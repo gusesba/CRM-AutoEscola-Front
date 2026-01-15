@@ -77,23 +77,29 @@ export default function TransferirVendasPage() {
       // ===============================
       // VENDAS DO VENDEDOR ORIGEM
       // ===============================
-      if (vendedorOrigemId) {
-        const paramsOrigem = new URLSearchParams();
-
-        if (vendedorOrigemModo === "transferidos") {
-          paramsOrigem.append("Vendedor", vendedorOrigemId.toString());
-          paramsOrigem.append("Status", "1"); // AgendarContato
-          paramsOrigem.append("Status", "3"); // StandBy
-          paramsOrigem.append("page", "1");
-          paramsOrigem.append("pageSize", "1000");
-          paramsOrigem.append("NaoVendedorAtual", vendedorOrigemId.toString());
-        } else {
-          paramsOrigem.append("VendedorAtualId", vendedorOrigemId.toString());
-          paramsOrigem.append("Status", "1"); // AgendarContato
-          paramsOrigem.append("Status", "3"); // StandBy
-          paramsOrigem.append("page", "1");
-          paramsOrigem.append("pageSize", "1000");
+      if (vendedorOrigemModo === "transferidos") {
+        if (!vendedorDestino) {
+          setVendasOrigem([]);
+          return;
         }
+
+        const paramsOrigem = new URLSearchParams();
+        paramsOrigem.append("Vendedor", vendedorDestino.toString());
+        paramsOrigem.append("Status", "1"); // AgendarContato
+        paramsOrigem.append("Status", "3"); // StandBy
+        paramsOrigem.append("page", "1");
+        paramsOrigem.append("pageSize", "1000");
+        paramsOrigem.append("NaoVendedorAtual", vendedorDestino.toString());
+
+        const responseOrigem = await BuscarVendas(paramsOrigem.toString());
+        setVendasOrigem(responseOrigem?.items || []);
+      } else if (vendedorOrigemId) {
+        const paramsOrigem = new URLSearchParams();
+        paramsOrigem.append("VendedorAtualId", vendedorOrigemId.toString());
+        paramsOrigem.append("Status", "1"); // AgendarContato
+        paramsOrigem.append("Status", "3"); // StandBy
+        paramsOrigem.append("page", "1");
+        paramsOrigem.append("pageSize", "1000");
 
         const responseOrigem = await BuscarVendas(paramsOrigem.toString());
         setVendasOrigem(responseOrigem?.items || []);
@@ -202,9 +208,11 @@ export default function TransferirVendasPage() {
             <select
               className="w-full p-2 border rounded-lg bg-background"
               value={
-                vendedorOrigemId
-                  ? `${vendedorOrigemModo}-${vendedorOrigemId}`
-                  : ""
+                vendedorOrigemModo === "transferidos"
+                  ? "transferidos"
+                  : vendedorOrigemId
+                    ? `normal-${vendedorOrigemId}`
+                    : ""
               }
               onChange={(e) => {
                 const value = e.target.value;
@@ -214,10 +222,8 @@ export default function TransferirVendasPage() {
                   return;
                 }
 
-                if (value.startsWith("transferidos-")) {
-                  setVendedorOrigemId(
-                    Number(value.replace("transferidos-", ""))
-                  );
+                if (value === "transferidos") {
+                  setVendedorOrigemId("");
                   setVendedorOrigemModo("transferidos");
                   return;
                 }
@@ -228,17 +234,12 @@ export default function TransferirVendasPage() {
               }}
             >
               <option value="">Selecione</option>
+              <option value="transferidos" disabled={!vendedorDestino}>
+                Transferidos
+              </option>
               {usuarios.map((v) => (
                 <option key={`normal-${v.id}`} value={`normal-${v.id}`}>
                   {v.nome}
-                </option>
-              ))}
-              {usuarios.map((v) => (
-                <option
-                  key={`transferidos-${v.id}`}
-                  value={`transferidos-${v.id}`}
-                >
-                  {v.nome} (transferidos)
                 </option>
               ))}
             </select>
@@ -288,7 +289,8 @@ export default function TransferirVendasPage() {
                 selecionadasOrigem.length === 0 ||
                 vendedorDestino == vendedorOrigemId ||
                 vendedorDestino == "" ||
-                vendedorOrigemId == ""
+                (vendedorOrigemModo === "normal" && vendedorOrigemId == "") ||
+                (vendedorOrigemModo === "transferidos" && vendedorDestino == "")
               }
               className="p-2 border rounded-lg hover:bg-muted disabled:opacity-50"
             >
@@ -301,7 +303,8 @@ export default function TransferirVendasPage() {
                 selecionadasDestino.length === 0 ||
                 vendedorDestino == vendedorOrigemId ||
                 vendedorDestino == "" ||
-                vendedorOrigemId == ""
+                (vendedorOrigemModo === "normal" && vendedorOrigemId == "") ||
+                (vendedorOrigemModo === "transferidos" && vendedorDestino == "")
               }
               className="p-2 border rounded-lg hover:bg-muted disabled:opacity-50"
             >
