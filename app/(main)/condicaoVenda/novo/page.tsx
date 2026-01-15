@@ -44,16 +44,15 @@ export default function NovoCondicaoVenda() {
           noValidate
         >
           <h1 className="text-2xl font-semibold text-center text-foreground">
-            Novo Serviço
+            Nova Condição de Venda
           </h1>
 
-          {/* Nome do Serviço */}
           <div>
             <label
               htmlFor="nome"
               className="block mb-1 text-sm font-medium text-muted-foreground"
             >
-              Nome do Serviço
+              Nome
             </label>
             <input
               id="nome"
