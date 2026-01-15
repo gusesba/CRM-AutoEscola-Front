@@ -65,6 +65,7 @@ export default function TransferirVendasPage() {
 
   const [selecionadasOrigem, setSelecionadasOrigem] = useState<number[]>([]);
   const [selecionadasDestino, setSelecionadasDestino] = useState<number[]>([]);
+  const [transferenciaPermanente, setTransferenciaPermanente] = useState(false);
 
   useEffect(() => {
     const carregarVendedores = async () => {
@@ -181,7 +182,8 @@ export default function TransferirVendasPage() {
     try {
       await TransferirVendas(
         vendedorDestino,
-        vendasDestino.map((v) => v.id)
+        vendasDestino.map((v) => v.id),
+        transferenciaPermanente
       );
 
       toast.success("Vendas transferidas com sucesso!");
@@ -310,7 +312,18 @@ export default function TransferirVendasPage() {
         </div>
 
         {/* SALVAR */}
-        <div className="flex justify-end pt-4">
+        <div className="flex items-center justify-between gap-4 pt-4">
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={transferenciaPermanente}
+              onChange={(event) => {
+                setTransferenciaPermanente(event.target.checked);
+              }}
+            />
+            Transferir permanentemente
+          </label>
+
           <button
             onClick={salvarTransferencia}
             className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:opacity-90"
