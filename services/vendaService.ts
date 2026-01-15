@@ -120,7 +120,8 @@ export const AtualizarVenda = async (id: string, data: any) => {
 
 export const TransferirVendas = async (
   usuarioDestinoId: number,
-  vendasIds: number[]
+  vendasIds: number[],
+  permanente = false
 ) => {
   try {
     return await apiFetch(`/venda/transferir`, {
@@ -128,6 +129,7 @@ export const TransferirVendas = async (
       body: JSON.stringify({
         usuarioId: usuarioDestinoId,
         vendasIds,
+        permanente,
       }),
     });
   } catch (error) {
