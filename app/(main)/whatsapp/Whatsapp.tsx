@@ -410,9 +410,6 @@ export default function Home({ onDisconnect, disconnecting }: HomeProps) {
           </div>
           {isAdmin && (
             <div className="flex flex-col gap-1 min-w-[220px]">
-              <label className="text-xs font-semibold text-gray-600">
-                Conversas de
-              </label>
               <select
                 value={selectedUserId}
                 onChange={(event) => setSelectedUserId(event.target.value)}
