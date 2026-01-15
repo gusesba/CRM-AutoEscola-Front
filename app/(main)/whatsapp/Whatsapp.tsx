@@ -143,35 +143,32 @@ export default function Home({ onDisconnect, disconnecting }: HomeProps) {
   }, [activeUserId]);
 
   // 🔌 SOCKET GLOBAL
-  useWhatsSocket(
-    activeUserId,
-    (data: { chatId: string; message: Message }) => {
-      console.log("Nova mensagem via socket");
-      setChats((prev) => {
-        const chatIndex = prev.findIndex((c) => c.id === data.chatId);
+  useWhatsSocket(activeUserId, (data: { chatId: string; message: Message }) => {
+    console.log("Nova mensagem via socket");
+    setChats((prev) => {
+      const chatIndex = prev.findIndex((c) => c.id === data.chatId);
 
-        // chat ainda não existe (novo contato)
-        if (chatIndex === -1) return prev;
+      // chat ainda não existe (novo contato)
+      if (chatIndex === -1) return prev;
 
-        const chat = prev[chatIndex];
-        const isSelected = data.chatId === selectedChatId;
+      const chat = prev[chatIndex];
+      const isSelected = data.chatId === selectedChatId;
 
-        const updatedChat: Chat = {
-          ...chat,
-          lastMessage: data.message,
-          unreadCount: isSelected
-            ? chat.unreadCount
-            : (chat.unreadCount ?? 0) + 1,
-        };
+      const updatedChat: Chat = {
+        ...chat,
+        lastMessage: data.message,
+        unreadCount: isSelected
+          ? chat.unreadCount
+          : (chat.unreadCount ?? 0) + 1,
+      };
 
-        // move o chat para o topo
-        const updated = [...prev];
-        updated.splice(chatIndex, 1);
+      // move o chat para o topo
+      const updated = [...prev];
+      updated.splice(chatIndex, 1);
 
-        return [updatedChat, ...updated];
-      });
-    }
-  );
+      return [updatedChat, ...updated];
+    });
+  });
 
   const selectedChat = chats.find((c) => c.id === selectedChatId);
   const gruposPorPagina = 3;
@@ -428,7 +425,7 @@ export default function Home({ onDisconnect, disconnecting }: HomeProps) {
                 {!loadingUsuarios &&
                   usuariosParaSelecao.map((usuario) => (
                     <option key={usuario.id} value={String(usuario.id)}>
-                      {usuario.nome} ({usuario.usuario})
+                      {usuario.nome}
                     </option>
                   ))}
               </select>
