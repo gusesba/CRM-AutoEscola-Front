@@ -103,7 +103,7 @@ export default function TransferirVendasPage() {
           }
 
           const paramsDestino = new URLSearchParams();
-          paramsDestino.append("Vendedor", vendedorOrigem.toString());
+          paramsDestino.append("VendedorId", vendedorOrigem.toString());
           paramsDestino.append("Status", "1");
           paramsDestino.append("Status", "3");
           paramsDestino.append("page", "1");
@@ -247,10 +247,7 @@ export default function TransferirVendasPage() {
               }}
             >
               <option value="">Selecione</option>
-              <option
-                value={DESTINO_TRANSFERIDOS}
-                disabled={!vendedorOrigem}
-              >
+              <option value={DESTINO_TRANSFERIDOS} disabled={!vendedorOrigem}>
                 Leads transferidos do vendedor origem
               </option>
               {usuarios.map((v) => (
