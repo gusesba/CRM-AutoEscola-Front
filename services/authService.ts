@@ -12,6 +12,15 @@ interface ICriarVendedorDto {
   isAdmin: boolean;
 }
 
+interface IEditarUsuarioDto {
+  id: number;
+  nome: string;
+  usuario: string;
+  senha?: string | null;
+  isAdmin: boolean;
+  status: number;
+}
+
 export const Login = async (data: ILoginDto) => {
   try {
     const baseUrl = process.env.NEXT_PUBLIC_API_URL;
@@ -74,5 +83,19 @@ export const BuscarUsuarios = async (parametros: string) => {
     throw error instanceof Error
       ? error
       : new Error("Erro inesperado ao buscar usuários.");
+  }
+};
+
+export const EditarUsuario = async (data: IEditarUsuarioDto) => {
+  try {
+    return await apiFetch("/usuario", {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  } catch (error) {
+    console.error("Erro ao editar usuário:", error);
+    throw error instanceof Error
+      ? error
+      : new Error("Erro inesperado ao editar usuário.");
   }
 };

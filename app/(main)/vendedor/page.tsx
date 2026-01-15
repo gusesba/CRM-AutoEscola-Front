@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { ArrowUpDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { BuscarUsuarios } from "@/services/authService";
+import { useAuth } from "@/hooks/useAuth";
 
 /* =======================
    TIPOS
@@ -71,6 +74,8 @@ async function buscarUsuarios(
 ======================= */
 
 export default function ListaUsuarios() {
+  const router = useRouter();
+  const { isAdmin } = useAuth();
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [filtro, setFiltro] = useState<Filtro>({
     page: 1,
@@ -211,7 +216,18 @@ export default function ListaUsuarios() {
                 usuarios.map((u) => (
                   <tr
                     key={u.id}
-                    className="border-t border-border hover:bg-muted/40"
+                    onDoubleClick={() => {
+                      if (!isAdmin) {
+                        toast.error(
+                          "Apenas administradores podem editar usuários."
+                        );
+                        return;
+                      }
+                      router.push(`/vendedor/editar/${u.id}`);
+                    }}
+                    className={`border-t border-border hover:bg-muted/40 ${
+                      isAdmin ? "cursor-pointer" : "cursor-not-allowed"
+                    }`}
                   >
                     <td className="px-4 py-2">{u.nome}</td>
                     <td className="px-4 py-2">{u.usuario}</td>
