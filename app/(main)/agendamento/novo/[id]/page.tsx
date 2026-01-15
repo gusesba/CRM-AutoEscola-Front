@@ -38,7 +38,7 @@ export default function NovoAgendamento() {
       await router.push(`/agendamento/venda/${params.id}`);
     } catch (error) {
       console.log(error);
-      toast.error("Erro ao criar agendamento. Tente novamente mais tarde.");
+      // toast.error("Erro ao criar agendamento. Tente novamente mais tarde.");
     }
   };
 

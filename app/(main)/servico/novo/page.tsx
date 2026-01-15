@@ -27,7 +27,7 @@ export default function NovoServico() {
       reset();
     } catch (err) {
       console.log(err);
-      toast.error("Erro ao adicionar serviço. Tente novamente.");
+      // toast.error("Erro ao adicionar serviço. Tente novamente.");
     }
   };
 

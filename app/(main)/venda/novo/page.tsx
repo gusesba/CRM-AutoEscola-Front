@@ -102,7 +102,7 @@ export default function NovaVenda() {
       await router.push(`/venda/editar/${venda.id}`);
     } catch (error) {
       console.log(error);
-      toast.error("Erro ao registrar a venda. Tente novamente mais tarde.");
+      // toast.error("Erro ao registrar a venda. Tente novamente mais tarde.");
     }
   };
 

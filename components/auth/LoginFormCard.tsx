@@ -34,13 +34,13 @@ export default function LoginFormCard() {
     } catch (error: any) {
       console.error(error);
 
-      if (
-        error.message === "Falha ao fazer login. Verifique suas credenciais."
-      ) {
-        toast.error("Credenciais inválidas. Tente novamente.");
-      } else {
-        toast.error("Falha inesperada no login. Tente novamente mais tarde.");
-      }
+      // if (
+      //   error.message === "Falha ao fazer login. Verifique suas credenciais."
+      // ) {
+      //   toast.error("Credenciais inválidas. Tente novamente.");
+      // } else {
+      //   toast.error("Falha inesperada no login. Tente novamente mais tarde.");
+      // }
     } finally {
       setIsLoading(false);
     }
