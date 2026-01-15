@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { getWhatsLogin } from "@/services/whatsapp";
+import { getWhatsLogin, removeWhatsSession } from "@/services/whatsapp";
 import { WhatsLogin } from "./WhatsLogin";
 import Home from "./Whatsapp";
+import { toast } from "sonner";
 
 type Status = "loading" | "waiting" | "qr" | "connected" | "error";
 
@@ -13,6 +14,8 @@ export default function WhatsPage() {
 
   const [status, setStatus] = useState<Status>("loading");
   const [qrCode, setQrCode] = useState<string | null>(null);
+  const [pollToken, setPollToken] = useState(0);
+  const [disconnecting, setDisconnecting] = useState(false);
 
   useEffect(() => {
     if (!user?.UserId) return;
@@ -46,11 +49,34 @@ export default function WhatsPage() {
     interval = setInterval(poll, 5000);
 
     return () => clearInterval(interval);
-  }, [user]);
+  }, [user, pollToken]);
+
+  const handleDisconnect = useCallback(async () => {
+    if (!user?.UserId || disconnecting) return;
+
+    try {
+      setDisconnecting(true);
+      await removeWhatsSession(String(user.UserId));
+      toast.success("Sessão do WhatsApp removida com sucesso.");
+      setStatus("waiting");
+      setQrCode(null);
+      setPollToken((prev) => prev + 1);
+    } catch (error) {
+      console.error(error);
+      toast.error("Erro ao remover a sessão do WhatsApp.");
+    } finally {
+      setDisconnecting(false);
+    }
+  }, [disconnecting, user?.UserId]);
 
   // 🟢 Whats conectado
   if (status === "connected") {
-    return <Home />;
+    return (
+      <Home
+        onDisconnect={handleDisconnect}
+        disconnecting={disconnecting}
+      />
+    );
   }
 
   // 🔴 Login

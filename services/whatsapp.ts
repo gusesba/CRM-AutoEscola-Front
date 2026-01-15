@@ -108,3 +108,15 @@ export async function sendBatchMessages(
 
   return res.json();
 }
+
+export async function removeWhatsSession(userId: string) {
+  const res = await fetch(`http://localhost:3001/whatsapp/${userId}/session`, {
+    method: "DELETE",
+  });
+
+  if (!res.ok) {
+    throw new Error("Erro ao remover sessão do WhatsApp");
+  }
+
+  return res.json();
+}
