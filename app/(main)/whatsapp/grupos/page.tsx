@@ -102,7 +102,7 @@ export default function GruposWhatsappPage() {
       setGrupos(data ?? []);
     } catch (error) {
       console.error(error);
-      setErro("NÃ£o foi possÃ­vel carregar os grupos.");
+      setErro("Não foi possível carregar os grupos.");
     } finally {
       setLoading(false);
     }
@@ -221,10 +221,7 @@ export default function GruposWhatsappPage() {
       setExcluindoGrupoId(null);
     }
   };
-  const handleRemoverConversa = (
-    grupoId: number,
-    vendaWhatsappId: number
-  ) => {
+  const handleRemoverConversa = (grupoId: number, vendaWhatsappId: number) => {
     setConfirmacaoAberta({
       tipo: "remover-conversa",
       grupoId,
@@ -302,7 +299,7 @@ export default function GruposWhatsappPage() {
                 ))}
               </select>
             </label>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 mt-2">
               <label className="text-sm text-muted-foreground">
                 Data inicial de
                 <input
