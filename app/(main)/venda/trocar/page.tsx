@@ -447,9 +447,11 @@ function TabelaVendas({
                     <input
                       type="checkbox"
                       checked={selecionadas.includes(v.id)}
-                      onChange={(event) =>
-                        toggle(v.id, event.target.checked, event.shiftKey)
-                      }
+                      onClick={(event) => {
+                        const target = event.currentTarget;
+                        toggle(v.id, target.checked, event.shiftKey);
+                      }}
+                      readOnly
                     />
                   </td>
                   <td className="px-3 py-2">{v.cliente}</td>
