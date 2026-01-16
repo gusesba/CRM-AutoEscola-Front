@@ -364,24 +364,16 @@ function TabelaVendas({
   selecionadas: number[];
   setSelecionadas: React.Dispatch<React.SetStateAction<number[]>>;
 }) {
-  const lastSelectedIdRef = useRef<number | null>(null);
+  const lastSelectedIndexRef = useRef<number | null>(null);
   const todasSelecionadas =
     vendas.length > 0 && selecionadas.length === vendas.length;
 
-  const obterIdsNoIntervalo = (idAtual: number) => {
-    if (lastSelectedIdRef.current === null) {
+  const obterIdsNoIntervalo = (idAtual: number, indiceAtual: number) => {
+    if (lastSelectedIndexRef.current === null) {
       return [idAtual];
     }
 
-    const indiceAtual = vendas.findIndex((v) => v.id === idAtual);
-    const indiceAnterior = vendas.findIndex(
-      (v) => v.id === lastSelectedIdRef.current
-    );
-
-    if (indiceAtual === -1 || indiceAnterior === -1) {
-      return [idAtual];
-    }
-
+    const indiceAnterior = lastSelectedIndexRef.current;
     const [inicio, fim] =
       indiceAtual > indiceAnterior
         ? [indiceAnterior, indiceAtual]
@@ -390,9 +382,16 @@ function TabelaVendas({
     return vendas.slice(inicio, fim + 1).map((v) => v.id);
   };
 
-  const toggle = (id: number, checked: boolean, shiftKey: boolean) => {
+  const toggle = (
+    id: number,
+    indiceAtual: number,
+    checked: boolean,
+    shiftKey: boolean
+  ) => {
     setSelecionadas((prev) => {
-      const idsParaAtualizar = shiftKey ? obterIdsNoIntervalo(id) : [id];
+      const idsParaAtualizar = shiftKey
+        ? obterIdsNoIntervalo(id, indiceAtual)
+        : [id];
       const setAtualizado = new Set(prev);
 
       if (checked) {
@@ -404,12 +403,14 @@ function TabelaVendas({
       return Array.from(setAtualizado);
     });
 
-    lastSelectedIdRef.current = id;
+    if (!shiftKey || lastSelectedIndexRef.current === null) {
+      lastSelectedIndexRef.current = indiceAtual;
+    }
   };
 
   const alternarSelecionarTodos = () => {
     setSelecionadas(todasSelecionadas ? [] : vendas.map((v) => v.id));
-    lastSelectedIdRef.current = null;
+    lastSelectedIndexRef.current = null;
   };
 
   return (
@@ -441,7 +442,7 @@ function TabelaVendas({
           </thead>
           <tbody>
             {vendas.length > 0 ? (
-              vendas.map((v) => (
+              vendas.map((v, indiceAtual) => (
                 <tr key={v.id} className="border-t hover:bg-muted/40">
                   <td className="px-3 py-2">
                     <input
@@ -449,7 +450,12 @@ function TabelaVendas({
                       checked={selecionadas.includes(v.id)}
                       onClick={(event) => {
                         const target = event.currentTarget;
-                        toggle(v.id, target.checked, event.shiftKey);
+                        toggle(
+                          v.id,
+                          indiceAtual,
+                          target.checked,
+                          event.shiftKey
+                        );
                       }}
                       readOnly
                     />
