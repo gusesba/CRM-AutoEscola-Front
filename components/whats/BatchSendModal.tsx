@@ -39,6 +39,19 @@ type BatchItem = BatchMediaItem | BatchTextItem;
 const EMPTY_MESSAGE = "Digite uma mensagem para o preview.";
 const TEMPLATE_FIRST_NAME = "${PrimeiroNome}";
 const TEMPLATE_FULL_NAME = "${NomeCompleto}";
+const BATCH_SETTINGS_STORAGE_KEY = "batch-send-settings";
+
+type BatchSendSettings = {
+  intervalMs: string;
+  bigIntervalMs: string;
+  messagesUntilBigInterval: string;
+};
+
+const defaultBatchSettings: BatchSendSettings = {
+  intervalMs: "",
+  bigIntervalMs: "",
+  messagesUntilBigInterval: "",
+};
 
 function getMessageTypeFromFile(file: File): Message["type"] {
   if (file.type.startsWith("image")) return "image";
@@ -75,6 +88,9 @@ export function BatchSendModal({ userId, onClose }: Props) {
   const [recipientsModalOpen, setRecipientsModalOpen] = useState(false);
   const [selectedRecipients, setSelectedRecipients] = useState<Set<string>>(
     new Set()
+  );
+  const [batchSettings, setBatchSettings] = useState<BatchSendSettings>(
+    defaultBatchSettings
   );
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
@@ -128,6 +144,28 @@ export function BatchSendModal({ userId, onClose }: Props) {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [previewMessages]);
+
+  useEffect(() => {
+    const cached = window.localStorage.getItem(BATCH_SETTINGS_STORAGE_KEY);
+    if (!cached) return;
+
+    try {
+      const parsed = JSON.parse(cached) as Partial<BatchSendSettings>;
+      setBatchSettings((prev) => ({
+        ...prev,
+        ...parsed,
+      }));
+    } catch (err) {
+      console.warn("Não foi possível ler as configurações salvas.", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      BATCH_SETTINGS_STORAGE_KEY,
+      JSON.stringify(batchSettings)
+    );
+  }, [batchSettings]);
 
   useEffect(() => {
     setRecipientsModalOpen(false);
@@ -280,11 +318,30 @@ export function BatchSendModal({ userId, onClose }: Props) {
         };
       });
 
+      const intervalMs = Number(batchSettings.intervalMs);
+      const bigIntervalMs = Number(batchSettings.bigIntervalMs);
+      const messagesUntilBigInterval = Number(
+        batchSettings.messagesUntilBigInterval
+      );
+
       await sendBatchMessages(
         userId,
         Array.from(selectedRecipients),
         items,
-        Object.keys(paramsByChatId).length ? paramsByChatId : undefined
+        Object.keys(paramsByChatId).length ? paramsByChatId : undefined,
+        {
+          intervalMs:
+            Number.isFinite(intervalMs) && intervalMs > 0 ? intervalMs : undefined,
+          bigIntervalMs:
+            Number.isFinite(bigIntervalMs) && bigIntervalMs > 0
+              ? bigIntervalMs
+              : undefined,
+          messagesUntilBigInterval:
+            Number.isFinite(messagesUntilBigInterval) &&
+            messagesUntilBigInterval > 0
+              ? messagesUntilBigInterval
+              : undefined,
+        }
       );
       setPreviewMessages([]);
       setText("");
@@ -403,6 +460,67 @@ export function BatchSendModal({ userId, onClose }: Props) {
                   : selectedGroup
                   ? `${selectedGroup.conversas?.length ?? 0} conversas vinculadas`
                   : "Selecione um grupo para visualizar as conversas"}
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-gray-200 bg-white p-4">
+              <div className="flex flex-col gap-1">
+                <span className="text-sm font-medium text-gray-700">
+                  Intervalos de envio
+                </span>
+                <span className="text-xs text-gray-500">
+                  Configure o intervalo padrão e o intervalo maior para lotes.
+                </span>
+              </div>
+              <div className="mt-4 grid gap-3">
+                <label className="flex flex-col gap-1 text-xs text-gray-600">
+                  Intervalo entre mensagens (ms)
+                  <input
+                    type="number"
+                    min="0"
+                    value={batchSettings.intervalMs}
+                    onChange={(event) =>
+                      setBatchSettings((prev) => ({
+                        ...prev,
+                        intervalMs: event.target.value,
+                      }))
+                    }
+                    className="rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#25d366]"
+                    placeholder="Ex: 1200"
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-xs text-gray-600">
+                  Intervalo maior (ms)
+                  <input
+                    type="number"
+                    min="0"
+                    value={batchSettings.bigIntervalMs}
+                    onChange={(event) =>
+                      setBatchSettings((prev) => ({
+                        ...prev,
+                        bigIntervalMs: event.target.value,
+                      }))
+                    }
+                    className="rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#25d366]"
+                    placeholder="Ex: 5000"
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-xs text-gray-600">
+                  Mensagens até o intervalo maior
+                  <input
+                    type="number"
+                    min="0"
+                    value={batchSettings.messagesUntilBigInterval}
+                    onChange={(event) =>
+                      setBatchSettings((prev) => ({
+                        ...prev,
+                        messagesUntilBigInterval: event.target.value,
+                      }))
+                    }
+                    className="rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#25d366]"
+                    placeholder="Ex: 10"
+                  />
+                </label>
               </div>
             </div>
 
