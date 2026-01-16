@@ -14,6 +14,12 @@ export type BatchMessageItem =
       caption?: string;
     };
 
+export type BatchSendTiming = {
+  intervalMs?: number;
+  bigIntervalMs?: number;
+  messagesUntilBigInterval?: number;
+};
+
 export async function getConversations(userId: string): Promise<Chat[]> {
   const res = await fetch(
     `http://localhost:3001/whatsapp/${userId}/conversations`,
@@ -94,12 +100,13 @@ export async function sendBatchMessages(
   userId: string,
   chatIds: string[],
   items: BatchMessageItem[],
-  paramsByChatId?: Record<string, Record<string, string>>
+  paramsByChatId?: Record<string, Record<string, string>>,
+  timing?: BatchSendTiming
 ) {
   const res = await fetch(`http://localhost:3001/whatsapp/${userId}/messages/batch`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ chatIds, items, paramsByChatId }),
+    body: JSON.stringify({ chatIds, items, paramsByChatId, ...timing }),
   });
 
   if (!res.ok) {
