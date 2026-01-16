@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowRight, ArrowLeft, Save } from "lucide-react";
 import { BuscarUsuarios } from "@/services/authService";
 import { BuscarVendas, TransferirVendas } from "@/services/vendaService";
@@ -19,6 +19,7 @@ type Venda = {
   id: number;
   cliente: string;
   contato: string;
+  dataInicial: string;
 };
 
 const formatarContato = (valor?: string) => {
@@ -39,6 +40,13 @@ const formatarContato = (valor?: string) => {
 
   // fallback (caso venha incompleto)
   return valor;
+};
+
+const formatarData = (valor?: string) => {
+  if (!valor) return "";
+  const data = new Date(valor);
+  if (Number.isNaN(data.getTime())) return "";
+  return data.toLocaleDateString("pt-BR");
 };
 
 /* =======================
@@ -364,51 +372,123 @@ function TabelaVendas({
   selecionadas: number[];
   setSelecionadas: React.Dispatch<React.SetStateAction<number[]>>;
 }) {
-  const toggle = (id: number) => {
-    setSelecionadas((prev) =>
-      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
-    );
+  const lastSelectedIndexRef = useRef<number | null>(null);
+  const todasSelecionadas =
+    vendas.length > 0 && selecionadas.length === vendas.length;
+
+  const obterIdsNoIntervalo = (idAtual: number, indiceAtual: number) => {
+    if (lastSelectedIndexRef.current === null) {
+      return [idAtual];
+    }
+
+    const indiceAnterior = lastSelectedIndexRef.current;
+    const [inicio, fim] =
+      indiceAtual > indiceAnterior
+        ? [indiceAnterior, indiceAtual]
+        : [indiceAtual, indiceAnterior];
+
+    return vendas.slice(inicio, fim + 1).map((v) => v.id);
+  };
+
+  const toggle = (
+    id: number,
+    indiceAtual: number,
+    checked: boolean,
+    shiftKey: boolean
+  ) => {
+    setSelecionadas((prev) => {
+      const idsParaAtualizar = shiftKey
+        ? obterIdsNoIntervalo(id, indiceAtual)
+        : [id];
+      const setAtualizado = new Set(prev);
+
+      if (checked) {
+        idsParaAtualizar.forEach((itemId) => setAtualizado.add(itemId));
+      } else {
+        idsParaAtualizar.forEach((itemId) => setAtualizado.delete(itemId));
+      }
+
+      return Array.from(setAtualizado);
+    });
+
+    if (!shiftKey || lastSelectedIndexRef.current === null) {
+      lastSelectedIndexRef.current = indiceAtual;
+    }
+  };
+
+  const alternarSelecionarTodos = () => {
+    setSelecionadas(todasSelecionadas ? [] : vendas.map((v) => v.id));
+    lastSelectedIndexRef.current = null;
   };
 
   return (
     <div className="border border-border rounded-xl overflow-hidden">
-      <div className="bg-muted px-4 py-2 font-medium text-sm">{titulo}</div>
+      <div className="bg-muted px-4 py-2 text-sm flex flex-wrap items-center justify-between gap-2">
+        <div className="font-medium">{titulo}</div>
+        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+          <span>Total: {vendas.length}</span>
+          <span>Selecionadas: {selecionadas.length}</span>
+        </div>
+        <button
+          type="button"
+          onClick={alternarSelecionarTodos}
+          disabled={vendas.length === 0}
+          className="text-xs px-2 py-1 border rounded-md bg-background hover:bg-muted/60 disabled:opacity-50"
+        >
+          {todasSelecionadas ? "Desmarcar todos" : "Selecionar todos"}
+        </button>
+      </div>
 
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b">
-            <th className="px-3 py-2 text-left w-10"></th>
-            <th className="px-3 py-2 text-left">Cliente</th>
-            <th className="px-3 py-2 text-left">Contato</th>
-          </tr>
-        </thead>
-        <tbody>
-          {vendas.length > 0 ? (
-            vendas.map((v) => (
-              <tr key={v.id} className="border-t hover:bg-muted/40">
-                <td className="px-3 py-2">
-                  <input
-                    type="checkbox"
-                    checked={selecionadas.includes(v.id)}
-                    onChange={() => toggle(v.id)}
-                  />
-                </td>
-                <td className="px-3 py-2">{v.cliente}</td>
-                <td className="px-3 py-2">{formatarContato(v.contato)}</td>
-              </tr>
-            ))
-          ) : (
-            <tr>
-              <td
-                colSpan={3}
-                className="text-center py-6 text-muted-foreground"
-              >
-                Nenhuma venda
-              </td>
+      <div className="max-h-80 overflow-y-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b">
+              <th className="px-3 py-2 text-left w-10"></th>
+              <th className="px-3 py-2 text-left">Início</th>
+              <th className="px-3 py-2 text-left">Cliente</th>
+              <th className="px-3 py-2 text-left">Contato</th>
             </tr>
-          )}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {vendas.length > 0 ? (
+              vendas.map((v, indiceAtual) => (
+                <tr key={v.id} className="border-t hover:bg-muted/40">
+                  <td className="px-3 py-2">
+                    <input
+                      type="checkbox"
+                      checked={selecionadas.includes(v.id)}
+                      onClick={(event) => {
+                        const target = event.currentTarget;
+                        toggle(
+                          v.id,
+                          indiceAtual,
+                          target.checked,
+                          event.shiftKey
+                        );
+                      }}
+                      readOnly
+                    />
+                  </td>
+                  <td className="px-3 py-2">
+                    {formatarData(v.dataInicial)}
+                  </td>
+                  <td className="px-3 py-2">{v.cliente}</td>
+                  <td className="px-3 py-2">{formatarContato(v.contato)}</td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td
+                  colSpan={4}
+                  className="text-center py-6 text-muted-foreground"
+                >
+                  Nenhuma venda
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
