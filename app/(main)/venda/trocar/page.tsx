@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowRight, ArrowLeft, Save } from "lucide-react";
 import { BuscarUsuarios } from "@/services/authService";
 import { BuscarVendas, TransferirVendas } from "@/services/vendaService";
@@ -364,51 +364,111 @@ function TabelaVendas({
   selecionadas: number[];
   setSelecionadas: React.Dispatch<React.SetStateAction<number[]>>;
 }) {
-  const toggle = (id: number) => {
-    setSelecionadas((prev) =>
-      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+  const lastSelectedIdRef = useRef<number | null>(null);
+  const todasSelecionadas =
+    vendas.length > 0 && selecionadas.length === vendas.length;
+
+  const obterIdsNoIntervalo = (idAtual: number) => {
+    if (lastSelectedIdRef.current === null) {
+      return [idAtual];
+    }
+
+    const indiceAtual = vendas.findIndex((v) => v.id === idAtual);
+    const indiceAnterior = vendas.findIndex(
+      (v) => v.id === lastSelectedIdRef.current
     );
+
+    if (indiceAtual === -1 || indiceAnterior === -1) {
+      return [idAtual];
+    }
+
+    const [inicio, fim] =
+      indiceAtual > indiceAnterior
+        ? [indiceAnterior, indiceAtual]
+        : [indiceAtual, indiceAnterior];
+
+    return vendas.slice(inicio, fim + 1).map((v) => v.id);
+  };
+
+  const toggle = (id: number, checked: boolean, shiftKey: boolean) => {
+    setSelecionadas((prev) => {
+      const idsParaAtualizar = shiftKey ? obterIdsNoIntervalo(id) : [id];
+      const setAtualizado = new Set(prev);
+
+      if (checked) {
+        idsParaAtualizar.forEach((itemId) => setAtualizado.add(itemId));
+      } else {
+        idsParaAtualizar.forEach((itemId) => setAtualizado.delete(itemId));
+      }
+
+      return Array.from(setAtualizado);
+    });
+
+    lastSelectedIdRef.current = id;
+  };
+
+  const alternarSelecionarTodos = () => {
+    setSelecionadas(todasSelecionadas ? [] : vendas.map((v) => v.id));
+    lastSelectedIdRef.current = null;
   };
 
   return (
     <div className="border border-border rounded-xl overflow-hidden">
-      <div className="bg-muted px-4 py-2 font-medium text-sm">{titulo}</div>
+      <div className="bg-muted px-4 py-2 text-sm flex flex-wrap items-center justify-between gap-2">
+        <div className="font-medium">{titulo}</div>
+        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+          <span>Total: {vendas.length}</span>
+          <span>Selecionadas: {selecionadas.length}</span>
+        </div>
+        <button
+          type="button"
+          onClick={alternarSelecionarTodos}
+          disabled={vendas.length === 0}
+          className="text-xs px-2 py-1 border rounded-md bg-background hover:bg-muted/60 disabled:opacity-50"
+        >
+          {todasSelecionadas ? "Desmarcar todos" : "Selecionar todos"}
+        </button>
+      </div>
 
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b">
-            <th className="px-3 py-2 text-left w-10"></th>
-            <th className="px-3 py-2 text-left">Cliente</th>
-            <th className="px-3 py-2 text-left">Contato</th>
-          </tr>
-        </thead>
-        <tbody>
-          {vendas.length > 0 ? (
-            vendas.map((v) => (
-              <tr key={v.id} className="border-t hover:bg-muted/40">
-                <td className="px-3 py-2">
-                  <input
-                    type="checkbox"
-                    checked={selecionadas.includes(v.id)}
-                    onChange={() => toggle(v.id)}
-                  />
-                </td>
-                <td className="px-3 py-2">{v.cliente}</td>
-                <td className="px-3 py-2">{formatarContato(v.contato)}</td>
-              </tr>
-            ))
-          ) : (
-            <tr>
-              <td
-                colSpan={3}
-                className="text-center py-6 text-muted-foreground"
-              >
-                Nenhuma venda
-              </td>
+      <div className="max-h-80 overflow-y-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b">
+              <th className="px-3 py-2 text-left w-10"></th>
+              <th className="px-3 py-2 text-left">Cliente</th>
+              <th className="px-3 py-2 text-left">Contato</th>
             </tr>
-          )}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {vendas.length > 0 ? (
+              vendas.map((v) => (
+                <tr key={v.id} className="border-t hover:bg-muted/40">
+                  <td className="px-3 py-2">
+                    <input
+                      type="checkbox"
+                      checked={selecionadas.includes(v.id)}
+                      onChange={(event) =>
+                        toggle(v.id, event.target.checked, event.shiftKey)
+                      }
+                    />
+                  </td>
+                  <td className="px-3 py-2">{v.cliente}</td>
+                  <td className="px-3 py-2">{formatarContato(v.contato)}</td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td
+                  colSpan={3}
+                  className="text-center py-6 text-muted-foreground"
+                >
+                  Nenhuma venda
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
