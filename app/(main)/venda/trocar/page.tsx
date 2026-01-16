@@ -19,6 +19,7 @@ type Venda = {
   id: number;
   cliente: string;
   contato: string;
+  dataInicial: string;
 };
 
 const formatarContato = (valor?: string) => {
@@ -39,6 +40,13 @@ const formatarContato = (valor?: string) => {
 
   // fallback (caso venha incompleto)
   return valor;
+};
+
+const formatarData = (valor?: string) => {
+  if (!valor) return "";
+  const data = new Date(valor);
+  if (Number.isNaN(data.getTime())) return "";
+  return data.toLocaleDateString("pt-BR");
 };
 
 /* =======================
@@ -436,6 +444,7 @@ function TabelaVendas({
           <thead>
             <tr className="border-b">
               <th className="px-3 py-2 text-left w-10"></th>
+              <th className="px-3 py-2 text-left">Início</th>
               <th className="px-3 py-2 text-left">Cliente</th>
               <th className="px-3 py-2 text-left">Contato</th>
             </tr>
@@ -460,6 +469,9 @@ function TabelaVendas({
                       readOnly
                     />
                   </td>
+                  <td className="px-3 py-2">
+                    {formatarData(v.dataInicial)}
+                  </td>
                   <td className="px-3 py-2">{v.cliente}</td>
                   <td className="px-3 py-2">{formatarContato(v.contato)}</td>
                 </tr>
@@ -467,7 +479,7 @@ function TabelaVendas({
             ) : (
               <tr>
                 <td
-                  colSpan={3}
+                  colSpan={4}
                   className="text-center py-6 text-muted-foreground"
                 >
                   Nenhuma venda
