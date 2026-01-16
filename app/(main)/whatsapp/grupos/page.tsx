@@ -147,7 +147,8 @@ export default function GruposWhatsappPage() {
       await criarGrupoWhatsapp({
         nome,
         usuarioId: Number(user.UserId),
-        status: statusSelecionado === "" ? undefined : statusSelecionado,
+        status:
+          statusSelecionado === "" ? undefined : Number(statusSelecionado),
         dataInicialDe: temDataDe ? `${dataInicialDe}T00:00:00` : undefined,
         dataInicialAte: temDataAte ? `${dataInicialAte}T24:00:00` : undefined,
       });
