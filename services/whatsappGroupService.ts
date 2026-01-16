@@ -93,7 +93,7 @@ export async function criarGrupoWhatsapp(data: {
 }) {
   return await apiFetch("/venda/grupo", {
     method: "POST",
-    body: JSON.stringify(data),
+    body: JSON.stringify({ command: data }),
   });
 }
 
