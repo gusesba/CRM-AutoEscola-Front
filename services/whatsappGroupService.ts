@@ -87,6 +87,9 @@ export async function buscarGruposWhatsappPorChat(
 export async function criarGrupoWhatsapp(data: {
   nome: string;
   usuarioId: number;
+  status?: number;
+  dataInicialDe?: string;
+  dataInicialAte?: string;
 }) {
   return await apiFetch("/venda/grupo", {
     method: "POST",

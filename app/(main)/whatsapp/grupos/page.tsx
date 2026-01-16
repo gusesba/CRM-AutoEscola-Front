@@ -16,6 +16,7 @@ import {
   VendaWhatsappVinculo,
 } from "@/services/whatsappGroupService";
 import { ChevronRight } from "lucide-react";
+import { StatusEnum } from "@/enums";
 
 const formatarConversa = (conversa: GrupoWhatsappConversa) => {
   return conversa.venda?.cliente ?? "Cliente nao informado";
@@ -30,6 +31,9 @@ export default function GruposWhatsappPage() {
   const [erro, setErro] = useState<string | null>(null);
 
   const [novoGrupoNome, setNovoGrupoNome] = useState("");
+  const [statusSelecionado, setStatusSelecionado] = useState<number | "">("");
+  const [dataInicialDe, setDataInicialDe] = useState("");
+  const [dataInicialAte, setDataInicialAte] = useState("");
   const [criandoGrupo, setCriandoGrupo] = useState(false);
 
   const [grupoSelecionado, setGrupoSelecionado] = useState<number | "">("");
@@ -52,6 +56,17 @@ export default function GruposWhatsappPage() {
   const gruposOrdenados = useMemo(() => {
     return [...grupos].sort((a, b) => a.nome.localeCompare(b.nome));
   }, [grupos]);
+
+  const statusOptions = useMemo(
+    () =>
+      Object.entries(StatusEnum)
+        .filter(([, value]) => typeof value === "number")
+        .map(([label, value]) => ({
+          label,
+          value: Number(value),
+        })),
+    []
+  );
 
   const carregarGrupos = async () => {
     try {
@@ -113,10 +128,33 @@ export default function GruposWhatsappPage() {
       return;
     }
 
+    const temDataDe = dataInicialDe.trim() !== "";
+    const temDataAte = dataInicialAte.trim() !== "";
+
+    if (temDataDe && !temDataAte) {
+      setErro("Informe a data inicial até.");
+      return;
+    }
+
+    if (!temDataDe && temDataAte) {
+      setErro("Informe a data inicial de.");
+      return;
+    }
+
     try {
+      setErro(null);
       setCriandoGrupo(true);
-      await criarGrupoWhatsapp({ nome, usuarioId: Number(user.UserId) });
+      await criarGrupoWhatsapp({
+        nome,
+        usuarioId: Number(user.UserId),
+        status: statusSelecionado === "" ? undefined : statusSelecionado,
+        dataInicialDe: temDataDe ? `${dataInicialDe}T00:00:00` : undefined,
+        dataInicialAte: temDataAte ? `${dataInicialAte}T24:00:00` : undefined,
+      });
       setNovoGrupoNome("");
+      setStatusSelecionado("");
+      setDataInicialDe("");
+      setDataInicialAte("");
       await carregarGrupos();
     } catch (error) {
       console.error(error);
@@ -224,6 +262,45 @@ export default function GruposWhatsappPage() {
                 placeholder="Informe o nome do grupo"
               />
             </label>
+            <label className="text-sm text-muted-foreground">
+              Status (opcional)
+              <select
+                value={statusSelecionado}
+                onChange={(event) =>
+                  setStatusSelecionado(
+                    event.target.value ? Number(event.target.value) : ""
+                  )
+                }
+                className="mt-2 w-full p-2 border rounded-lg bg-background text-sm focus:ring-2 focus:ring-primary outline-none transition"
+              >
+                <option value="">Todos os status</option>
+                {statusOptions.map((status) => (
+                  <option key={status.value} value={status.value}>
+                    {status.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <label className="text-sm text-muted-foreground">
+                Data inicial de
+                <input
+                  type="date"
+                  value={dataInicialDe}
+                  onChange={(event) => setDataInicialDe(event.target.value)}
+                  className="mt-2 w-full p-2 border rounded-lg bg-background text-sm focus:ring-2 focus:ring-primary outline-none transition"
+                />
+              </label>
+              <label className="text-sm text-muted-foreground">
+                Data inicial até
+                <input
+                  type="date"
+                  value={dataInicialAte}
+                  onChange={(event) => setDataInicialAte(event.target.value)}
+                  className="mt-2 w-full p-2 border rounded-lg bg-background text-sm focus:ring-2 focus:ring-primary outline-none transition"
+                />
+              </label>
+            </div>
             <button
               type="submit"
               disabled={criandoGrupo || !novoGrupoNome.trim()}
