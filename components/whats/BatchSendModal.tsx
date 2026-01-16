@@ -161,13 +161,6 @@ export function BatchSendModal({ userId, onClose }: Props) {
   }, []);
 
   useEffect(() => {
-    window.localStorage.setItem(
-      BATCH_SETTINGS_STORAGE_KEY,
-      JSON.stringify(batchSettings)
-    );
-  }, [batchSettings]);
-
-  useEffect(() => {
     setRecipientsModalOpen(false);
     setSelectedRecipients(new Set());
   }, [selectedGroupId]);
@@ -342,6 +335,10 @@ export function BatchSendModal({ userId, onClose }: Props) {
               ? messagesUntilBigInterval
               : undefined,
         }
+      );
+      window.localStorage.setItem(
+        BATCH_SETTINGS_STORAGE_KEY,
+        JSON.stringify(batchSettings)
       );
       setPreviewMessages([]);
       setText("");
