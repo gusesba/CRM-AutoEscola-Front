@@ -10,7 +10,6 @@ import {
 } from "@/services/whatsapp";
 import { MessageBubble } from "./MessageBubble";
 import { MessageInput } from "./MessageInput";
-import { useAuth } from "@/hooks/useAuth";
 import {
   desvincularVendaWhats,
   getChatStatus,
@@ -65,9 +64,13 @@ function lastMessageToMessage(
 
 type Props = {
   chat?: Chat;
+  whatsappUserId?: string;
 };
 
-export const ChatWindow = React.memo(function ChatWindow({ chat }: Props) {
+export const ChatWindow = React.memo(function ChatWindow({
+  chat,
+  whatsappUserId,
+}: Props) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
@@ -75,17 +78,17 @@ export const ChatWindow = React.memo(function ChatWindow({ chat }: Props) {
   const [hasReachedStart, setHasReachedStart] = useState(false);
   const [text, setText] = useState("");
   const [status, setStatus] = useState<ChatStatusDto | null>(null);
-  const { user } = useAuth();
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
   const shouldAutoScrollRef = useRef(true);
   const pendingScrollHeightRef = useRef<number | null>(null);
 
   const vincularVenda = async (vendaId: number) => {
+    if (!whatsappUserId) return;
     const status = await vincularVendaWhats({
       vendaId,
       whatsappChatId: chat?.id || "",
-      whatsappUserId: String(user?.UserId),
+      whatsappUserId,
     });
 
     setStatus(status);
@@ -93,33 +96,30 @@ export const ChatWindow = React.memo(function ChatWindow({ chat }: Props) {
 
   const desvincularVenda = async (vendaWhatsappId: number) => {
     await desvincularVendaWhats(vendaWhatsappId);
-    if (!chat) return;
-    const updatedStatus = await getChatStatus(
-      chat.id,
-      String(user?.UserId)
-    );
+    if (!chat || !whatsappUserId) return;
+    const updatedStatus = await getChatStatus(chat.id, whatsappUserId);
     setStatus(updatedStatus);
   };
 
   // 📥 Buscar mensagens ao trocar de chat
   useEffect(() => {
-    if (!chat) return;
+    if (!chat || !whatsappUserId) return;
     setLoading(true);
     setMessages([]);
     setLimit(50);
     setHasReachedStart(false);
     shouldAutoScrollRef.current = true;
 
-    fetchMessages(String(user?.UserId), chat.id, 50)
+    fetchMessages(whatsappUserId, chat.id, 50)
       .then((data) => {
         setMessages(data);
         setHasReachedStart(data.length < 50);
       })
       .finally(() => setLoading(false));
-  }, [chat?.id]);
+  }, [chat?.id, whatsappUserId]);
 
   useEffect(() => {
-    if (!chat) return;
+    if (!chat || !whatsappUserId) return;
     if (limit === 50) return;
 
     const container = messagesContainerRef.current;
@@ -127,7 +127,7 @@ export const ChatWindow = React.memo(function ChatWindow({ chat }: Props) {
     pendingScrollHeightRef.current = previousScrollHeight;
     setIsFetchingMore(true);
 
-    fetchMessages(String(user?.UserId), chat.id, limit)
+    fetchMessages(whatsappUserId, chat.id, limit)
       .then((data) => {
         setMessages(data);
         setHasReachedStart(data.length < limit);
@@ -135,15 +135,15 @@ export const ChatWindow = React.memo(function ChatWindow({ chat }: Props) {
       .finally(() => {
         setIsFetchingMore(false);
       });
-  }, [chat?.id, limit]);
+  }, [chat?.id, limit, whatsappUserId]);
 
   useEffect(() => {
-    if (!chat) return;
+    if (!chat || !whatsappUserId) return;
 
-    getChatStatus(chat.id, String(user?.UserId))
+    getChatStatus(chat.id, whatsappUserId)
       .then(setStatus)
       .catch(console.error);
-  }, [chat?.id]);
+  }, [chat?.id, whatsappUserId]);
 
   useEffect(() => {
     if (!chat?.lastMessage) return;
@@ -178,7 +178,7 @@ export const ChatWindow = React.memo(function ChatWindow({ chat }: Props) {
   // 📤 Enviar mensagem
   const handleSend = useCallback(
     async (file?: File) => {
-      if (!chat) return;
+      if (!chat || !whatsappUserId) return;
       if (!text.trim() && !file) return;
 
       const currentText = text;
@@ -190,19 +190,19 @@ export const ChatWindow = React.memo(function ChatWindow({ chat }: Props) {
       try {
         if (file) {
           await sendMediaMessage(
-            String(user?.UserId),
+            whatsappUserId,
             chat.id,
             file,
             currentText // legenda
           );
         } else {
-          await sendMessage(String(user?.UserId), chat.id, currentText);
+          await sendMessage(whatsappUserId, chat.id, currentText);
         }
       } catch (err) {
         console.error(err);
       }
     },
-    [text, chat]
+    [text, chat, whatsappUserId]
   );
 
   const handleScroll = useCallback(() => {
