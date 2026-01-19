@@ -1,7 +1,8 @@
 "use client";
 
 import { CriarVendedor } from "@/services/authService";
-import { useState } from "react";
+import { BuscarSedes } from "@/services/sedeService";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
@@ -10,6 +11,7 @@ type FormData = {
   usuario: string;
   senha: string;
   isAdmin: boolean;
+  sedeId?: number;
 };
 
 export default function NovoVendedor() {
@@ -17,15 +19,42 @@ export default function NovoVendedor() {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
+    watch,
     reset,
   } = useForm<FormData>();
 
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [sedes, setSedes] = useState<{ id: number; nome: string }[]>([]);
+  const isAdminSelecionado = watch("isAdmin");
+
+  useEffect(() => {
+    const carregarSedes = async () => {
+      try {
+        const sedesRes = await BuscarSedes("pageSize=1000");
+        setSedes(sedesRes?.items || []);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    carregarSedes();
+  }, []);
 
   const onSubmit = async (data: FormData) => {
     try {
-      await CriarVendedor(data);
+      const sedeId =
+        typeof data.sedeId === "number" && !Number.isNaN(data.sedeId)
+          ? data.sedeId
+          : null;
+
+      await CriarVendedor({
+        nome: data.nome,
+        usuario: data.usuario,
+        senha: data.senha,
+        isAdmin: data.isAdmin,
+        sedeId,
+      });
       toast.success("Vendedor adicionado com sucesso!");
       reset();
     } catch (err) {
@@ -165,6 +194,46 @@ export default function NovoVendedor() {
             <span className="text-sm text-muted-foreground select-none">
               Administrador
             </span>
+          </div>
+
+          {/* Sede */}
+          <div>
+            <label
+              htmlFor="sedeId"
+              className="block mb-1 text-sm font-medium text-muted-foreground"
+            >
+              Sede
+            </label>
+            <select
+              id="sedeId"
+              {...register("sedeId", {
+                setValueAs: (value) =>
+                  value === "" ? undefined : Number(value),
+                validate: (value) =>
+                  isAdminSelecionado || value
+                    ? true
+                    : "Selecione a sede.",
+              })}
+              aria-invalid={errors.sedeId ? "true" : "false"}
+              className={`w-full p-2 border rounded-lg bg-background text-sm focus:ring-2 focus:ring-primary outline-none
+                ${
+                  errors.sedeId
+                    ? "ring-1 focus:ring-2 ring-error"
+                    : "focus:ring-2 focus:ring-primary"
+                }`}
+            >
+              <option value="">Selecione a sede</option>
+              {sedes.map((sede) => (
+                <option key={sede.id} value={sede.id}>
+                  {sede.nome}
+                </option>
+              ))}
+            </select>
+            {errors.sedeId && (
+              <p className="text-error text-sm mt-1">
+                {errors.sedeId.message}
+              </p>
+            )}
           </div>
 
           {/* Botão */}

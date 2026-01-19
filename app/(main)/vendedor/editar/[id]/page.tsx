@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { BuscarUsuarios, EditarUsuario } from "@/services/authService";
+import { BuscarSedes } from "@/services/sedeService";
 import { useAuth } from "@/hooks/useAuth";
 
 const statusOptions = [
@@ -19,6 +20,7 @@ type Usuario = {
   usuario: string;
   isAdmin: boolean;
   status: number;
+  sedeId?: number | null;
 };
 
 type FormData = {
@@ -27,6 +29,7 @@ type FormData = {
   senha?: string;
   isAdmin: boolean;
   status: number;
+  sedeId?: number;
 };
 
 export default function EditarUsuarioPage() {
@@ -40,10 +43,13 @@ export default function EditarUsuarioPage() {
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
+    watch,
   } = useForm<FormData>();
 
   const [carregandoUsuario, setCarregandoUsuario] = useState(true);
   const [erroCarregamento, setErroCarregamento] = useState<string | null>(null);
+  const [sedes, setSedes] = useState<{ id: number; nome: string }[]>([]);
+  const isAdminSelecionado = watch("isAdmin");
 
   useEffect(() => {
     const carregarUsuario = async () => {
@@ -69,6 +75,7 @@ export default function EditarUsuarioPage() {
           isAdmin: usuario.isAdmin,
           status: usuario.status,
           senha: "",
+          sedeId: usuario.sedeId ?? undefined,
         });
       } catch (error) {
         console.error(error);
@@ -81,6 +88,19 @@ export default function EditarUsuarioPage() {
     carregarUsuario();
   }, [reset, usuarioId]);
 
+  useEffect(() => {
+    const carregarSedes = async () => {
+      try {
+        const sedesRes = await BuscarSedes("pageSize=1000");
+        setSedes(sedesRes?.items || []);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    carregarSedes();
+  }, []);
+
   const onSubmit = async (data: FormData) => {
     if (!isAdmin) {
       toast.error("Apenas administradores podem editar usuários.");
@@ -88,6 +108,11 @@ export default function EditarUsuarioPage() {
     }
 
     try {
+      const sedeId =
+        typeof data.sedeId === "number" && !Number.isNaN(data.sedeId)
+          ? data.sedeId
+          : null;
+
       await EditarUsuario({
         id: usuarioId,
         nome: data.nome,
@@ -95,6 +120,7 @@ export default function EditarUsuarioPage() {
         senha: data.senha ? data.senha : null,
         isAdmin: data.isAdmin,
         status: Number(data.status),
+        sedeId,
       });
       toast.success("Usuário atualizado com sucesso!");
       router.push("/vendedor");
@@ -244,6 +270,46 @@ export default function EditarUsuarioPage() {
                 </option>
               ))}
             </select>
+          </div>
+
+          <div>
+            <label
+              htmlFor="sedeId"
+              className="block mb-1 text-sm font-medium text-muted-foreground"
+            >
+              Sede
+            </label>
+            <select
+              id="sedeId"
+              {...register("sedeId", {
+                setValueAs: (value) =>
+                  value === "" ? undefined : Number(value),
+                validate: (value) =>
+                  isAdminSelecionado || value
+                    ? true
+                    : "Selecione a sede.",
+              })}
+              aria-invalid={errors.sedeId ? "true" : "false"}
+              disabled={!isAdmin}
+              className={`w-full p-2 border rounded-lg bg-background text-sm focus:ring-2 focus:ring-primary outline-none
+                ${
+                  errors.sedeId
+                    ? "ring-1 focus:ring-2 ring-error"
+                    : "focus:ring-2 focus:ring-primary"
+                } ${!isAdmin ? "opacity-60" : ""}`}
+            >
+              <option value="">Selecione a sede</option>
+              {sedes.map((sede) => (
+                <option key={sede.id} value={sede.id}>
+                  {sede.nome}
+                </option>
+              ))}
+            </select>
+            {errors.sedeId && (
+              <p className="text-error text-sm mt-1">
+                {errors.sedeId.message}
+              </p>
+            )}
           </div>
 
           <div className="flex items-center gap-3 justify-end">

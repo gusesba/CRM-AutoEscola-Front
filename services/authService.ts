@@ -10,6 +10,7 @@ interface ICriarVendedorDto {
   usuario: string;
   senha: string;
   isAdmin: boolean;
+  sedeId?: number | null;
 }
 
 interface IEditarUsuarioDto {
@@ -19,6 +20,7 @@ interface IEditarUsuarioDto {
   senha?: string | null;
   isAdmin: boolean;
   status: number;
+  sedeId?: number | null;
 }
 
 export const Login = async (data: ILoginDto) => {
