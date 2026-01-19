@@ -8,7 +8,7 @@ type BackupChatPayload = {
   chatId?: string | number;
   nome?: string;
   name?: string;
-  NomeChat?: string;
+  nomeChat?: string;
   isGroup?: boolean;
   grupo?: boolean;
   unreadCount?: number;
@@ -79,7 +79,7 @@ function normalizeChat(payload: BackupChatPayload): Chat {
   const chatId = String(
     payload.chatWhatsappId ?? payload.id ?? payload.chatId ?? ""
   );
-  const name = payload.nome ?? payload.name ?? payload.NomeChat ?? "Conversa";
+  const name = payload.nome ?? payload.name ?? payload.nomeChat ?? "Conversa";
   const lastMessageBody =
     payload.lastMessage?.body ??
     payload.ultimaMensagemTexto ??
@@ -136,12 +136,14 @@ function normalizeMessage(payload: BackupMessagePayload): Message {
   return {
     id,
     body: String(body ?? ""),
-    fromMe: payload.fromMe ?? payload.enviadaPorMim ?? payload.sentByMe ?? false,
+    fromMe:
+      payload.fromMe ?? payload.enviadaPorMim ?? payload.sentByMe ?? false,
     timestamp: timestamp ?? 0,
     type,
     hasMedia,
     mediaUrl: mediaUrl ?? undefined,
-    mimetype: payload.mimetype ?? payload.mimeType ?? payload.tipoMidia ?? undefined,
+    mimetype:
+      payload.mimetype ?? payload.mimeType ?? payload.tipoMidia ?? undefined,
     filename: payload.filename ?? payload.nomeArquivo ?? undefined,
     author: payload.author ?? payload.autor ?? payload.remetente ?? undefined,
   };
