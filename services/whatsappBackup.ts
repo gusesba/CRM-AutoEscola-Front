@@ -8,6 +8,7 @@ type BackupChatPayload = {
   chatId?: string | number;
   nome?: string;
   name?: string;
+  NomeChat?: string;
   isGroup?: boolean;
   grupo?: boolean;
   unreadCount?: number;
@@ -78,7 +79,7 @@ function normalizeChat(payload: BackupChatPayload): Chat {
   const chatId = String(
     payload.chatWhatsappId ?? payload.id ?? payload.chatId ?? ""
   );
-  const name = payload.nome ?? payload.name ?? "Conversa";
+  const name = payload.nome ?? payload.name ?? payload.NomeChat ?? "Conversa";
   const lastMessageBody =
     payload.lastMessage?.body ??
     payload.ultimaMensagemTexto ??
