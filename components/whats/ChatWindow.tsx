@@ -65,11 +65,19 @@ function lastMessageToMessage(
 type Props = {
   chat?: Chat;
   whatsappUserId?: string;
+  fetchMessagesFn?: (
+    userId: string,
+    chatId: string,
+    limit?: number
+  ) => Promise<Message[]>;
+  disableSend?: boolean;
 };
 
 export const ChatWindow = React.memo(function ChatWindow({
   chat,
   whatsappUserId,
+  fetchMessagesFn,
+  disableSend,
 }: Props) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
@@ -101,6 +109,8 @@ export const ChatWindow = React.memo(function ChatWindow({
     setStatus(updatedStatus);
   };
 
+  const fetchMessagesHandler = fetchMessagesFn ?? fetchMessages;
+
   // 📥 Buscar mensagens ao trocar de chat
   useEffect(() => {
     if (!chat || !whatsappUserId) return;
@@ -110,13 +120,13 @@ export const ChatWindow = React.memo(function ChatWindow({
     setHasReachedStart(false);
     shouldAutoScrollRef.current = true;
 
-    fetchMessages(whatsappUserId, chat.id, 50)
+    fetchMessagesHandler(whatsappUserId, chat.id, 50)
       .then((data) => {
         setMessages(data);
         setHasReachedStart(data.length < 50);
       })
       .finally(() => setLoading(false));
-  }, [chat?.id, whatsappUserId]);
+  }, [chat?.id, whatsappUserId, fetchMessagesHandler]);
 
   useEffect(() => {
     if (!chat || !whatsappUserId) return;
@@ -127,7 +137,7 @@ export const ChatWindow = React.memo(function ChatWindow({
     pendingScrollHeightRef.current = previousScrollHeight;
     setIsFetchingMore(true);
 
-    fetchMessages(whatsappUserId, chat.id, limit)
+    fetchMessagesHandler(whatsappUserId, chat.id, limit)
       .then((data) => {
         setMessages(data);
         setHasReachedStart(data.length < limit);
@@ -135,7 +145,7 @@ export const ChatWindow = React.memo(function ChatWindow({
       .finally(() => {
         setIsFetchingMore(false);
       });
-  }, [chat?.id, limit, whatsappUserId]);
+  }, [chat?.id, limit, whatsappUserId, fetchMessagesHandler]);
 
   useEffect(() => {
     if (!chat || !whatsappUserId) return;
@@ -178,6 +188,7 @@ export const ChatWindow = React.memo(function ChatWindow({
   // 📤 Enviar mensagem
   const handleSend = useCallback(
     async (file?: File) => {
+      if (disableSend) return;
       if (!chat || !whatsappUserId) return;
       if (!text.trim() && !file) return;
 
@@ -202,7 +213,7 @@ export const ChatWindow = React.memo(function ChatWindow({
         console.error(err);
       }
     },
-    [text, chat, whatsappUserId]
+    [disableSend, text, chat, whatsappUserId]
   );
 
   const handleScroll = useCallback(() => {
@@ -326,7 +337,12 @@ export const ChatWindow = React.memo(function ChatWindow({
 
       {/* Footer */}
       <footer className="h-16 shrink-0 px-6 flex items-center gap-3 border-t border-gray-200 bg-[#f7f8fa]">
-        <MessageInput value={text} onChange={setText} onSend={handleSend} />
+        <MessageInput
+          value={text}
+          onChange={setText}
+          onSend={handleSend}
+          disabled={disableSend}
+        />
       </footer>
     </main>
   );

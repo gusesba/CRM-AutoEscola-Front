@@ -8,6 +8,7 @@ type Props = {
   value: string;
   onChange: (v: string) => void;
   onSend: (attachment?: File) => void;
+  disabled?: boolean;
 };
 
 type Attachment = {
@@ -16,7 +17,7 @@ type Attachment = {
   previewUrl?: string;
 };
 
-export function MessageInput({ value, onChange, onSend }: Props) {
+export function MessageInput({ value, onChange, onSend, disabled }: Props) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -36,6 +37,7 @@ export function MessageInput({ value, onChange, onSend }: Props) {
 
   /** Seleção de arquivo */
   function handleFileSelect(file: File) {
+    if (disabled) return;
     const type = file.type.startsWith("image")
       ? "image"
       : file.type.startsWith("video")
@@ -55,6 +57,7 @@ export function MessageInput({ value, onChange, onSend }: Props) {
   }
 
   function handleSend() {
+    if (disabled) return;
     if (!value.trim() && !attachment) return;
 
     onSend(attachment?.file);
@@ -67,7 +70,7 @@ export function MessageInput({ value, onChange, onSend }: Props) {
   }
 
   return (
-    <div className="w-full px-4 py-3 ">
+    <div className="w-full px-4 py-3">
       <div className="max-w-full  rounded-xl flex flex-col gap-3">
         {/* 📦 Preview da mídia — SEM SOBREPOR */}
         {attachment && (
@@ -120,7 +123,8 @@ export function MessageInput({ value, onChange, onSend }: Props) {
           {/* 📎 */}
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="p-2 text-gray-600 hover:bg-black/5 rounded-full"
+            className="p-2 text-gray-600 hover:bg-black/5 rounded-full disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={disabled}
           >
             <Paperclip size={20} />
           </button>
@@ -129,6 +133,7 @@ export function MessageInput({ value, onChange, onSend }: Props) {
             ref={fileInputRef}
             type="file"
             hidden
+            disabled={disabled}
             onChange={(e) => {
               const file = e.target.files?.[0];
               if (file) handleFileSelect(file);
@@ -163,10 +168,11 @@ export function MessageInput({ value, onChange, onSend }: Props) {
                 }
               }}
               rows={1}
+              disabled={disabled}
               className="
               absolute inset-0 w-full px-4 py-2 text-sm
               bg-transparent text-transparent caret-black
-              resize-none outline-none
+              resize-none outline-none disabled:cursor-not-allowed
             "
             />
           </div>
@@ -174,10 +180,12 @@ export function MessageInput({ value, onChange, onSend }: Props) {
           {/* 🚀 */}
           <button
             onClick={handleSend}
+            disabled={disabled}
             className="
             p-2 rounded-full
             bg-[#25d366] text-white
             hover:bg-[#1ebe5d]
+            disabled:cursor-not-allowed disabled:opacity-60
           "
           >
             {value || attachment ? <Send size={18} /> : <Mic size={18} />}
