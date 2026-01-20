@@ -1,7 +1,7 @@
 import { Chat } from "@/types/chat";
 import { Message } from "@/types/messages";
 
-const WHATSAPP_BASE_URL = "http://localhost:3001/whatsapp";
+const WHATSAPP_BASE_URL = `${process.env.NEXT_PUBLIC_WHATS_URL}/whatsapp`;
 
 export type BatchMessageItem =
   | {

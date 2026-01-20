@@ -5,7 +5,7 @@ type Props = {
   message: Message;
 };
 
-const mediaUrl = "http://localhost:3001";
+const mediaUrl = process.env.NEXT_PUBLIC_WHATS_URL;
 
 function formatTime(timestamp?: number) {
   if (!timestamp) return "";
