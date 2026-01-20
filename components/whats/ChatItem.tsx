@@ -36,7 +36,7 @@ function ChatItemComponent({ chat, isSelected, onSelect }: Props) {
       <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden">
         {chat.profilePicUrl ? (
           <img
-            src={chat.profilePicUrl}
+            src={`${process.env.NEXT_PUBLIC_WHATS_URL}${chat.profilePicUrl}`}
             alt={chat.name}
             className="w-full h-full object-cover"
           />
@@ -102,5 +102,5 @@ export const ChatItem = React.memo(
   (prev, next) =>
     prev.isSelected === next.isSelected &&
     prev.chat.unreadCount === next.chat.unreadCount &&
-    prev.chat.lastMessage?.timestamp === next.chat.lastMessage?.timestamp
+    prev.chat.lastMessage?.timestamp === next.chat.lastMessage?.timestamp,
 );

@@ -251,7 +251,7 @@ export const ChatWindow = React.memo(function ChatWindow({
         <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-300 shrink-0">
           {chat.profilePicUrl ? (
             <img
-              src={chat.profilePicUrl}
+              src={`${process.env.NEXT_PUBLIC_WHATS_URL}${chat.profilePicUrl}`}
               alt={chat.name}
               className="w-full h-full object-cover"
             />
@@ -265,7 +265,7 @@ export const ChatWindow = React.memo(function ChatWindow({
         {/* Info */}
         <div className="flex flex-col min-w-0">
           <p className="font-medium text-gray-900 truncate">{chat.name}</p>
-          <span className="text-xs text-gray-500">Status aqui</span>
+          {/* <span className="text-xs text-gray-500">Status aqui</span> */}
           {/* depois dá pra ligar isso ao socket */}
         </div>
         {status && (
