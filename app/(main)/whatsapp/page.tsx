@@ -18,11 +18,13 @@ export default function WhatsPage() {
   const [disconnecting, setDisconnecting] = useState(false);
 
   useEffect(() => {
+    console.log(user);
     if (!user?.UserId) return;
 
     let interval: NodeJS.Timeout;
 
     async function poll() {
+      console.log("Polling WhatsApp login status...");
       try {
         const res = await getWhatsLogin(String(user?.UserId));
 
@@ -40,7 +42,8 @@ export default function WhatsPage() {
         if (res.status === "waiting") {
           setStatus("waiting");
         }
-      } catch {
+      } catch (err) {
+        console.error("Erro ao verificar status do WhatsApp:", err);
         setStatus("error");
       }
     }
@@ -72,10 +75,7 @@ export default function WhatsPage() {
   // 🟢 Whats conectado
   if (status === "connected") {
     return (
-      <Home
-        onDisconnect={handleDisconnect}
-        disconnecting={disconnecting}
-      />
+      <Home onDisconnect={handleDisconnect} disconnecting={disconnecting} />
     );
   }
 

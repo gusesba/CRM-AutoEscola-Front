@@ -50,7 +50,7 @@ function formatDayLabel(timestamp: number) {
 
 function lastMessageToMessage(
   last: NonNullable<Chat["lastMessage"]>,
-  chatId: string
+  chatId: string,
 ): Message {
   return {
     id: `${chatId}-${last.timestamp}`,
@@ -68,7 +68,7 @@ type Props = {
   fetchMessagesFn?: (
     userId: string,
     chatId: string,
-    limit?: number
+    limit?: number,
   ) => Promise<Message[]>;
   disableSend?: boolean;
 };
@@ -150,23 +150,21 @@ export const ChatWindow = React.memo(function ChatWindow({
   useEffect(() => {
     if (!chat || !whatsappUserId) return;
 
-    getChatStatus(chat.id, whatsappUserId)
-      .then(setStatus)
-      .catch(console.error);
+    getChatStatus(chat.id, whatsappUserId).then(setStatus).catch(console.error);
   }, [chat?.id, whatsappUserId]);
 
   useEffect(() => {
     if (!chat?.lastMessage) return;
 
-    //@ts-ignore
+    //@ts-expect-error
     setMessages((prev) => {
-      //@ts-ignore
+      //@ts-expect-error
       const exists = prev.some((m) => m.id === chat.lastMessage!.id);
       if (exists) return prev;
       shouldAutoScrollRef.current = true;
       return [...prev, chat.lastMessage!];
     });
-    //@ts-ignore
+    //@ts-expect-error
   }, [chat?.lastMessage?.id]);
 
   useEffect(() => {
@@ -204,7 +202,7 @@ export const ChatWindow = React.memo(function ChatWindow({
             whatsappUserId,
             chat.id,
             file,
-            currentText // legenda
+            currentText, // legenda
           );
         } else {
           await sendMessage(whatsappUserId, chat.id, currentText);
@@ -213,7 +211,7 @@ export const ChatWindow = React.memo(function ChatWindow({
         console.error(err);
       }
     },
-    [disableSend, text, chat, whatsappUserId]
+    [disableSend, text, chat, whatsappUserId],
   );
 
   const handleScroll = useCallback(() => {

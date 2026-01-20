@@ -57,9 +57,7 @@ function ImageMessage({ message, className }: any) {
           hover:opacity-90
           transition
         "
-        onClick={() =>
-          window.open(getMediaSrc(message.mediaUrl), "_blank")
-        }
+        onClick={() => window.open(getMediaSrc(message.mediaUrl), "_blank")}
       />
 
       {message.body && (
@@ -96,9 +94,7 @@ function AudioMessage({ message, className }: any) {
 function StickerMessage({ message }: any) {
   return (
     <div
-      className={`flex flex-col ${
-        message.fromMe ? "self-end" : "self-start"
-      }`}
+      className={`flex flex-col ${message.fromMe ? "self-end" : "self-start"}`}
     >
       <img
         src={getMediaSrc(message.mediaUrl)}
