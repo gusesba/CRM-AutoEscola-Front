@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { ArrowUpDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { BuscarAgendamentos } from "@/services/agendamentoService";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
 
 type Agendamento = {
   id: number;
@@ -29,6 +30,7 @@ type Filtro = {
   cliente?: string;
   dataAgendamentoDe?: string;
   dataAgendamentoAte?: string;
+  vendedorId?: string;
   page: number;
   pageSize: number;
   orderBy?: string;
@@ -75,6 +77,7 @@ async function buscarAgendamentos(
     params.append("dataAgendamentoDe", filtro.dataAgendamentoDe);
   if (filtro.dataAgendamentoAte)
     params.append("dataAgendamentoAte", filtro.dataAgendamentoAte);
+  if (filtro.vendedorId) params.append("VendedorId", filtro.vendedorId);
   params.append("page", filtro.page.toString());
   params.append("pageSize", filtro.pageSize.toString());
   if (filtro.orderBy) params.append("orderBy", filtro.orderBy);
@@ -85,6 +88,7 @@ async function buscarAgendamentos(
 }
 
 export default function AgendamentosDiarios() {
+  const { user } = useAuth();
   const today = getTodayBrazil();
   const [agendamentos, setAgendamentos] = useState<Agendamento[]>([]);
   const [dataSelecionada, setDataSelecionada] = useState<string>(today);
@@ -115,8 +119,19 @@ export default function AgendamentosDiarios() {
   };
 
   useEffect(() => {
+    if (!filtro.vendedorId) return;
     carregarAgendamentos();
   }, [filtro]);
+
+  useEffect(() => {
+    if (!user?.UserId) return;
+
+    setFiltro((prev) => ({
+      ...prev,
+      vendedorId: user.UserId,
+      page: 1,
+    }));
+  }, [user]);
 
   const carregarAgendamentos = async () => {
     try {
