@@ -92,6 +92,9 @@ export default function AgendamentosDiarios() {
   const today = getTodayBrazil();
   const [agendamentos, setAgendamentos] = useState<Agendamento[]>([]);
   const [dataSelecionada, setDataSelecionada] = useState<string>(today);
+  const [dataFinalSelecionada, setDataFinalSelecionada] =
+    useState<string>(today);
+  const [usarDataFinal, setUsarDataFinal] = useState(false);
   const [filtro, setFiltro] = useState<Filtro>({
     page: 1,
     pageSize: 10,
@@ -113,7 +116,36 @@ export default function AgendamentosDiarios() {
     setFiltro((prev) => ({
       ...prev,
       dataAgendamentoDe: `${data}T00:00:00`,
+      dataAgendamentoAte: usarDataFinal
+        ? `${dataFinalSelecionada}T23:59:59`
+        : `${data}T23:59:59`,
+      page: 1,
+    }));
+  };
+
+  const handleDataFinalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const data = e.target.value;
+
+    setDataFinalSelecionada(data);
+
+    setFiltro((prev) => ({
+      ...prev,
       dataAgendamentoAte: `${data}T23:59:59`,
+      page: 1,
+    }));
+  };
+
+  const handleUsarDataFinalChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const habilitar = e.target.checked;
+    setUsarDataFinal(habilitar);
+
+    setFiltro((prev) => ({
+      ...prev,
+      dataAgendamentoAte: habilitar
+        ? `${dataFinalSelecionada}T23:59:59`
+        : `${dataSelecionada}T23:59:59`,
       page: 1,
     }));
   };
@@ -175,13 +207,28 @@ export default function AgendamentosDiarios() {
         </h1>
 
         {/* Filtros adicionais */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-4 gap-3">
           <input
             type="date"
             value={dataSelecionada}
             onChange={handleDataChange}
             className="p-2 border rounded-lg bg-background text-sm focus:ring-2 focus:ring-primary outline-none transition"
           />
+          <input
+            type="date"
+            value={dataFinalSelecionada}
+            onChange={handleDataFinalChange}
+            disabled={!usarDataFinal}
+            className="p-2 border rounded-lg bg-background text-sm focus:ring-2 focus:ring-primary outline-none transition disabled:opacity-50"
+          />
+          <label className="flex items-center gap-2 text-sm text-muted-foreground">
+            <input
+              type="checkbox"
+              checked={usarDataFinal}
+              onChange={handleUsarDataFinalChange}
+            />
+            Usar data final
+          </label>
           <input
             name="cliente"
             type="text"
