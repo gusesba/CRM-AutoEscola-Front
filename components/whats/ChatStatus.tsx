@@ -60,8 +60,15 @@ export function ChatVendaStatus({
               const numeroSemPais = chat?.id
                 .replace(/\D/g, "")
                 .replace(/^(00)?55/, "");
+              const parametros = new URLSearchParams();
+              if (numeroSemPais) {
+                parametros.set("contato", numeroSemPais);
+              }
+              if (chat?.name) {
+                parametros.set("cliente", chat.name);
+              }
               window.open(
-                `/venda/novo?contato=${numeroSemPais}`,
+                `/venda/novo?${parametros.toString()}`,
                 "_blank",
                 "noopener,noreferrer"
               );

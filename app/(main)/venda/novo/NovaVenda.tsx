@@ -69,7 +69,11 @@ export default function NovaVenda() {
     if (contatoParam) {
       setValue("contato", contatoParam);
     }
-  }, [searchParams]);
+    const clienteParam = searchParams.get("cliente");
+    if (clienteParam) {
+      setValue("cliente", clienteParam);
+    }
+  }, [searchParams, setValue]);
 
   useEffect(() => {
     const carregarListas = async () => {
