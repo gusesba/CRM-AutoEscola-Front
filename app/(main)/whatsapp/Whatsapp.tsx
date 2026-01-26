@@ -177,11 +177,9 @@ export default function Home({ onDisconnect, disconnecting }: HomeProps) {
     const term = chatFilter.trim().toLowerCase();
     if (!term) return chats;
     return chats.filter((chat) => {
-      const lastMessageBody = chat.lastMessage?.body ?? "";
       return (
         chat.name.toLowerCase().includes(term) ||
-        chat.id.toLowerCase().includes(term) ||
-        lastMessageBody.toLowerCase().includes(term)
+        chat.id.toLowerCase().includes(term)
       );
     });
   }, [chatFilter, chats]);

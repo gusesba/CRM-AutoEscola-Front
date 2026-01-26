@@ -33,7 +33,7 @@ export function ChatList({
           type="text"
           value={filterValue}
           onChange={(event) => onFilterChange(event.target.value)}
-          placeholder="Pesquisar por nome, ID ou mensagem"
+          placeholder="Pesquisar por nome ou ID"
           className="w-full rounded-full border border-gray-200 bg-gray-50 px-4 py-2 text-sm text-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#25d366]"
         />
       </div>
