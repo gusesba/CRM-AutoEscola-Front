@@ -70,6 +70,7 @@ export default function Backup() {
   >([]);
   const [loadingUsuarios, setLoadingUsuarios] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState("");
+  const [chatFilter, setChatFilter] = useState("");
 
   useEffect(() => {
     if (!user?.UserId) return;
@@ -138,6 +139,16 @@ export default function Backup() {
   }, [activeUserId]);
 
   const selectedChat = chats.find((c) => c.id === selectedChatId);
+  const filteredChats = useMemo(() => {
+    const term = chatFilter.trim().toLowerCase();
+    if (!term) return chats;
+    return chats.filter((chat) => {
+      return (
+        chat.name.toLowerCase().includes(term) ||
+        chat.id.toLowerCase().includes(term)
+      );
+    });
+  }, [chatFilter, chats]);
   const gruposPorPagina = 3;
   const gruposChatPaginados = gruposChat.slice(
     grupoChatIndex * gruposPorPagina,
@@ -428,8 +439,10 @@ export default function Backup() {
           {loadingChats && <ChatsLoadingOverlay />}
 
           <ChatList
-            chats={chats}
+            chats={filteredChats}
             selectedChatId={selectedChatId}
+            filterValue={chatFilter}
+            onFilterChange={setChatFilter}
             onSelect={(id) => {
               setSelectedChatId(id);
 
