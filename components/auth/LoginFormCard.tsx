@@ -30,17 +30,17 @@ export default function LoginFormCard() {
       await Login(data);
 
       toast.success("Logado com sucesso!");
-      await router.push("/vendedor/novo");
+      await router.push("/agendamento/diario");
     } catch (error: any) {
       console.error(error);
 
       if (
-         error.message === "Falha ao fazer login. Verifique suas credenciais."
-       ) {
-         toast.error("Credenciais inválidas. Tente novamente.");
-       } else {
-         toast.error("Falha inesperada no login. Tente novamente mais tarde.");
-       }
+        error.message === "Falha ao fazer login. Verifique suas credenciais."
+      ) {
+        toast.error("Credenciais inválidas. Tente novamente.");
+      } else {
+        toast.error("Falha inesperada no login. Tente novamente mais tarde.");
+      }
     } finally {
       setIsLoading(false);
     }
