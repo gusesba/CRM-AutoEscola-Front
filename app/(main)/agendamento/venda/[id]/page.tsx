@@ -62,7 +62,7 @@ const formatarContato = (valor?: string) => {
 };
 
 async function buscarAgendamentos(
-  filtro: Filtro
+  filtro: Filtro,
 ): Promise<PagedResult<Agendamento>> {
   const params = new URLSearchParams();
   if (filtro.vendaId) params.append("vendaId", filtro.vendaId.toString());
@@ -106,7 +106,7 @@ export default function AgendamentosDiarios() {
 
   useEffect(() => {
     carregarAgendamentos();
-  }, [filtro]);
+  }, [filtro, venda]);
 
   const carregarAgendamentos = async () => {
     try {
@@ -240,7 +240,7 @@ export default function AgendamentosDiarios() {
                     <td className="px-4 py-2">
                       {new Date(
                         new Date(a.dataAgendamento).getTime() +
-                          3 * 60 * 60 * 1000
+                          3 * 60 * 60 * 1000,
                       ).toLocaleString()}
                     </td>
                     <td className="px-4 py-2">{a.obs}</td>
