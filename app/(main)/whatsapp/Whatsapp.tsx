@@ -76,6 +76,7 @@ export default function Home({ onDisconnect, disconnecting }: HomeProps) {
   >([]);
   const [loadingUsuarios, setLoadingUsuarios] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState("");
+  const [chatFilter, setChatFilter] = useState("");
 
   useEffect(() => {
     if (!user?.UserId) return;
@@ -172,6 +173,18 @@ export default function Home({ onDisconnect, disconnecting }: HomeProps) {
   });
 
   const selectedChat = chats.find((c) => c.id === selectedChatId);
+  const filteredChats = useMemo(() => {
+    const term = chatFilter.trim().toLowerCase();
+    if (!term) return chats;
+    return chats.filter((chat) => {
+      const lastMessageBody = chat.lastMessage?.body ?? "";
+      return (
+        chat.name.toLowerCase().includes(term) ||
+        chat.id.toLowerCase().includes(term) ||
+        lastMessageBody.toLowerCase().includes(term)
+      );
+    });
+  }, [chatFilter, chats]);
   const gruposPorPagina = 3;
   const gruposChatPaginados = gruposChat.slice(
     grupoChatIndex * gruposPorPagina,
@@ -461,8 +474,10 @@ export default function Home({ onDisconnect, disconnecting }: HomeProps) {
           {loadingChats && <ChatsLoadingOverlay />}
 
           <ChatList
-            chats={chats}
+            chats={filteredChats}
             selectedChatId={selectedChatId}
+            filterValue={chatFilter}
+            onFilterChange={setChatFilter}
             onSelect={(id) => {
               setSelectedChatId(id);
 
