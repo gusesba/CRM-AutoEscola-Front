@@ -135,13 +135,35 @@ export default function Home({ onDisconnect, disconnecting }: HomeProps) {
 
   useEffect(() => {
     if (!activeUserId) return;
-    setLoadingChats(true);
-    setSelectedChatId(null);
-    setChats([]);
-    getConversations(activeUserId)
-      .then(setChats)
-      .catch(console.error)
-      .finally(() => setLoadingChats(false));
+    let mounted = true;
+    const fetchChats = async () => {
+      setLoadingChats(true);
+      setSelectedChatId(null);
+      setChats([]);
+      try {
+        for (let attempt = 0; attempt < 2; attempt += 1) {
+          try {
+            const data = await getConversations(activeUserId);
+            if (!mounted) return;
+            setChats(data);
+            return;
+          } catch (error) {
+            console.error(error);
+            if (attempt === 1) return;
+          }
+        }
+      } finally {
+        if (mounted) {
+          setLoadingChats(false);
+        }
+      }
+    };
+
+    fetchChats();
+
+    return () => {
+      mounted = false;
+    };
   }, [activeUserId]);
 
   // 🔌 SOCKET GLOBAL
