@@ -155,14 +155,22 @@ export const BuscarDashboard = async (parametros: string) => {
 
 export async function getChatStatus(
   chatId: string,
-  userId: string
+  userId: string,
+  contato?: string | null,
 ): Promise<ChatStatusDto> {
   try {
+    const params = new URLSearchParams({
+      whatsappChatId: chatId,
+      whatsappUserId: userId,
+    });
+    if (contato) {
+      params.set("contato", contato);
+    }
     return await apiFetch(
-      `/venda/whatsapp?whatsappChatId=${chatId}&whatsappUserId=${userId}`,
+      `/venda/whatsapp?${params.toString()}`,
       {
         method: "GET",
-      }
+      },
     );
   } catch (error) {
     console.error("Erro ao buscar Chat:", error);

@@ -16,6 +16,7 @@ import {
   vincularVendaWhats,
 } from "@/services/vendaService";
 import { ChatVendaStatus } from "./ChatStatus";
+import { normalizarContato } from "./normalizarContato";
 
 function isSameDay(firstTimestamp: number, secondTimestamp: number) {
   const firstDate = new Date(firstTimestamp * 1000);
@@ -105,7 +106,8 @@ export const ChatWindow = React.memo(function ChatWindow({
   const desvincularVenda = async (vendaWhatsappId: number) => {
     await desvincularVendaWhats(vendaWhatsappId);
     if (!chat || !whatsappUserId) return;
-    const updatedStatus = await getChatStatus(chat.id, whatsappUserId);
+    const numero = normalizarContato(chat);
+    const updatedStatus = await getChatStatus(chat.id, whatsappUserId, numero);
     setStatus(updatedStatus);
   };
 
@@ -150,8 +152,11 @@ export const ChatWindow = React.memo(function ChatWindow({
   useEffect(() => {
     if (!chat || !whatsappUserId) return;
 
-    getChatStatus(chat.id, whatsappUserId).then(setStatus).catch(console.error);
-  }, [chat?.id, whatsappUserId]);
+    const numero = normalizarContato(chat);
+    getChatStatus(chat.id, whatsappUserId, numero)
+      .then(setStatus)
+      .catch(console.error);
+  }, [chat?.id, chat?.isGroup, chat?.name, whatsappUserId]);
 
   useEffect(() => {
     if (!chat?.lastMessage) return;

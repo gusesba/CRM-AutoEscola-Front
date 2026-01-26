@@ -6,6 +6,7 @@ import { getConversations } from "@/services/whatsapp";
 import { ChatList } from "@/components/whats/ChatList";
 import { ChatWindow } from "@/components/whats/ChatWindow";
 import { ConfirmModal } from "@/components/ConfirmModal";
+import { normalizarContato } from "@/components/whats/normalizarContato";
 import { BatchSendModal } from "@/components/whats/BatchSendModal";
 import { useWhatsSocket } from "@/hooks/useWhatsSocket";
 import { Message } from "@/types/messages";
@@ -208,7 +209,8 @@ export default function Home({ onDisconnect, disconnecting }: HomeProps) {
       return;
     }
 
-    getChatStatus(selectedChatId, activeUserId)
+    const numero = normalizarContato(selectedChat);
+    getChatStatus(selectedChatId, activeUserId, numero)
       .then((data) => {
         setVendaWhatsappId(data?.venda?.vendaWhatsapp?.id ?? null);
       })
@@ -216,7 +218,7 @@ export default function Home({ onDisconnect, disconnecting }: HomeProps) {
         console.error(error);
         setVendaWhatsappId(null);
       });
-  }, [selectedChatId, activeUserId]);
+  }, [selectedChatId, activeUserId, selectedChat]);
 
   useEffect(() => {
     if (!modalAdicionarGrupoOpen || !activeUserId) return;

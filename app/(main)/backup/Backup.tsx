@@ -5,6 +5,7 @@ import { Chat } from "@/types/chat";
 import { ChatList } from "@/components/whats/ChatList";
 import { ChatWindow } from "@/components/whats/ChatWindow";
 import { ConfirmModal } from "@/components/ConfirmModal";
+import { normalizarContato } from "@/components/whats/normalizarContato";
 import { useAuth } from "@/hooks/useAuth";
 import { BuscarUsuarios } from "@/services/authService";
 import {
@@ -174,7 +175,8 @@ export default function Backup() {
       return;
     }
 
-    getChatStatus(selectedChatId, activeUserId)
+    const numero = normalizarContato(selectedChat);
+    getChatStatus(selectedChatId, activeUserId, numero)
       .then((data) => {
         setVendaWhatsappId(data?.venda?.vendaWhatsapp?.id ?? null);
       })
@@ -182,7 +184,7 @@ export default function Backup() {
         console.error(error);
         setVendaWhatsappId(null);
       });
-  }, [selectedChatId, activeUserId]);
+  }, [selectedChatId, activeUserId, selectedChat]);
 
   useEffect(() => {
     if (!modalAdicionarGrupoOpen || !activeUserId) return;
