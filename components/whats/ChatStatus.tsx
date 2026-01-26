@@ -4,6 +4,33 @@ import { useState } from "react";
 import { ConfirmModal } from "@/components/ConfirmModal";
 import { Chat, ChatStatusDto, WhatsStatusEnum } from "@/types/chat";
 
+function normalizarContato(
+  chat: { id?: string; name?: string; isGroup?: boolean } | null | undefined,
+) {
+  if (!chat || chat.isGroup) return null;
+
+  const id = chat.id ?? "";
+  const name = chat.name ?? "";
+
+  // 1) ID padrão de telefone: 55...@c.us
+  if (id.endsWith("@c.us")) {
+    const somenteDigitos = id.replace(/\D/g, ""); // remove @c.us etc
+    return somenteDigitos.replace(/^(00)?55/, ""); // tira 55 (e 0055)
+  }
+
+  // 2) Se for @lid (ou outro), tenta pegar do "name" caso seja telefone
+  const nameDigitos = name.replace(/\D/g, "");
+  // Heurística simples BR: com DDD fica 10 ou 11 dígitos (sem +55)
+  // Se vier com 55 na frente, remove.
+  const semPais = nameDigitos.replace(/^(00)?55/, "");
+  if (semPais.length === 10 || semPais.length === 11) {
+    return semPais;
+  }
+
+  // 3) Não consegui inferir número
+  return null;
+}
+
 export function ChatVendaStatus({
   status,
   onVincular,
@@ -57,20 +84,16 @@ export function ChatVendaStatus({
           <button
             className="underline hover:text-blue-800"
             onClick={() => {
-              const numeroSemPais = chat?.id
-                .replace(/\D/g, "")
-                .replace(/^(00)?55/, "");
-              const parametros = new URLSearchParams();
-              if (numeroSemPais) {
-                parametros.set("contato", numeroSemPais);
-              }
-              if (chat?.name) {
-                parametros.set("cliente", chat.name);
-              }
+              const numero = normalizarContato(chat);
+
+              const params = new URLSearchParams();
+              if (numero) params.set("contato", numero);
+              if (chat?.name) params.set("cliente", chat.name);
+
               window.open(
-                `/venda/novo?${parametros.toString()}`,
+                `/venda/novo?${params.toString()}`,
                 "_blank",
-                "noopener,noreferrer"
+                "noopener,noreferrer",
               );
             }}
           >
