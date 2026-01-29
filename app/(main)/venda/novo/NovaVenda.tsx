@@ -125,7 +125,8 @@ export default function NovaVenda() {
   const origemOptions = [
     { value: 1, label: "Presencialmente" },
     { value: 2, label: "Fone" },
-    { value: 3, label: "Email" },
+    { value: 3, label: "Site" },
+    { value: 4, label: "Redes Sociais" },
   ];
 
   const statusOptions = [
