@@ -20,6 +20,8 @@ export interface IVendaServicoDto {
   valorVenda: string;
   indicacao: string;
   dataNascimento: string;
+  dataRetorno?: string;
+  obsRetorno?: string;
   vendaWhatsapp?: {
     id: number;
     vendaId?: number;
@@ -56,6 +58,10 @@ export const CriarVenda = async (data: IVendaServicoDto) => {
           data.dataNascimento === "" || data.dataNascimento == null
             ? null
             : new Date(data.dataNascimento),
+        dataRetorno:
+          data.dataRetorno === "" || data.dataRetorno == null
+            ? null
+            : new Date(data.dataRetorno),
       }),
     });
   } catch (error) {
@@ -108,6 +114,10 @@ export const AtualizarVenda = async (id: string, data: any) => {
           data.dataNascimento === "" || data.dataNascimento == null
             ? null
             : new Date(data.dataNascimento),
+        dataRetorno:
+          data.dataRetorno === "" || data.dataRetorno == null
+            ? null
+            : new Date(data.dataRetorno),
       }),
     });
   } catch (error) {
