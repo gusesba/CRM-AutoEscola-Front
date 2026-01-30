@@ -186,7 +186,6 @@ export default function Backup() {
       return;
     }
 
-    //@ts-expect-error
     const numero = normalizarContato(selectedChat);
     getChatStatus(selectedChatId, activeUserId, numero)
       .then((data) => {
