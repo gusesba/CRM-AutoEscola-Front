@@ -31,6 +31,8 @@ type FormData = {
   valorVenda: string;
   indicacao: string;
   dataNascimento: string;
+  dataRetorno?: string;
+  obsRetorno?: string;
 };
 
 type OptionType = {
@@ -46,6 +48,7 @@ export default function NovaVenda() {
     formState: { errors, isSubmitting },
     reset,
     setValue,
+    watch,
   } = useForm<FormData>();
 
   const { isAdmin, user } = useAuth();
@@ -63,6 +66,7 @@ export default function NovaVenda() {
   );
   const router = useRouter();
   const searchParams = useSearchParams();
+  const obsRetornoValue = watch("obsRetorno");
 
   useEffect(() => {
     const contatoParam = searchParams.get("contato");
@@ -121,7 +125,8 @@ export default function NovaVenda() {
   const origemOptions = [
     { value: 1, label: "Presencialmente" },
     { value: 2, label: "Fone" },
-    { value: 3, label: "Email" },
+    { value: 3, label: "Site" },
+    { value: 4, label: "Redes Sociais" },
   ];
 
   const statusOptions = [
@@ -506,6 +511,42 @@ export default function NovaVenda() {
             </label>
             <textarea
               {...register("obs")}
+              className="w-full p-2 border rounded-lg bg-background focus:ring-2 focus:ring-primary"
+              rows={3}
+            />
+          </div>
+
+          {/* Retorno */}
+          <div>
+            <label className="block mb-1 text-sm font-medium text-muted-foreground">
+              Data de Retorno
+              {obsRetornoValue?.trim() ? " *" : ""}
+            </label>
+            <input
+              type="date"
+              {...register("dataRetorno", {
+                validate: (value) =>
+                  obsRetornoValue?.trim()
+                    ? value
+                      ? true
+                      : "Informe a data de retorno."
+                    : true,
+              })}
+              className="w-full p-2 border rounded-lg bg-background focus:ring-2 focus:ring-primary"
+            />
+            {errors.dataRetorno && (
+              <p className="text-error text-sm mt-1">
+                {errors.dataRetorno.message}
+              </p>
+            )}
+          </div>
+
+          <div className="md:col-span-1 lg:col-span-2">
+            <label className="block mb-1 text-sm font-medium text-muted-foreground">
+              Observação de Retorno
+            </label>
+            <textarea
+              {...register("obsRetorno")}
               className="w-full p-2 border rounded-lg bg-background focus:ring-2 focus:ring-primary"
               rows={3}
             />
