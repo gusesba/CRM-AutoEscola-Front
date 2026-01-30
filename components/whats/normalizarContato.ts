@@ -1,6 +1,9 @@
 import type { Chat } from "@/types/chat";
 
-type ContatoEntrada = Pick<Chat, "id" | "name" | "isGroup"> | null | undefined;
+type ContatoEntrada =
+  | Pick<Chat, "id" | "name" | "isGroup" | "nmr">
+  | null
+  | undefined;
 
 export function normalizarContato(chat: ContatoEntrada) {
   if (!chat || chat.isGroup) return null;
@@ -12,6 +15,10 @@ export function normalizarContato(chat: ContatoEntrada) {
   if (id.endsWith("@c.us")) {
     const somenteDigitos = id.replace(/\D/g, ""); // remove @c.us etc
     return somenteDigitos.replace(/^(00)?55/, ""); // tira 55 (e 0055)
+  }
+
+  if (id.endsWith("@lid") && chat.nmr) {
+    return chat.nmr.replace(/\D/g, "").replace(/^(00)?55/, "");
   }
 
   // 2) Se for @lid (ou outro), tenta pegar do "name" caso seja telefone
