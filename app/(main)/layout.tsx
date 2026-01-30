@@ -24,7 +24,7 @@ export default function RootLayout({
     <>
       <Header />
       <Sidebar />
-      <main className="bg-gray-100 w-[calc(100%-16rem)] h-[calc(100%-3.5rem)] fixed top-14 left-64 p-8 flex">
+      <main className="bg-gray-100 w-[calc(100%-16rem)] h-[calc(100%-3.5rem)] fixed top-14 left-64 p-8 flex overflow-y-auto">
         {children}
       </main>
     </>
