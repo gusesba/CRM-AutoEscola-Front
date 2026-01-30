@@ -135,7 +135,7 @@ export default function DashboardPage() {
     ===================== */
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="h-full w-full overflow-y-auto p-6 space-y-6">
       <h1 className="text-2xl font-semibold flex items-center gap-2">
         <BarChart3 />
         Dashboard de Leads e Vendas
