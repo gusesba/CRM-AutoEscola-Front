@@ -1,7 +1,7 @@
 import type { Chat } from "@/types/chat";
 
 type ContatoEntrada =
-  | Pick<Chat, "id" | "name" | "isGroup" | "nmr">
+  | (Pick<Chat, "id" | "name" | "isGroup"> & { nmr?: string | null })
   | null
   | undefined;
 
