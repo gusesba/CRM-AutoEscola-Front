@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+
 type Props = {
   qrCode?: string;
   status: "waiting" | "qr";
@@ -11,6 +13,16 @@ export function WhatsLogin({
   onDisconnect,
   disconnecting,
 }: Props) {
+  const [canShowDisconnect, setCanShowDisconnect] = useState(false);
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      setCanShowDisconnect(true);
+    }, 15000);
+
+    return () => clearTimeout(timeout);
+  }, []);
+
   return (
     <div className="flex-1 flex items-center justify-center bg-[#f0f2f5]">
       <div
@@ -43,7 +55,7 @@ export function WhatsLogin({
               <span className="text-gray-400">Gerando QR Code…</span>
             </div>
             <p className="text-sm text-gray-500">Aguardando autenticação…</p>
-            {onDisconnect ? (
+            {onDisconnect && canShowDisconnect ? (
               <button
                 type="button"
                 onClick={onDisconnect}
