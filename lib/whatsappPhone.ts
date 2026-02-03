@@ -1,5 +1,5 @@
 const PHONE_MESSAGE_ALLOWED = /^\s*\+?[\d()\s.-]+\s*$/;
-const PHONE_IN_TEXT = /(\+?\d[\d()\s.-]{8,}\d)/g;
+const PHONE_IN_TEXT = /(\+?\d[\d()\s.\n-]{8,}\d)/g;
 
 export function getPhoneDigits(text: string) {
   if (!text || !PHONE_MESSAGE_ALLOWED.test(text)) {
