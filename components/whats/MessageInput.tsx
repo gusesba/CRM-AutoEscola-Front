@@ -9,6 +9,7 @@ type Props = {
   onChange: (v: string) => void;
   onSend: (attachment?: File) => void;
   disabled?: boolean;
+  disableAttachments?: boolean;
 };
 
 type Attachment = {
@@ -17,7 +18,13 @@ type Attachment = {
   previewUrl?: string;
 };
 
-export function MessageInput({ value, onChange, onSend, disabled }: Props) {
+export function MessageInput({
+  value,
+  onChange,
+  onSend,
+  disabled,
+  disableAttachments,
+}: Props) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -37,7 +44,7 @@ export function MessageInput({ value, onChange, onSend, disabled }: Props) {
 
   /** Seleção de arquivo */
   function handleFileSelect(file: File) {
-    if (disabled) return;
+    if (disabled || disableAttachments) return;
     const type = file.type.startsWith("image")
       ? "image"
       : file.type.startsWith("video")
@@ -124,7 +131,7 @@ export function MessageInput({ value, onChange, onSend, disabled }: Props) {
           <button
             onClick={() => fileInputRef.current?.click()}
             className="p-2 text-gray-600 hover:bg-black/5 rounded-full disabled:cursor-not-allowed disabled:opacity-60"
-            disabled={disabled}
+            disabled={disabled || disableAttachments}
           >
             <Paperclip size={20} />
           </button>
@@ -133,7 +140,7 @@ export function MessageInput({ value, onChange, onSend, disabled }: Props) {
             ref={fileInputRef}
             type="file"
             hidden
-            disabled={disabled}
+            disabled={disabled || disableAttachments}
             onChange={(e) => {
               const file = e.target.files?.[0];
               if (file) handleFileSelect(file);

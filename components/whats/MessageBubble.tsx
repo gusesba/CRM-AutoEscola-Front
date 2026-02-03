@@ -1,8 +1,10 @@
 import { formatWhatsText } from "@/lib/formatWhatsText";
+import { extractPhoneNumbers } from "@/lib/whatsappPhone";
 import { Message } from "@/types/messages";
 
 type Props = {
   message: Message;
+  onPhoneNumberClick?: (number: string) => void;
 };
 
 const mediaUrl = process.env.NEXT_PUBLIC_WHATS_URL;
@@ -44,6 +46,55 @@ function MessageTime({ message }: { message: Message }) {
   );
 }
 
+function renderMessageBody(
+  text: string,
+  onPhoneNumberClick?: (number: string) => void
+) {
+  if (!onPhoneNumberClick) {
+    return formatWhatsText(text);
+  }
+
+  const matches = extractPhoneNumbers(text);
+  if (matches.length === 0) {
+    return formatWhatsText(text);
+  }
+
+  const nodes: React.ReactNode[] = [];
+  let cursor = 0;
+
+  matches.forEach((match, index) => {
+    const start = text.indexOf(match.raw, cursor);
+    if (start > cursor) {
+      nodes.push(
+        <span key={`text-${index}`}>
+          {formatWhatsText(text.slice(cursor, start))}
+        </span>
+      );
+    }
+
+    nodes.push(
+      <button
+        key={`phone-${index}`}
+        type="button"
+        onClick={() => onPhoneNumberClick(match.digits)}
+        className="text-[#25d366] font-semibold hover:underline"
+      >
+        {match.raw}
+      </button>
+    );
+
+    cursor = start + match.raw.length;
+  });
+
+  if (cursor < text.length) {
+    nodes.push(
+      <span key="text-end">{formatWhatsText(text.slice(cursor))}</span>
+    );
+  }
+
+  return nodes;
+}
+
 function ImageMessage({ message, className }: any) {
   return (
     <div className={`${className} p-1 flex flex-col`}>
@@ -61,7 +112,9 @@ function ImageMessage({ message, className }: any) {
       />
 
       {message.body && (
-        <p className="mt-1 text-sm">{formatWhatsText(message.body)}</p>
+        <div className="mt-1 text-sm">
+          {renderMessageBody(message.body, message.onPhoneNumberClick)}
+        </div>
       )}
       <MessageTime message={message} />
     </div>
@@ -133,16 +186,16 @@ function DocumentMessage({ message, className }: any) {
 
       {/* 📎 Legenda / mensagem */}
       {message.body && (
-        <p className="text-sm whitespace-pre-wrap break-words pl-2 pr-2 pb-2">
-          {formatWhatsText(message.body)}
-        </p>
+        <div className="text-sm whitespace-pre-wrap break-words pl-2 pr-2 pb-2">
+          {renderMessageBody(message.body, message.onPhoneNumberClick)}
+        </div>
       )}
       <MessageTime message={message} />
     </div>
   );
 }
 
-export function MessageBubble({ message }: Props) {
+export function MessageBubble({ message, onPhoneNumberClick }: Props) {
   const base =
     "max-w-[70%] rounded-lg text-sm whitespace-pre-wrap break-words flex flex-col";
 
@@ -152,7 +205,12 @@ export function MessageBubble({ message }: Props) {
 
   switch (message.type) {
     case "image":
-      return <ImageMessage message={message} className={`${base} ${bubble}`} />;
+      return (
+        <ImageMessage
+          message={{ ...message, onPhoneNumberClick }}
+          className={`${base} ${bubble}`}
+        />
+      );
 
     case "video":
       return <VideoMessage message={message} className={`${base} ${bubble}`} />;
@@ -170,13 +228,16 @@ export function MessageBubble({ message }: Props) {
 
     case "document":
       return (
-        <DocumentMessage message={message} className={`${base} ${bubble}`} />
+        <DocumentMessage
+          message={{ ...message, onPhoneNumberClick }}
+          className={`${base} ${bubble}`}
+        />
       );
 
     default:
       return (
         <div className={`${base} ${bubble} px-3 py-2`}>
-          {formatWhatsText(message.body)}
+          {renderMessageBody(message.body, onPhoneNumberClick)}
           <MessageTime message={message} />
         </div>
       );
