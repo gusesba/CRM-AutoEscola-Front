@@ -1,5 +1,5 @@
 const PHONE_MESSAGE_ALLOWED = /^\s*\+?[\d()\s.-]+\s*$/;
-const PHONE_IN_TEXT = /(\+?\d[\d()\s.\n-]{8,}\d)/g;
+const PHONE_IN_TEXT = /(\+?\d[\d().() -]{8,}\d)/g;
 
 export function getPhoneDigits(text: string) {
   if (!text || !PHONE_MESSAGE_ALLOWED.test(text)) {
@@ -63,7 +63,9 @@ export function isPhoneMatch(candidate: string, reference: string) {
   const candidateVariants = buildPhoneVariants(candidate);
   const referenceVariants = buildPhoneVariants(reference);
 
-  return candidateVariants.some((variant) => referenceVariants.includes(variant));
+  return candidateVariants.some((variant) =>
+    referenceVariants.includes(variant),
+  );
 }
 
 export function isPhoneNumberMessage(text: string) {
