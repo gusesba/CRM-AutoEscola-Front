@@ -21,7 +21,7 @@ import {
 } from "@/services/whatsappGroupService";
 import { getChatStatus } from "@/services/vendaService";
 import { ChevronLeft, ChevronRight, Plus, X } from "lucide-react";
-import { getPhoneDigits, normalizePhoneDigits } from "@/lib/whatsappPhone";
+import { getPhoneDigits, isPhoneMatch } from "@/lib/whatsappPhone";
 
 function ChatsLoadingOverlay() {
   return (
@@ -518,12 +518,10 @@ export default function Home({ onDisconnect, disconnecting }: HomeProps) {
             whatsappUserId={activeUserId}
             pendingNumber={pendingChatNumber}
             onPhoneNumberClick={(number) => {
-              const normalized = normalizePhoneDigits(number);
-              if (!normalized) return;
-
               const existingChat = chats.find((chat) => {
                 const chatNumber = normalizarContato(chat);
-                return chatNumber === normalized;
+                if (!chatNumber) return false;
+                return isPhoneMatch(chatNumber, number);
               });
 
               if (existingChat) {

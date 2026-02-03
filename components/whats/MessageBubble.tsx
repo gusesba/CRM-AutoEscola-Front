@@ -1,5 +1,5 @@
 import { formatWhatsText } from "@/lib/formatWhatsText";
-import { getPhoneDigits } from "@/lib/whatsappPhone";
+import { extractPhoneNumbers } from "@/lib/whatsappPhone";
 import { Message } from "@/types/messages";
 
 type Props = {
@@ -46,11 +46,56 @@ function MessageTime({ message }: { message: Message }) {
   );
 }
 
+function renderMessageBody(
+  text: string,
+  onPhoneNumberClick?: (number: string) => void
+) {
+  if (!onPhoneNumberClick) {
+    return formatWhatsText(text);
+  }
+
+  const matches = extractPhoneNumbers(text);
+  if (matches.length === 0) {
+    return formatWhatsText(text);
+  }
+
+  const nodes: React.ReactNode[] = [];
+  let cursor = 0;
+
+  matches.forEach((match, index) => {
+    const start = text.indexOf(match.raw, cursor);
+    if (start > cursor) {
+      nodes.push(
+        <span key={`text-${index}`}>
+          {formatWhatsText(text.slice(cursor, start))}
+        </span>
+      );
+    }
+
+    nodes.push(
+      <button
+        key={`phone-${index}`}
+        type="button"
+        onClick={() => onPhoneNumberClick(match.digits)}
+        className="text-[#25d366] font-semibold hover:underline"
+      >
+        {match.raw}
+      </button>
+    );
+
+    cursor = start + match.raw.length;
+  });
+
+  if (cursor < text.length) {
+    nodes.push(
+      <span key="text-end">{formatWhatsText(text.slice(cursor))}</span>
+    );
+  }
+
+  return nodes;
+}
+
 function ImageMessage({ message, className }: any) {
-  const phoneDigits =
-    message.body && message.onPhoneNumberClick
-      ? getPhoneDigits(message.body)
-      : null;
   return (
     <div className={`${className} p-1 flex flex-col`}>
       <img
@@ -68,17 +113,7 @@ function ImageMessage({ message, className }: any) {
 
       {message.body && (
         <div className="mt-1 text-sm">
-          {phoneDigits ? (
-            <button
-              type="button"
-              onClick={() => message.onPhoneNumberClick?.(phoneDigits)}
-              className="text-[#25d366] font-semibold hover:underline"
-            >
-              {message.body.trim()}
-            </button>
-          ) : (
-            formatWhatsText(message.body)
-          )}
+          {renderMessageBody(message.body, message.onPhoneNumberClick)}
         </div>
       )}
       <MessageTime message={message} />
@@ -126,10 +161,6 @@ function StickerMessage({ message }: any) {
 
 function DocumentMessage({ message, className }: any) {
   const fileName = message.fileName || "Documento";
-  const phoneDigits =
-    message.body && message.onPhoneNumberClick
-      ? getPhoneDigits(message.body)
-      : null;
 
   return (
     <div className={`${className} p-1 flex flex-col gap-1`}>
@@ -156,17 +187,7 @@ function DocumentMessage({ message, className }: any) {
       {/* 📎 Legenda / mensagem */}
       {message.body && (
         <div className="text-sm whitespace-pre-wrap break-words pl-2 pr-2 pb-2">
-          {phoneDigits ? (
-            <button
-              type="button"
-              onClick={() => message.onPhoneNumberClick?.(phoneDigits)}
-              className="text-[#25d366] font-semibold hover:underline"
-            >
-              {message.body.trim()}
-            </button>
-          ) : (
-            formatWhatsText(message.body)
-          )}
+          {renderMessageBody(message.body, message.onPhoneNumberClick)}
         </div>
       )}
       <MessageTime message={message} />
@@ -181,18 +202,6 @@ export function MessageBubble({ message, onPhoneNumberClick }: Props) {
   const bubble = message.fromMe
     ? "bg-[#d9fdd3] self-end"
     : "bg-white self-start";
-
-  const phoneDigits =
-    message.body && onPhoneNumberClick ? getPhoneDigits(message.body) : null;
-  const phoneButton = phoneDigits ? (
-    <button
-      type="button"
-      onClick={() => onPhoneNumberClick?.(phoneDigits)}
-      className="text-[#25d366] font-semibold hover:underline"
-    >
-      {message.body.trim()}
-    </button>
-  ) : null;
 
   switch (message.type) {
     case "image":
@@ -228,7 +237,7 @@ export function MessageBubble({ message, onPhoneNumberClick }: Props) {
     default:
       return (
         <div className={`${base} ${bubble} px-3 py-2`}>
-          {phoneButton ?? formatWhatsText(message.body)}
+          {renderMessageBody(message.body, onPhoneNumberClick)}
           <MessageTime message={message} />
         </div>
       );
