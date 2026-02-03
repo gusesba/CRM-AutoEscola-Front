@@ -314,6 +314,12 @@ export default function Backup() {
     }
   };
 
+  const handleArchiveToggle = (chatId: string, archived: boolean) => {
+    setChats((prev) =>
+      prev.map((chat) => (chat.id === chatId ? { ...chat, archived } : chat))
+    );
+  };
+
   return (
     <div className="flex-1 bg-[#f0f2f5]">
       <div className="mx-auto max-w-[1400px] mt-[-30px]">
@@ -460,6 +466,7 @@ export default function Backup() {
               fetchBackupMessages(chatId, limit)
             }
             disableSend
+            onArchiveToggle={handleArchiveToggle}
           />
         </div>
       </div>
