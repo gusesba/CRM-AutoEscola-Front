@@ -8,6 +8,7 @@ import {
   sendMediaMessage,
   sendMessage,
   sendMessageToNumber,
+  toggleArchiveChat,
 } from "@/services/whatsapp";
 import { MessageBubble } from "./MessageBubble";
 import { MessageInput } from "./MessageInput";
@@ -77,6 +78,7 @@ type Props = {
   pendingNumber?: string | null;
   onPhoneNumberClick?: (number: string) => void;
   onChatCreated?: (chat: Chat) => void;
+  onArchiveToggle?: (chatId: string, archived: boolean) => void;
 };
 
 export const ChatWindow = React.memo(function ChatWindow({
@@ -87,6 +89,7 @@ export const ChatWindow = React.memo(function ChatWindow({
   pendingNumber,
   onPhoneNumberClick,
   onChatCreated,
+  onArchiveToggle,
 }: Props) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
@@ -96,6 +99,8 @@ export const ChatWindow = React.memo(function ChatWindow({
   const [text, setText] = useState("");
   const [status, setStatus] = useState<ChatStatusDto | null>(null);
   const [sendError, setSendError] = useState<string | null>(null);
+  const [archiveError, setArchiveError] = useState<string | null>(null);
+  const [isArchiving, setIsArchiving] = useState(false);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
   const shouldAutoScrollRef = useRef(true);
@@ -123,6 +128,26 @@ export const ChatWindow = React.memo(function ChatWindow({
 
   const fetchMessagesHandler = fetchMessagesFn ?? fetchMessages;
 
+  const handleToggleArchive = useCallback(async () => {
+    if (!chat || !whatsappUserId) return;
+    setIsArchiving(true);
+    setArchiveError(null);
+    try {
+      const nextArchived = !chat.archived;
+      await toggleArchiveChat(whatsappUserId, chat.id, nextArchived);
+      onArchiveToggle?.(chat.id, nextArchived);
+    } catch (error) {
+      console.error(error);
+      setArchiveError(
+        error instanceof Error
+          ? error.message
+          : "Erro ao arquivar conversa."
+      );
+    } finally {
+      setIsArchiving(false);
+    }
+  }, [chat, onArchiveToggle, whatsappUserId]);
+
   useEffect(() => {
     if (!isNewChat) return;
     setMessages([]);
@@ -130,6 +155,7 @@ export const ChatWindow = React.memo(function ChatWindow({
     setHasReachedStart(false);
     setStatus(null);
     setSendError(null);
+    setArchiveError(null);
   }, [isNewChat, pendingNumber]);
 
   // 📥 Buscar mensagens ao trocar de chat
@@ -140,6 +166,7 @@ export const ChatWindow = React.memo(function ChatWindow({
     setLimit(50);
     setHasReachedStart(false);
     setSendError(null);
+    setArchiveError(null);
     shouldAutoScrollRef.current = true;
 
     fetchMessagesHandler(whatsappUserId, chat.id, 50)
@@ -327,14 +354,30 @@ export const ChatWindow = React.memo(function ChatWindow({
           {/* <span className="text-xs text-gray-500">Status aqui</span> */}
           {/* depois dá pra ligar isso ao socket */}
         </div>
-        {status && chat && (
-          <ChatVendaStatus
-            status={status}
-            onVincular={vincularVenda}
-            onDesvincular={desvincularVenda}
-            chat={chat}
-          />
-        )}
+        <div className="ml-auto flex items-center gap-3">
+          {status && chat && (
+            <ChatVendaStatus
+              status={status}
+              onVincular={vincularVenda}
+              onDesvincular={desvincularVenda}
+              chat={chat}
+            />
+          )}
+          {chat && !isNewChat && whatsappUserId && (
+            <button
+              type="button"
+              onClick={handleToggleArchive}
+              disabled={isArchiving}
+              className="rounded-lg border border-gray-200 px-3 py-2 text-xs font-semibold text-gray-600 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
+            >
+              {isArchiving
+                ? "Processando..."
+                : chat.archived
+                  ? "Desarquivar"
+                  : "Arquivar"}
+            </button>
+          )}
+        </div>
       </header>
 
       {/* Mensagens */}
@@ -357,6 +400,13 @@ export const ChatWindow = React.memo(function ChatWindow({
           <div className="flex justify-center">
             <div className="px-4 py-2 rounded-full bg-red-100 text-red-700 text-xs shadow">
               {sendError}
+            </div>
+          </div>
+        )}
+        {archiveError && (
+          <div className="flex justify-center">
+            <div className="px-4 py-2 rounded-full bg-red-100 text-red-700 text-xs shadow">
+              {archiveError}
             </div>
           </div>
         )}

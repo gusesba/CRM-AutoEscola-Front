@@ -198,3 +198,26 @@ export async function removeWhatsSession(userId: string) {
 
   return res.json();
 }
+
+export async function toggleArchiveChat(
+  userId: string,
+  chatId: string,
+  arquivar: boolean
+) {
+  const token = getWhatsappToken();
+  const res = await fetch(buildWhatsappUrl(`/${userId}/arquivar`), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chatId,
+      arquivar,
+      ...(token ? { token } : {}),
+    }),
+  });
+
+  if (!res.ok) {
+    throw new Error("Erro ao arquivar conversa");
+  }
+
+  return res.json().catch(() => null);
+}
