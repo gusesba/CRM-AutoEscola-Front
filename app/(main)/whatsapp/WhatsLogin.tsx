@@ -1,9 +1,16 @@
 type Props = {
   qrCode?: string;
   status: "waiting" | "qr";
+  onDisconnect?: () => void;
+  disconnecting?: boolean;
 };
 
-export function WhatsLogin({ qrCode, status }: Props) {
+export function WhatsLogin({
+  qrCode,
+  status,
+  onDisconnect,
+  disconnecting,
+}: Props) {
   return (
     <div className="flex-1 flex items-center justify-center bg-[#f0f2f5]">
       <div
@@ -36,6 +43,16 @@ export function WhatsLogin({ qrCode, status }: Props) {
               <span className="text-gray-400">Gerando QR Code…</span>
             </div>
             <p className="text-sm text-gray-500">Aguardando autenticação…</p>
+            {onDisconnect ? (
+              <button
+                type="button"
+                onClick={onDisconnect}
+                disabled={disconnecting}
+                className="rounded-md border border-red-500 px-4 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {disconnecting ? "Removendo sessão..." : "Remover sessão"}
+              </button>
+            ) : null}
           </div>
         )}
       </div>
