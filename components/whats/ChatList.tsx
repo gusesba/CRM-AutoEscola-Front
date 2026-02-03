@@ -25,7 +25,7 @@ export function ChatList({
     (id: string) => {
       onSelect(id);
     },
-    [onSelect]
+    [onSelect],
   );
 
   const { activeChats, archivedChats, shouldExpandArchived } = useMemo(() => {
@@ -54,15 +54,6 @@ export function ChatList({
         />
       </div>
       <div className="flex-1 overflow-y-auto">
-        {activeChats.map((chat) => (
-          <ChatItem
-            key={chat.id}
-            chat={chat}
-            isSelected={chat.id === selectedChatId}
-            onSelect={handleSelect}
-          />
-        ))}
-
         {(archivedChats.length > 0 || shouldExpandArchived) && (
           <div className="px-3 py-2">
             <button
@@ -83,15 +74,27 @@ export function ChatList({
           </div>
         )}
 
-        {showArchivedList &&
-          archivedChats.map((chat) => (
-            <ChatItem
-              key={chat.id}
-              chat={chat}
-              isSelected={chat.id === selectedChatId}
-              onSelect={handleSelect}
-            />
-          ))}
+        {showArchivedList && (
+          <div className="border-b-2">
+            {archivedChats.map((chat) => (
+              <ChatItem
+                key={chat.id}
+                chat={chat}
+                isSelected={chat.id === selectedChatId}
+                onSelect={handleSelect}
+              />
+            ))}
+          </div>
+        )}
+
+        {activeChats.map((chat) => (
+          <ChatItem
+            key={chat.id}
+            chat={chat}
+            isSelected={chat.id === selectedChatId}
+            onSelect={handleSelect}
+          />
+        ))}
 
         {!hasAnyChats && (
           <p className="px-4 py-6 text-sm text-gray-500">
