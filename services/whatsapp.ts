@@ -95,6 +95,37 @@ export async function sendMessage(
   });
 }
 
+export type SendNumberMessageResponse = {
+  success: true;
+  chat: Chat;
+  normalizedNumber: string;
+};
+
+export async function sendMessageToNumber(
+  userId: string,
+  number: string,
+  message: string
+): Promise<SendNumberMessageResponse> {
+  const token = getWhatsappToken();
+  const res = await fetch(buildWhatsappUrl(`/${userId}/messages/number`), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      number,
+      message,
+      ...(token ? { token } : {}),
+    }),
+  });
+
+  const payload = await res.json().catch(() => null);
+
+  if (!res.ok) {
+    throw new Error(payload?.error || "Erro ao enviar mensagem");
+  }
+
+  return payload;
+}
+
 export async function sendMediaMessage(
   userId: string,
   chatId: string,

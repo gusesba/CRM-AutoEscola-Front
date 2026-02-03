@@ -1,8 +1,10 @@
 import { formatWhatsText } from "@/lib/formatWhatsText";
+import { getPhoneDigits } from "@/lib/whatsappPhone";
 import { Message } from "@/types/messages";
 
 type Props = {
   message: Message;
+  onPhoneNumberClick?: (number: string) => void;
 };
 
 const mediaUrl = process.env.NEXT_PUBLIC_WHATS_URL;
@@ -45,6 +47,10 @@ function MessageTime({ message }: { message: Message }) {
 }
 
 function ImageMessage({ message, className }: any) {
+  const phoneDigits =
+    message.body && message.onPhoneNumberClick
+      ? getPhoneDigits(message.body)
+      : null;
   return (
     <div className={`${className} p-1 flex flex-col`}>
       <img
@@ -61,7 +67,19 @@ function ImageMessage({ message, className }: any) {
       />
 
       {message.body && (
-        <p className="mt-1 text-sm">{formatWhatsText(message.body)}</p>
+        <div className="mt-1 text-sm">
+          {phoneDigits ? (
+            <button
+              type="button"
+              onClick={() => message.onPhoneNumberClick?.(phoneDigits)}
+              className="text-[#25d366] font-semibold hover:underline"
+            >
+              {message.body.trim()}
+            </button>
+          ) : (
+            formatWhatsText(message.body)
+          )}
+        </div>
       )}
       <MessageTime message={message} />
     </div>
@@ -108,6 +126,10 @@ function StickerMessage({ message }: any) {
 
 function DocumentMessage({ message, className }: any) {
   const fileName = message.fileName || "Documento";
+  const phoneDigits =
+    message.body && message.onPhoneNumberClick
+      ? getPhoneDigits(message.body)
+      : null;
 
   return (
     <div className={`${className} p-1 flex flex-col gap-1`}>
@@ -133,16 +155,26 @@ function DocumentMessage({ message, className }: any) {
 
       {/* 📎 Legenda / mensagem */}
       {message.body && (
-        <p className="text-sm whitespace-pre-wrap break-words pl-2 pr-2 pb-2">
-          {formatWhatsText(message.body)}
-        </p>
+        <div className="text-sm whitespace-pre-wrap break-words pl-2 pr-2 pb-2">
+          {phoneDigits ? (
+            <button
+              type="button"
+              onClick={() => message.onPhoneNumberClick?.(phoneDigits)}
+              className="text-[#25d366] font-semibold hover:underline"
+            >
+              {message.body.trim()}
+            </button>
+          ) : (
+            formatWhatsText(message.body)
+          )}
+        </div>
       )}
       <MessageTime message={message} />
     </div>
   );
 }
 
-export function MessageBubble({ message }: Props) {
+export function MessageBubble({ message, onPhoneNumberClick }: Props) {
   const base =
     "max-w-[70%] rounded-lg text-sm whitespace-pre-wrap break-words flex flex-col";
 
@@ -150,9 +182,26 @@ export function MessageBubble({ message }: Props) {
     ? "bg-[#d9fdd3] self-end"
     : "bg-white self-start";
 
+  const phoneDigits =
+    message.body && onPhoneNumberClick ? getPhoneDigits(message.body) : null;
+  const phoneButton = phoneDigits ? (
+    <button
+      type="button"
+      onClick={() => onPhoneNumberClick?.(phoneDigits)}
+      className="text-[#25d366] font-semibold hover:underline"
+    >
+      {message.body.trim()}
+    </button>
+  ) : null;
+
   switch (message.type) {
     case "image":
-      return <ImageMessage message={message} className={`${base} ${bubble}`} />;
+      return (
+        <ImageMessage
+          message={{ ...message, onPhoneNumberClick }}
+          className={`${base} ${bubble}`}
+        />
+      );
 
     case "video":
       return <VideoMessage message={message} className={`${base} ${bubble}`} />;
@@ -170,13 +219,16 @@ export function MessageBubble({ message }: Props) {
 
     case "document":
       return (
-        <DocumentMessage message={message} className={`${base} ${bubble}`} />
+        <DocumentMessage
+          message={{ ...message, onPhoneNumberClick }}
+          className={`${base} ${bubble}`}
+        />
       );
 
     default:
       return (
         <div className={`${base} ${bubble} px-3 py-2`}>
-          {formatWhatsText(message.body)}
+          {phoneButton ?? formatWhatsText(message.body)}
           <MessageTime message={message} />
         </div>
       );

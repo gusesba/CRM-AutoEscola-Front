@@ -21,6 +21,7 @@ import {
 } from "@/services/whatsappGroupService";
 import { getChatStatus } from "@/services/vendaService";
 import { ChevronLeft, ChevronRight, Plus, X } from "lucide-react";
+import { getPhoneDigits, normalizePhoneDigits } from "@/lib/whatsappPhone";
 
 function ChatsLoadingOverlay() {
   return (
@@ -77,6 +78,9 @@ export default function Home({ onDisconnect, disconnecting }: HomeProps) {
   const [loadingUsuarios, setLoadingUsuarios] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState("");
   const [chatFilter, setChatFilter] = useState("");
+  const [pendingChatNumber, setPendingChatNumber] = useState<string | null>(
+    null
+  );
 
   useEffect(() => {
     if (!user?.UserId) return;
@@ -500,6 +504,7 @@ export default function Home({ onDisconnect, disconnecting }: HomeProps) {
             onFilterChange={setChatFilter}
             onSelect={(id) => {
               setSelectedChatId(id);
+              setPendingChatNumber(null);
 
               // zera unread ao abrir
               setChats((prev) =>
@@ -508,7 +513,47 @@ export default function Home({ onDisconnect, disconnecting }: HomeProps) {
             }}
           />
 
-          <ChatWindow chat={selectedChat} whatsappUserId={activeUserId} />
+          <ChatWindow
+            chat={selectedChat}
+            whatsappUserId={activeUserId}
+            pendingNumber={pendingChatNumber}
+            onPhoneNumberClick={(number) => {
+              const normalized = normalizePhoneDigits(number);
+              if (!normalized) return;
+
+              const existingChat = chats.find((chat) => {
+                const chatNumber = normalizarContato(chat);
+                return chatNumber === normalized;
+              });
+
+              if (existingChat) {
+                setSelectedChatId(existingChat.id);
+                setPendingChatNumber(null);
+                return;
+              }
+
+              const digits = getPhoneDigits(number);
+              if (!digits) return;
+              setSelectedChatId(null);
+              setPendingChatNumber(digits);
+            }}
+            onChatCreated={(newChat) => {
+              setChats((prev) => {
+                const existingIndex = prev.findIndex(
+                  (chat) => chat.id === newChat.id
+                );
+                if (existingIndex === -1) {
+                  return [newChat, ...prev];
+                }
+
+                const updated = [...prev];
+                updated.splice(existingIndex, 1);
+                return [newChat, ...updated];
+              });
+              setSelectedChatId(newChat.id);
+              setPendingChatNumber(null);
+            }}
+          />
         </div>
       </div>
 
