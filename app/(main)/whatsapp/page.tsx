@@ -96,6 +96,8 @@ export default function WhatsPage() {
         <WhatsLogin
           qrCode={qrCode ?? undefined}
           status={status === "qr" ? "qr" : "waiting"}
+          onDisconnect={handleDisconnect}
+          disconnecting={disconnecting}
         />
       </div>
     </div>
