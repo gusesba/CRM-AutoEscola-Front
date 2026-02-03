@@ -4,6 +4,7 @@ export type Chat = {
   id: string;
   name: string;
   isGroup: boolean;
+  archived?: boolean;
   unreadCount: number;
   profilePicUrl?: string | null;
   lastMessage?: {
