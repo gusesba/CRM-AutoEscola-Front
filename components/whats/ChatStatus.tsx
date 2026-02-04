@@ -4,19 +4,25 @@ import { useState } from "react";
 import { ConfirmModal } from "@/components/ConfirmModal";
 import { Chat, ChatStatusDto, WhatsStatusEnum } from "@/types/chat";
 import { normalizarContato } from "./normalizarContato";
+import { addContactToAddressbook } from "@/services/whatsapp";
 
 export function ChatVendaStatus({
   status,
   onVincular,
   onDesvincular,
   chat,
+  whatsappUserId,
 }: {
   status: ChatStatusDto;
   onVincular: (vendaId: number) => void;
   onDesvincular: (vendaWhatsappId: number) => void;
   chat?: Chat;
+  whatsappUserId?: string;
 }) {
   const [confirmarDesvinculo, setConfirmarDesvinculo] = useState(false);
+  const [isAddingContact, setIsAddingContact] = useState(false);
+  const [addError, setAddError] = useState<string | null>(null);
+  const [contactAdded, setContactAdded] = useState(false);
 
   switch (status.status) {
     case WhatsStatusEnum.Criado:
@@ -53,27 +59,70 @@ export function ChatVendaStatus({
 
     case WhatsStatusEnum.NaoEncontrado:
       return (
-        <span className="text-xs text-orange-600">
-          ⚠ Nenhum lead encontrado para este contato{" "}
-          <button
-            className="underline hover:text-blue-800"
-            onClick={() => {
-              const numero = normalizarContato(chat);
+        <div className="flex flex-col gap-1 text-xs text-orange-600">
+          <span>
+            ⚠ Nenhum lead encontrado para este contato{" "}
+            <button
+              className="underline hover:text-blue-800"
+              onClick={() => {
+                const numero = normalizarContato(chat);
 
-              const params = new URLSearchParams();
-              if (numero) params.set("contato", numero);
-              if (chat?.name) params.set("cliente", chat.name);
+                const params = new URLSearchParams();
+                if (numero) params.set("contato", numero);
+                if (chat?.name) params.set("cliente", chat.name);
 
-              window.open(
-                `/venda/novo?${params.toString()}`,
-                "_blank",
-                "noopener,noreferrer",
-              );
-            }}
-          >
-            Criar Lead
-          </button>
-        </span>
+                window.open(
+                  `/venda/novo?${params.toString()}`,
+                  "_blank",
+                  "noopener,noreferrer",
+                );
+              }}
+            >
+              Criar Lead
+            </button>
+          </span>
+          <span className="text-[11px] text-blue-700">
+            <button
+              className="underline hover:text-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={isAddingContact || contactAdded || !whatsappUserId}
+              onClick={async () => {
+                if (!whatsappUserId) return;
+                const numero = normalizarContato(chat);
+                if (!numero) {
+                  setAddError("Número inválido para adicionar contato.");
+                  return;
+                }
+                const [firstName, ...rest] = (chat?.name ?? "").split(" ");
+                setIsAddingContact(true);
+                setAddError(null);
+                try {
+                  await addContactToAddressbook(whatsappUserId, {
+                    phoneNumber: numero,
+                    firstName: firstName || numero,
+                    lastName: rest.join(" "),
+                    syncToAddressbook: true,
+                  });
+                  setContactAdded(true);
+                } catch (error) {
+                  setAddError(
+                    error instanceof Error
+                      ? error.message
+                      : "Erro ao adicionar contato."
+                  );
+                } finally {
+                  setIsAddingContact(false);
+                }
+              }}
+            >
+              {contactAdded
+                ? "Contato adicionado"
+                : isAddingContact
+                  ? "Adicionando..."
+                  : "Adicionar contato"}
+            </button>
+          </span>
+          {addError && <span className="text-[11px] text-red-600">{addError}</span>}
+        </div>
       );
 
     case WhatsStatusEnum.NaoCriado:

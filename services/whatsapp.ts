@@ -221,3 +221,36 @@ export async function toggleArchiveChat(
 
   return res.json().catch(() => null);
 }
+
+export type AddressbookContactPayload = {
+  phoneNumber: string;
+  firstName?: string;
+  lastName?: string;
+  syncToAddressbook?: boolean;
+};
+
+export async function addContactToAddressbook(
+  userId: string,
+  payload: AddressbookContactPayload
+) {
+  const token = getWhatsappToken();
+  const res = await fetch(
+    buildWhatsappUrl(`/${userId}/addressbook/contact`),
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...payload,
+        ...(token ? { token } : {}),
+      }),
+    }
+  );
+
+  const responsePayload = await res.json().catch(() => null);
+
+  if (!res.ok) {
+    throw new Error(responsePayload?.error || "Erro ao adicionar contato.");
+  }
+
+  return responsePayload;
+}

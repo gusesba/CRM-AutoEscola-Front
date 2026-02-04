@@ -361,6 +361,7 @@ export const ChatWindow = React.memo(function ChatWindow({
               onVincular={vincularVenda}
               onDesvincular={desvincularVenda}
               chat={chat}
+              whatsappUserId={whatsappUserId}
             />
           )}
           {chat && !isNewChat && whatsappUserId && (
