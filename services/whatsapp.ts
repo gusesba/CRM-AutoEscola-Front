@@ -1,3 +1,4 @@
+import { toast } from "sonner";
 import { Chat } from "@/types/chat";
 import { Message } from "@/types/messages";
 
@@ -220,4 +221,34 @@ export async function toggleArchiveChat(
   }
 
   return res.json().catch(() => null);
+}
+
+export type AddressBookContactPayload = {
+  phoneNumber: string;
+  firstName: string;
+  lastName: string;
+};
+
+export async function upsertAddressBookContact(
+  userId: string,
+  payload: AddressBookContactPayload
+) {
+  const res = await fetch(buildWhatsappUrl(`/${userId}/addressbook/contact`), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await res.json().catch(() => null);
+
+  if (!res.ok) {
+    const message =
+      data?.message ||
+      data?.error ||
+      "Erro ao salvar contato no catálogo.";
+    toast.error(message);
+    throw new Error(message);
+  }
+
+  return data;
 }
