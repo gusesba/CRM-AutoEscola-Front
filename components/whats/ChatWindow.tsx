@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useCallback, useRef } from "react";
+import { toast } from "sonner";
 import { Chat, ChatStatusDto } from "@/types/chat";
 import { Message } from "@/types/messages";
 import {
@@ -9,6 +10,7 @@ import {
   sendMessage,
   sendMessageToNumber,
   toggleArchiveChat,
+  upsertAddressBookContact,
 } from "@/services/whatsapp";
 import { MessageBubble } from "./MessageBubble";
 import { MessageInput } from "./MessageInput";
@@ -79,6 +81,7 @@ type Props = {
   onPhoneNumberClick?: (number: string) => void;
   onChatCreated?: (chat: Chat) => void;
   onArchiveToggle?: (chatId: string, archived: boolean) => void;
+  onChatNameUpdated?: (chatId: string, name: string) => void;
 };
 
 export const ChatWindow = React.memo(function ChatWindow({
@@ -90,6 +93,7 @@ export const ChatWindow = React.memo(function ChatWindow({
   onPhoneNumberClick,
   onChatCreated,
   onArchiveToggle,
+  onChatNameUpdated,
 }: Props) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
@@ -101,6 +105,11 @@ export const ChatWindow = React.memo(function ChatWindow({
   const [sendError, setSendError] = useState<string | null>(null);
   const [archiveError, setArchiveError] = useState<string | null>(null);
   const [isArchiving, setIsArchiving] = useState(false);
+  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
+  const [contactPhone, setContactPhone] = useState("");
+  const [contactFirstName, setContactFirstName] = useState("");
+  const [contactLastName, setContactLastName] = useState("");
+  const [isSavingContact, setIsSavingContact] = useState(false);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
   const shouldAutoScrollRef = useRef(true);
@@ -156,7 +165,21 @@ export const ChatWindow = React.memo(function ChatWindow({
     setStatus(null);
     setSendError(null);
     setArchiveError(null);
+    setIsContactModalOpen(false);
   }, [isNewChat, pendingNumber]);
+
+  useEffect(() => {
+    if (!isContactModalOpen || !chat) return;
+    const normalizedNumber =
+      normalizarContato(chat) ?? getPhoneDigits(chat.id) ?? "";
+    const trimmedName = chat.name?.trim() ?? "";
+    const [firstName, ...lastNameParts] = trimmedName
+      ? trimmedName.split(/\s+/)
+      : [""];
+    setContactPhone(normalizedNumber);
+    setContactFirstName(firstName ?? "");
+    setContactLastName(lastNameParts.join(" "));
+  }, [chat, isContactModalOpen]);
 
   // 📥 Buscar mensagens ao trocar de chat
   useEffect(() => {
@@ -319,6 +342,47 @@ export const ChatWindow = React.memo(function ChatWindow({
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []);
 
+  const handleOpenContactModal = useCallback(() => {
+    if (!chat || !whatsappUserId) return;
+    setIsContactModalOpen(true);
+  }, [chat, whatsappUserId]);
+
+  const handleSaveContact = useCallback(async () => {
+    if (!chat || !whatsappUserId) return;
+    if (!contactPhone.trim()) {
+      toast.error("Informe o número do contato.");
+      return;
+    }
+
+    setIsSavingContact(true);
+    try {
+      await upsertAddressBookContact(whatsappUserId, {
+        phoneNumber: contactPhone.trim(),
+        firstName: contactFirstName.trim(),
+        lastName: contactLastName.trim(),
+      });
+
+      const updatedName = `${contactFirstName} ${contactLastName}`
+        .replace(/\s+/g, " ")
+        .trim();
+      if (updatedName) {
+        onChatNameUpdated?.(chat.id, updatedName);
+      }
+      setIsContactModalOpen(false);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsSavingContact(false);
+    }
+  }, [
+    chat,
+    whatsappUserId,
+    contactPhone,
+    contactFirstName,
+    contactLastName,
+    onChatNameUpdated,
+  ]);
+
   if (!chat && !pendingNumber) {
     return (
       <main className="flex-1 flex items-center justify-center bg-[#f7f8fa]">
@@ -362,6 +426,15 @@ export const ChatWindow = React.memo(function ChatWindow({
               onDesvincular={desvincularVenda}
               chat={chat}
             />
+          )}
+          {chat && !isNewChat && whatsappUserId && !chat.isGroup && (
+            <button
+              type="button"
+              onClick={handleOpenContactModal}
+              className="rounded-lg border border-gray-200 px-3 py-2 text-xs font-semibold text-gray-600 transition hover:bg-gray-100 cursor-pointer"
+            >
+              Adicionar/Editar
+            </button>
           )}
           {chat && !isNewChat && whatsappUserId && (
             <button
@@ -469,6 +542,88 @@ export const ChatWindow = React.memo(function ChatWindow({
           disableAttachments={isNewChat}
         />
       </footer>
+
+      {isContactModalOpen && chat && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white shadow-xl">
+            <div className="flex items-start justify-between border-b border-gray-200 px-6 py-4">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Adicionar/Editar contato
+                </h2>
+                <p className="mt-1 text-sm text-gray-500">
+                  Atualize os dados do contato para este chat.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsContactModalOpen(false)}
+                className="rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 cursor-pointer"
+                aria-label="Fechar modal"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-4 px-6 py-5">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">
+                  Número
+                </label>
+                <input
+                  type="text"
+                  value={contactPhone}
+                  onChange={(event) => setContactPhone(event.target.value)}
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#25d366]"
+                  placeholder="Digite o número"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">
+                  Nome
+                </label>
+                <input
+                  type="text"
+                  value={contactFirstName}
+                  onChange={(event) => setContactFirstName(event.target.value)}
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#25d366]"
+                  placeholder="Digite o nome"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">
+                  Sobrenome
+                </label>
+                <input
+                  type="text"
+                  value={contactLastName}
+                  onChange={(event) => setContactLastName(event.target.value)}
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#25d366]"
+                  placeholder="Digite o sobrenome"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 border-t border-gray-200 px-6 py-4">
+              <button
+                type="button"
+                onClick={() => setIsContactModalOpen(false)}
+                className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50 cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveContact}
+                disabled={isSavingContact}
+                className="rounded-lg bg-[#25d366] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#1ebe5d] disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
+              >
+                {isSavingContact ? "Salvando..." : "Salvar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 });

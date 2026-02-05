@@ -380,6 +380,12 @@ export default function Home({ onDisconnect, disconnecting }: HomeProps) {
     );
   };
 
+  const handleChatNameUpdated = (chatId: string, name: string) => {
+    setChats((prev) =>
+      prev.map((chat) => (chat.id === chatId ? { ...chat, name } : chat))
+    );
+  };
+
   return (
     <div className="flex-1 bg-[#f0f2f5]">
       <div className="mx-auto max-w-[1400px] mt-[-30px]">
@@ -524,6 +530,7 @@ export default function Home({ onDisconnect, disconnecting }: HomeProps) {
             whatsappUserId={activeUserId}
             pendingNumber={pendingChatNumber}
             onArchiveToggle={handleArchiveToggle}
+            onChatNameUpdated={handleChatNameUpdated}
             onPhoneNumberClick={(number) => {
               const existingChat = chats.find((chat) => {
                 const chatNumber = normalizarContato(chat);
