@@ -117,11 +117,19 @@ export async function editMessage(
 ) {
   const token = getWhatsappToken();
 
-  await fetch(buildWhatsappUrl(`/${userId}/messages/${messageId}`), {
+  const res = await fetch(buildWhatsappUrl(`/${userId}/messages/${messageId}`), {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ message, ...(token ? { token } : {}) }),
   });
+
+  const payload = await res.json().catch(() => null);
+
+  if (!res.ok) {
+    throw new Error(payload?.error || "Erro ao editar mensagem");
+  }
+
+  return payload;
 }
 
 export type SendNumberMessageResponse = {

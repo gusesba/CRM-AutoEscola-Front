@@ -304,18 +304,24 @@ export const ChatWindow = React.memo(function ChatWindow({
 
         if (!chat) return;
         if (editingMessage) {
-          await editMessage(whatsappUserId, editingMessage.id, currentText);
-          setMessages((prev) =>
-            prev.map((msg) =>
-              msg.id === editingMessage.id
-                ? {
-                    ...msg,
-                    body: currentText,
-                  }
-                : msg,
-            ),
+          const response = await editMessage(
+            whatsappUserId,
+            editingMessage.id,
+            currentText,
           );
-          setEditingMessage(null);
+          if (response?.success) {
+            setMessages((prev) =>
+              prev.map((msg) =>
+                msg.id === editingMessage.id
+                  ? {
+                      ...msg,
+                      body: response.body ?? currentText,
+                    }
+                  : msg,
+              ),
+            );
+            setEditingMessage(null);
+          }
           return;
         }
 
