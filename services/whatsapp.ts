@@ -134,6 +134,31 @@ export async function editMessage(
   return payload;
 }
 
+export async function deleteMessage(
+  userId: string,
+  messageId: string,
+  forEveryone: boolean
+) {
+  const res = await fetch(
+    buildWhatsappUrl(`/${userId}/messages/${messageId}`, {
+      forEveryone: String(forEveryone),
+    }),
+    {
+      method: "DELETE",
+    }
+  );
+
+  const payload = await res.json().catch(() => null);
+
+  if (!res.ok) {
+    const message = payload?.error || "Erro ao excluir mensagem";
+    toast.error(message);
+    throw new Error(message);
+  }
+
+  return payload;
+}
+
 export type SendNumberMessageResponse = {
   success: true;
   chat: Chat;

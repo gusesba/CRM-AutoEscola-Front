@@ -13,6 +13,7 @@ import {
   toggleArchiveChat,
   upsertAddressBookContact,
   editMessage,
+  deleteMessage,
 } from "@/services/whatsapp";
 import { MessageBubble } from "./MessageBubble";
 import { MessageInput } from "./MessageInput";
@@ -445,6 +446,32 @@ export const ChatWindow = React.memo(function ChatWindow({
     setText("");
   }, []);
 
+  const handleDelete = useCallback(
+    async (message: Message, forEveryone: boolean) => {
+      if (!whatsappUserId) return;
+      try {
+        const response = await deleteMessage(
+          whatsappUserId,
+          message.id,
+          forEveryone,
+        );
+        if (response?.success) {
+          setMessages((prev) => prev.filter((msg) => msg.id !== message.id));
+          if (replyTo?.id === message.id) {
+            setReplyTo(null);
+          }
+          if (editingMessage?.id === message.id) {
+            setEditingMessage(null);
+            setText("");
+          }
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    },
+    [editingMessage?.id, replyTo?.id, whatsappUserId],
+  );
+
   if (!chat && !pendingNumber) {
     return (
       <main className="flex-1 flex items-center justify-center bg-[#f7f8fa]">
@@ -580,6 +607,16 @@ export const ChatWindow = React.memo(function ChatWindow({
                 onEdit={
                   !isNewChat && msg.fromMe && msg.type === "chat"
                     ? handleEdit
+                    : undefined
+                }
+                onDeleteForMe={
+                  !isNewChat
+                    ? (message) => handleDelete(message, false)
+                    : undefined
+                }
+                onDeleteForEveryone={
+                  !isNewChat && msg.fromMe
+                    ? (message) => handleDelete(message, true)
                     : undefined
                 }
               />
