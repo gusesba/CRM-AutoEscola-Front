@@ -126,7 +126,9 @@ export async function editMessage(
   const payload = await res.json().catch(() => null);
 
   if (!res.ok) {
-    throw new Error(payload?.error || "Erro ao editar mensagem");
+    const message = payload?.error || "Erro ao editar mensagem";
+    toast.error(message);
+    throw new Error(message);
   }
 
   return payload;
