@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import { formatWhatsText } from "@/lib/formatWhatsText";
 import { extractPhoneNumbers } from "@/lib/whatsappPhone";
 import { Message } from "@/types/messages";
@@ -5,6 +6,7 @@ import { Message } from "@/types/messages";
 type Props = {
   message: Message;
   onPhoneNumberClick?: (number: string) => void;
+  onReply?: (message: Message) => void;
 };
 
 const mediaUrl = process.env.NEXT_PUBLIC_WHATS_URL;
@@ -32,23 +34,23 @@ function getMediaSrc(url?: string) {
   return `${mediaUrl}${url}`;
 }
 
-function MessageTime({ message }: { message: Message }) {
+function MessageMeta({ message }: { message: Message }) {
   const time = formatTime(message.timestamp);
   if (!time) return null;
   return (
-    <span
-      className={`mt-1 text-[10px] text-gray-500 ${
+    <div
+      className={`mt-1 flex items-center gap-2 text-[10px] text-gray-500 ${
         message.fromMe ? "self-end" : "self-start"
       }`}
     >
-      {time}
-    </span>
+      <span>{time}</span>
+    </div>
   );
 }
 
 function renderMessageBody(
   text: string,
-  onPhoneNumberClick?: (number: string) => void
+  onPhoneNumberClick?: (number: string) => void,
 ) {
   if (!onPhoneNumberClick) {
     return formatWhatsText(text);
@@ -68,7 +70,7 @@ function renderMessageBody(
       nodes.push(
         <span key={`text-${index}`}>
           {formatWhatsText(text.slice(cursor, start))}
-        </span>
+        </span>,
       );
     }
 
@@ -80,7 +82,7 @@ function renderMessageBody(
         className="text-[#25d366] font-semibold hover:underline"
       >
         {match.raw}
-      </button>
+      </button>,
     );
 
     cursor = start + match.raw.length;
@@ -88,7 +90,7 @@ function renderMessageBody(
 
   if (cursor < text.length) {
     nodes.push(
-      <span key="text-end">{formatWhatsText(text.slice(cursor))}</span>
+      <span key="text-end">{formatWhatsText(text.slice(cursor))}</span>,
     );
   }
 
@@ -116,7 +118,7 @@ function ImageMessage({ message, className }: any) {
           {renderMessageBody(message.body, message.onPhoneNumberClick)}
         </div>
       )}
-      <MessageTime message={message} />
+      <MessageMeta message={message} />
     </div>
   );
 }
@@ -130,7 +132,7 @@ function VideoMessage({ message, className }: any) {
         className="rounded-md max-w-full"
       />
       {message.body && <p className="mt-1">{message.body}</p>}
-      <MessageTime message={message} />
+      <MessageMeta message={message} />
     </div>
   );
 }
@@ -139,22 +141,24 @@ function AudioMessage({ message, className }: any) {
   return (
     <div className={`${className} p-2 flex flex-col`}>
       <audio controls src={getMediaSrc(message.mediaUrl)} />
-      <MessageTime message={message} />
+      <MessageMeta message={message} />
     </div>
   );
 }
 
-function StickerMessage({ message }: any) {
+function StickerMessage({ message, className }: any) {
   return (
     <div
-      className={`flex flex-col ${message.fromMe ? "self-end" : "self-start"}`}
+      className={`${className} flex flex-col ${
+        message.fromMe ? "self-end" : "self-start"
+      }`}
     >
       <img
         src={getMediaSrc(message.mediaUrl)}
         alt="sticker"
         className="w-32 h-32 object-contain"
       />
-      <MessageTime message={message} />
+      <MessageMeta message={message} />
     </div>
   );
 }
@@ -190,55 +194,124 @@ function DocumentMessage({ message, className }: any) {
           {renderMessageBody(message.body, message.onPhoneNumberClick)}
         </div>
       )}
-      <MessageTime message={message} />
+      <MessageMeta message={message} />
     </div>
   );
 }
 
-export function MessageBubble({ message, onPhoneNumberClick }: Props) {
+function ReplyMenu({ onReply }: { onReply?: () => void }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    function handleClickOutside(event: MouseEvent) {
+      if (!menuRef.current?.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isOpen]);
+
+  if (!onReply) return null;
+
+  return (
+    <div ref={menuRef} className="absolute right-[-4px] top-[-2px]">
+      <button
+        type="button"
+        onClick={() => setIsOpen((prev) => !prev)}
+        className="flex h-6 w-6 items-center justify-center rounded-full bg-white/0 text-xs text-gray-600  transition hover:bg-white "
+        aria-label="Opções da mensagem"
+      >
+        ▾
+      </button>
+      {isOpen && (
+        <div className="absolute right-0 z-10 mt-2 w-32 rounded-lg border border-gray-200 bg-white py-1 text-sm shadow-lg">
+          <button
+            type="button"
+            onClick={() => {
+              onReply();
+              setIsOpen(false);
+            }}
+            className="w-full px-3 py-2 text-left text-gray-700 hover:bg-gray-100"
+          >
+            Responder
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function MessageBubble({ message, onPhoneNumberClick, onReply }: Props) {
   const base =
-    "max-w-[70%] rounded-lg text-sm whitespace-pre-wrap break-words flex flex-col";
+    "relative max-w-[70%] rounded-lg text-sm whitespace-pre-wrap break-words flex flex-col";
 
   const bubble = message.fromMe
     ? "bg-[#d9fdd3] self-end"
     : "bg-white self-start";
 
+  const handleReply = onReply ? () => onReply(message) : undefined;
+
   switch (message.type) {
     case "image":
       return (
-        <ImageMessage
-          message={{ ...message, onPhoneNumberClick }}
-          className={`${base} ${bubble}`}
-        />
+        <div className={`${base} ${bubble}`}>
+          <ReplyMenu onReply={handleReply} />
+          <ImageMessage
+            message={{ ...message, onPhoneNumberClick }}
+            className="flex flex-col"
+          />
+        </div>
       );
 
     case "video":
-      return <VideoMessage message={message} className={`${base} ${bubble}`} />;
+      return (
+        <div className={`${base} ${bubble}`}>
+          <ReplyMenu onReply={handleReply} />
+          <VideoMessage message={message} className="flex flex-col" />
+        </div>
+      );
 
     case "sticker":
-      return <StickerMessage message={message} />;
+      return (
+        <div className={`${base} ${bubble}`}>
+          <ReplyMenu onReply={handleReply} />
+          <StickerMessage message={message} className="flex flex-col" />
+        </div>
+      );
 
     case "audio":
       return (
-        <AudioMessage
-          message={message}
-          className={`${bubble} self-${message.fromMe ? "end" : "start"}`}
-        />
+        <div className={`${base} ${bubble}`}>
+          <ReplyMenu onReply={handleReply} />
+          <AudioMessage
+            message={message}
+            className={`self-${message.fromMe ? "end" : "start"}`}
+          />
+        </div>
       );
 
     case "document":
       return (
-        <DocumentMessage
-          message={{ ...message, onPhoneNumberClick }}
-          className={`${base} ${bubble}`}
-        />
+        <div className={`${base} ${bubble}`}>
+          <ReplyMenu onReply={handleReply} />
+          <DocumentMessage
+            message={{ ...message, onPhoneNumberClick }}
+            className="flex flex-col"
+          />
+        </div>
       );
 
     default:
       return (
         <div className={`${base} ${bubble} px-3 py-2`}>
+          <ReplyMenu onReply={handleReply} />
           {renderMessageBody(message.body, onPhoneNumberClick)}
-          <MessageTime message={message} />
+          <MessageMeta message={message} />
         </div>
       );
   }
