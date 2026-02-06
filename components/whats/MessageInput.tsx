@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { formatWhatsText } from "@/lib/formatWhatsText";
 import { Paperclip, Send, Mic } from "lucide-react";
+import { Message } from "@/types/messages";
 
 type Props = {
   value: string;
@@ -10,6 +11,8 @@ type Props = {
   onSend: (attachment?: File) => void;
   disabled?: boolean;
   disableAttachments?: boolean;
+  replyTo?: Message | null;
+  onCancelReply?: () => void;
 };
 
 type Attachment = {
@@ -24,12 +27,35 @@ export function MessageInput({
   onSend,
   disabled,
   disableAttachments,
+  replyTo,
+  onCancelReply,
 }: Props) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [attachment, setAttachment] = useState<Attachment | null>(null);
+
+  function getReplyPreview(message: Message) {
+    if (message.body?.trim()) {
+      return message.body;
+    }
+
+    switch (message.type) {
+      case "image":
+        return "Imagem";
+      case "video":
+        return "Vídeo";
+      case "audio":
+        return "Áudio";
+      case "document":
+        return "Documento";
+      case "sticker":
+        return "Sticker";
+      default:
+        return "Mensagem";
+    }
+  }
 
   /** Auto resize */
   useEffect(() => {
@@ -79,6 +105,26 @@ export function MessageInput({
   return (
     <div className="w-full px-4 py-3">
       <div className="max-w-full  rounded-xl flex flex-col gap-3">
+        {replyTo && (
+          <div className="flex items-center justify-between gap-3 rounded-lg border border-gray-200 bg-white px-4 py-2 shadow-sm">
+            <div className="min-w-0">
+              <p className="text-xs font-semibold text-gray-500">
+                Respondendo a
+              </p>
+              <p className="truncate text-sm text-gray-700">
+                {getReplyPreview(replyTo)}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={onCancelReply}
+              className="rounded-full p-1 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600"
+              aria-label="Cancelar resposta"
+            >
+              ✕
+            </button>
+          </div>
+        )}
         {/* 📦 Preview da mídia — SEM SOBREPOR */}
         {attachment && (
           <div className="relative bg-white rounded-xl p-3 shadow-sm w-fit max-w-full mt-[-140px]">

@@ -9,6 +9,7 @@ import {
   sendMediaMessage,
   sendMessage,
   sendMessageToNumber,
+  replyToMessage,
   toggleArchiveChat,
   upsertAddressBookContact,
 } from "@/services/whatsapp";
@@ -110,6 +111,7 @@ export const ChatWindow = React.memo(function ChatWindow({
   const [contactFirstName, setContactFirstName] = useState("");
   const [contactLastName, setContactLastName] = useState("");
   const [isSavingContact, setIsSavingContact] = useState(false);
+  const [replyTo, setReplyTo] = useState<Message | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
   const shouldAutoScrollRef = useRef(true);
@@ -165,6 +167,7 @@ export const ChatWindow = React.memo(function ChatWindow({
     setStatus(null);
     setSendError(null);
     setArchiveError(null);
+    setReplyTo(null);
     setIsContactModalOpen(false);
   }, [isNewChat, pendingNumber]);
 
@@ -190,6 +193,7 @@ export const ChatWindow = React.memo(function ChatWindow({
     setHasReachedStart(false);
     setSendError(null);
     setArchiveError(null);
+    setReplyTo(null);
     shouldAutoScrollRef.current = true;
 
     fetchMessagesHandler(whatsappUserId, chat.id, 50)
@@ -264,6 +268,10 @@ export const ChatWindow = React.memo(function ChatWindow({
       if (disableSend) return;
       if (!whatsappUserId) return;
       if (!text.trim() && !file) return;
+      if (replyTo && file) {
+        setSendError("Não é possível responder com mídia.");
+        return;
+      }
 
       const currentText = text;
 
@@ -293,6 +301,12 @@ export const ChatWindow = React.memo(function ChatWindow({
         }
 
         if (!chat) return;
+        if (replyTo) {
+          await replyToMessage(whatsappUserId, replyTo.id, currentText);
+          setReplyTo(null);
+          return;
+        }
+
         if (file) {
           await sendMediaMessage(
             whatsappUserId,
@@ -303,6 +317,7 @@ export const ChatWindow = React.memo(function ChatWindow({
         } else {
           await sendMessage(whatsappUserId, chat.id, currentText);
         }
+        setReplyTo(null);
       } catch (err) {
         console.error(err);
         setSendError(
@@ -318,6 +333,7 @@ export const ChatWindow = React.memo(function ChatWindow({
       isNewChat,
       pendingNumber,
       onChatCreated,
+      replyTo,
     ],
   );
 
@@ -382,6 +398,14 @@ export const ChatWindow = React.memo(function ChatWindow({
     contactLastName,
     onChatNameUpdated,
   ]);
+
+  const handleReply = useCallback((message: Message) => {
+    setReplyTo(message);
+  }, []);
+
+  const handleCancelReply = useCallback(() => {
+    setReplyTo(null);
+  }, []);
 
   if (!chat && !pendingNumber) {
     return (
@@ -514,6 +538,7 @@ export const ChatWindow = React.memo(function ChatWindow({
               <MessageBubble
                 message={msg}
                 onPhoneNumberClick={onPhoneNumberClick}
+                onReply={!isNewChat ? handleReply : undefined}
               />
             </React.Fragment>
           );
@@ -540,6 +565,8 @@ export const ChatWindow = React.memo(function ChatWindow({
           onSend={handleSend}
           disabled={disableSend}
           disableAttachments={isNewChat}
+          replyTo={replyTo}
+          onCancelReply={handleCancelReply}
         />
       </footer>
 

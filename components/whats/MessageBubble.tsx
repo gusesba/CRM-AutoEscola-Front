@@ -5,6 +5,7 @@ import { Message } from "@/types/messages";
 type Props = {
   message: Message;
   onPhoneNumberClick?: (number: string) => void;
+  onReply?: (message: Message) => void;
 };
 
 const mediaUrl = process.env.NEXT_PUBLIC_WHATS_URL;
@@ -32,17 +33,32 @@ function getMediaSrc(url?: string) {
   return `${mediaUrl}${url}`;
 }
 
-function MessageTime({ message }: { message: Message }) {
+function MessageMeta({
+  message,
+  onReply,
+}: {
+  message: Message;
+  onReply?: () => void;
+}) {
   const time = formatTime(message.timestamp);
-  if (!time) return null;
+  if (!time && !onReply) return null;
   return (
-    <span
-      className={`mt-1 text-[10px] text-gray-500 ${
+    <div
+      className={`mt-1 flex items-center gap-2 text-[10px] text-gray-500 ${
         message.fromMe ? "self-end" : "self-start"
       }`}
     >
-      {time}
-    </span>
+      {time && <span>{time}</span>}
+      {onReply && (
+        <button
+          type="button"
+          onClick={onReply}
+          className="text-[10px] font-semibold text-[#25d366] hover:underline"
+        >
+          Responder
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -95,7 +111,7 @@ function renderMessageBody(
   return nodes;
 }
 
-function ImageMessage({ message, className }: any) {
+function ImageMessage({ message, className, onReply }: any) {
   return (
     <div className={`${className} p-1 flex flex-col`}>
       <img
@@ -116,12 +132,12 @@ function ImageMessage({ message, className }: any) {
           {renderMessageBody(message.body, message.onPhoneNumberClick)}
         </div>
       )}
-      <MessageTime message={message} />
+      <MessageMeta message={message} onReply={onReply} />
     </div>
   );
 }
 
-function VideoMessage({ message, className }: any) {
+function VideoMessage({ message, className, onReply }: any) {
   return (
     <div className={`${className} p-1 flex flex-col`}>
       <video
@@ -130,21 +146,21 @@ function VideoMessage({ message, className }: any) {
         className="rounded-md max-w-full"
       />
       {message.body && <p className="mt-1">{message.body}</p>}
-      <MessageTime message={message} />
+      <MessageMeta message={message} onReply={onReply} />
     </div>
   );
 }
 
-function AudioMessage({ message, className }: any) {
+function AudioMessage({ message, className, onReply }: any) {
   return (
     <div className={`${className} p-2 flex flex-col`}>
       <audio controls src={getMediaSrc(message.mediaUrl)} />
-      <MessageTime message={message} />
+      <MessageMeta message={message} onReply={onReply} />
     </div>
   );
 }
 
-function StickerMessage({ message }: any) {
+function StickerMessage({ message, onReply }: any) {
   return (
     <div
       className={`flex flex-col ${message.fromMe ? "self-end" : "self-start"}`}
@@ -154,12 +170,12 @@ function StickerMessage({ message }: any) {
         alt="sticker"
         className="w-32 h-32 object-contain"
       />
-      <MessageTime message={message} />
+      <MessageMeta message={message} onReply={onReply} />
     </div>
   );
 }
 
-function DocumentMessage({ message, className }: any) {
+function DocumentMessage({ message, className, onReply }: any) {
   const fileName = message.fileName || "Documento";
 
   return (
@@ -190,12 +206,16 @@ function DocumentMessage({ message, className }: any) {
           {renderMessageBody(message.body, message.onPhoneNumberClick)}
         </div>
       )}
-      <MessageTime message={message} />
+      <MessageMeta message={message} onReply={onReply} />
     </div>
   );
 }
 
-export function MessageBubble({ message, onPhoneNumberClick }: Props) {
+export function MessageBubble({
+  message,
+  onPhoneNumberClick,
+  onReply,
+}: Props) {
   const base =
     "max-w-[70%] rounded-lg text-sm whitespace-pre-wrap break-words flex flex-col";
 
@@ -203,26 +223,36 @@ export function MessageBubble({ message, onPhoneNumberClick }: Props) {
     ? "bg-[#d9fdd3] self-end"
     : "bg-white self-start";
 
+  const handleReply = onReply ? () => onReply(message) : undefined;
+
   switch (message.type) {
     case "image":
       return (
         <ImageMessage
           message={{ ...message, onPhoneNumberClick }}
           className={`${base} ${bubble}`}
+          onReply={handleReply}
         />
       );
 
     case "video":
-      return <VideoMessage message={message} className={`${base} ${bubble}`} />;
+      return (
+        <VideoMessage
+          message={message}
+          className={`${base} ${bubble}`}
+          onReply={handleReply}
+        />
+      );
 
     case "sticker":
-      return <StickerMessage message={message} />;
+      return <StickerMessage message={message} onReply={handleReply} />;
 
     case "audio":
       return (
         <AudioMessage
           message={message}
           className={`${bubble} self-${message.fromMe ? "end" : "start"}`}
+          onReply={handleReply}
         />
       );
 
@@ -231,6 +261,7 @@ export function MessageBubble({ message, onPhoneNumberClick }: Props) {
         <DocumentMessage
           message={{ ...message, onPhoneNumberClick }}
           className={`${base} ${bubble}`}
+          onReply={handleReply}
         />
       );
 
@@ -238,7 +269,7 @@ export function MessageBubble({ message, onPhoneNumberClick }: Props) {
       return (
         <div className={`${base} ${bubble} px-3 py-2`}>
           {renderMessageBody(message.body, onPhoneNumberClick)}
-          <MessageTime message={message} />
+          <MessageMeta message={message} onReply={handleReply} />
         </div>
       );
   }

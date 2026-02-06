@@ -96,6 +96,20 @@ export async function sendMessage(
   });
 }
 
+export async function replyToMessage(
+  userId: string,
+  messageId: string,
+  message: string
+) {
+  const token = getWhatsappToken();
+
+  await fetch(buildWhatsappUrl(`/${userId}/messages/${messageId}/reply`), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message, ...(token ? { token } : {}) }),
+  });
+}
+
 export type SendNumberMessageResponse = {
   success: true;
   chat: Chat;
