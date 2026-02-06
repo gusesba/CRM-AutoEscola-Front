@@ -15,7 +15,7 @@ import {
   GrupoWhatsappConversa,
   VendaWhatsappVinculo,
 } from "@/services/whatsappGroupService";
-import { ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { StatusEnum } from "@/enums";
 
 const formatarConversa = (conversa: GrupoWhatsappConversa) => {
@@ -52,6 +52,9 @@ export default function GruposWhatsappPage() {
     grupoId: number;
     vendaWhatsappId?: number;
   } | null>(null);
+  const [gruposExpandidos, setGruposExpandidos] = useState<
+    Record<number, boolean>
+  >({});
 
   const gruposOrdenados = useMemo(() => {
     return [...grupos].sort((a, b) => a.nome.localeCompare(b.nome));
@@ -254,6 +257,13 @@ export default function GruposWhatsappPage() {
     }
   };
 
+  const alternarGrupo = (grupoId: number) => {
+    setGruposExpandidos((prev) => ({
+      ...prev,
+      [grupoId]: !(prev[grupoId] ?? true),
+    }));
+  };
+
   return (
     <div className="flex flex-col items-center justify-center w-full p-6">
       <div className="w-full h-[calc(100vh-7rem)] max-w-6xl bg-card border border-border rounded-xl shadow-right p-6 flex flex-col gap-6 min-h-0">
@@ -442,98 +452,122 @@ export default function GruposWhatsappPage() {
                 Nenhum grupo encontrado.
               </div>
             ) : (
-              gruposOrdenados.map((grupo) => (
-                <div
-                  key={grupo.id}
-                  className="border border-border rounded-lg p-4 bg-background shadow-sm"
-                >
-                  <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <h3 className="text-lg font-semibold text-foreground">
-                        {grupo.nome}
-                      </h3>
+              gruposOrdenados.map((grupo) => {
+                const grupoExpandido = gruposExpandidos[grupo.id] ?? true;
+
+                return (
+                  <div
+                    key={grupo.id}
+                    className="border border-border rounded-lg p-4 bg-background shadow-sm"
+                  >
+                    <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <h3 className="text-lg font-semibold text-foreground">
+                          {grupo.nome}
+                        </h3>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => alternarGrupo(grupo.id)}
+                          className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-border text-muted-foreground hover:text-foreground hover:border-muted-foreground transition"
+                          aria-label={
+                            grupoExpandido
+                              ? "Ocultar conversas do grupo"
+                              : "Exibir conversas do grupo"
+                          }
+                        >
+                          <ChevronDown
+                            size={18}
+                            className={
+                              grupoExpandido ? "rotate-0" : "-rotate-90"
+                            }
+                          />
+                        </button>
+                        <span className="text-xs text-muted-foreground">
+                          {grupo.conversas?.length ?? 0} conversas vinculadas
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleExcluirGrupo(grupo.id)}
+                          disabled={excluindoGrupoId === grupo.id}
+                          className="text-xs font-semibold text-red-600 hover:text-red-700 transition disabled:opacity-60"
+                        >
+                          {excluindoGrupoId === grupo.id
+                            ? "Excluindo..."
+                            : "Excluir"}
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-xs text-muted-foreground">
-                        {grupo.conversas?.length ?? 0} conversas vinculadas
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => handleExcluirGrupo(grupo.id)}
-                        disabled={excluindoGrupoId === grupo.id}
-                        className="text-xs font-semibold text-red-600 hover:text-red-700 transition disabled:opacity-60"
-                      >
-                        {excluindoGrupoId === grupo.id
-                          ? "Excluindo..."
-                          : "Excluir"}
-                      </button>
-                    </div>
-                  </div>
-                  <div className="mt-3">
-                    {grupo.conversas && grupo.conversas.length > 0 ? (
-                      <ul className="space-y-2">
-                        {grupo.conversas.map((conversa) => (
-                          <li
-                            key={conversa.id}
-                            className="rounded-lg border border-border px-3 py-2 text-sm text-foreground"
-                          >
-                            <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                              <span>{formatarConversa(conversa)}</span>
-                            </div>
-                            <div className="mt-1 flex items-center justify-between gap-3 text-xs text-muted-foreground">
-                              <span>
-                                Contato: {conversa.venda?.contato ?? "N/A"} -
-                                Status:{" "}
-                                {typeof conversa.venda?.status === "number"
-                                  ? statusLabelMap.get(conversa.venda.status) ??
-                                    "N/A"
-                                  : "N/A"}
-                              </span>
-                              <div className="flex items-center gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    handleRemoverConversa(
-                                      grupo.id,
-                                      conversa.vendaWhatsappId
-                                    )
-                                  }
-                                  disabled={
-                                    removendoConversaKey ===
-                                    `${grupo.id}-${conversa.vendaWhatsappId}`
-                                  }
-                                  className="text-xs font-semibold text-red-600 hover:text-red-700 transition disabled:opacity-60"
-                                >
-                                  {removendoConversaKey ===
-                                  `${grupo.id}-${conversa.vendaWhatsappId}`
-                                    ? "Removendo..."
-                                    : "Remover"}
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    router.push(
-                                      `/venda/editar/${conversa.vendaId}`
-                                    )
-                                  }
-                                  className="inline-flex h-7 w-7 items-center justify-center rounded-sm bg-green-600 border border-border text-white cursor-pointer hover:bg-green-700 transition"
-                                  aria-label="Editar venda"
-                                >
-                                  <ChevronRight size={18} />
-                                </button>
-                              </div>
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">
-                        Nenhuma conversa vinculada ao grupo.
-                      </p>
+                    {grupoExpandido && (
+                      <div className="mt-3">
+                        {grupo.conversas && grupo.conversas.length > 0 ? (
+                          <ul className="space-y-2">
+                            {grupo.conversas.map((conversa) => (
+                              <li
+                                key={conversa.id}
+                                className="rounded-lg border border-border px-3 py-2 text-sm text-foreground"
+                              >
+                                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                                  <span>{formatarConversa(conversa)}</span>
+                                </div>
+                                <div className="mt-1 flex items-center justify-between gap-3 text-xs text-muted-foreground">
+                                  <span>
+                                    Contato:{" "}
+                                    {conversa.venda?.contato ?? "N/A"} - Status:{" "}
+                                    {typeof conversa.venda?.status === "number"
+                                      ? statusLabelMap.get(
+                                          conversa.venda.status
+                                        ) ?? "N/A"
+                                      : "N/A"}
+                                  </span>
+                                  <div className="flex items-center gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleRemoverConversa(
+                                          grupo.id,
+                                          conversa.vendaWhatsappId
+                                        )
+                                      }
+                                      disabled={
+                                        removendoConversaKey ===
+                                        `${grupo.id}-${conversa.vendaWhatsappId}`
+                                      }
+                                      className="text-xs font-semibold text-red-600 hover:text-red-700 transition disabled:opacity-60"
+                                    >
+                                      {removendoConversaKey ===
+                                      `${grupo.id}-${conversa.vendaWhatsappId}`
+                                        ? "Removendo..."
+                                        : "Remover"}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        router.push(
+                                          `/venda/editar/${conversa.vendaId}`
+                                        )
+                                      }
+                                      className="inline-flex h-7 w-7 items-center justify-center rounded-sm bg-green-600 border border-border text-white cursor-pointer hover:bg-green-700 transition"
+                                      aria-label="Editar venda"
+                                    >
+                                      <ChevronRight size={18} />
+                                    </button>
+                                  </div>
+                                </div>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">
+                            Nenhuma conversa vinculada ao grupo.
+                          </p>
+                        )}
+                      </div>
                     )}
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </section>
