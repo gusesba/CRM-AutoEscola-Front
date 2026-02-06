@@ -67,6 +67,10 @@ export default function GruposWhatsappPage() {
         })),
     []
   );
+  const statusLabelMap = useMemo(
+    () => new Map(statusOptions.map((status) => [status.value, status.label])),
+    [statusOptions]
+  );
 
   const formatDateTime = (date: Date) => {
     const year = date.getFullYear();
@@ -479,7 +483,11 @@ export default function GruposWhatsappPage() {
                             <div className="mt-1 flex items-center justify-between gap-3 text-xs text-muted-foreground">
                               <span>
                                 Contato: {conversa.venda?.contato ?? "N/A"} -
-                                Status: {conversa.venda?.status ?? "N/A"}
+                                Status:{" "}
+                                {typeof conversa.venda?.status === "number"
+                                  ? statusLabelMap.get(conversa.venda.status) ??
+                                    "N/A"
+                                  : "N/A"}
                               </span>
                               <div className="flex items-center gap-2">
                                 <button
