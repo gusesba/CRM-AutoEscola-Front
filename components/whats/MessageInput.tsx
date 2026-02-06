@@ -74,10 +74,10 @@ export function MessageInput({
     const type = file.type.startsWith("image")
       ? "image"
       : file.type.startsWith("video")
-      ? "video"
-      : file.type.startsWith("audio")
-      ? "audio"
-      : "document";
+        ? "video"
+        : file.type.startsWith("audio")
+          ? "audio"
+          : "document";
 
     setAttachment({
       file,

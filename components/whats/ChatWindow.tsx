@@ -150,9 +150,7 @@ export const ChatWindow = React.memo(function ChatWindow({
     } catch (error) {
       console.error(error);
       setArchiveError(
-        error instanceof Error
-          ? error.message
-          : "Erro ao arquivar conversa."
+        error instanceof Error ? error.message : "Erro ao arquivar conversa.",
       );
     } finally {
       setIsArchiving(false);
@@ -284,7 +282,7 @@ export const ChatWindow = React.memo(function ChatWindow({
         if (isNewChat) {
           if (file) {
             throw new Error(
-              "Envio de mídia não disponível para o primeiro contato."
+              "Envio de mídia não disponível para o primeiro contato.",
             );
           }
           const numberDigits = getPhoneDigits(pendingNumber ?? "");
@@ -294,7 +292,7 @@ export const ChatWindow = React.memo(function ChatWindow({
           const response = await sendMessageToNumber(
             whatsappUserId,
             numberDigits,
-            currentText
+            currentText,
           );
           onChatCreated?.(response.chat);
           return;
@@ -321,7 +319,7 @@ export const ChatWindow = React.memo(function ChatWindow({
       } catch (err) {
         console.error(err);
         setSendError(
-          err instanceof Error ? err.message : "Erro ao enviar mensagem."
+          err instanceof Error ? err.message : "Erro ao enviar mensagem.",
         );
       }
     },
@@ -558,7 +556,7 @@ export const ChatWindow = React.memo(function ChatWindow({
       </button>
 
       {/* Footer */}
-      <footer className="h-16 shrink-0 px-6 flex items-center gap-3 border-t border-gray-200 bg-[#f7f8fa]">
+      <footer className="shrink-0 relative z-50 border-t border-gray-200 bg-[#f7f8fa] overflow-visible">
         <MessageInput
           value={text}
           onChange={setText}

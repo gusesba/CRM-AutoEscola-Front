@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { MessageBubble } from "@/components/whats/MessageBubble";
 import { MessageInput } from "@/components/whats/MessageInput";
 import {
@@ -10,7 +10,6 @@ import {
 } from "@/services/whatsappGroupService";
 import { sendBatchMessages } from "@/services/whatsapp";
 import { Message } from "@/types/messages";
-import { StatusEnum } from "@/enums";
 
 type PreviewMessage = Message & {
   file?: File;
@@ -41,18 +40,6 @@ const EMPTY_MESSAGE = "Digite uma mensagem para o preview.";
 const TEMPLATE_FIRST_NAME = "${PrimeiroNome}";
 const TEMPLATE_FULL_NAME = "${NomeCompleto}";
 const BATCH_SETTINGS_STORAGE_KEY = "batch-send-settings";
-const DEFAULT_UNCHECKED_STATUSES = new Set<number>([
-  StatusEnum.VendaEfetivada,
-  StatusEnum.OptouPelaConcorrencia,
-  StatusEnum.NaoEnviarMais,
-]);
-const STATUS_LABELS: Record<number, string> = {
-  1: "Agendar contato",
-  2: "Venda efetivada",
-  3: "Stand by",
-  4: "Optou pela concorrência",
-  5: "Não enviar mais",
-};
 
 type BatchSendSettings = {
   intervalMs: string;
@@ -100,26 +87,15 @@ export function BatchSendModal({ userId, onClose }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [recipientsModalOpen, setRecipientsModalOpen] = useState(false);
   const [selectedRecipients, setSelectedRecipients] = useState<Set<string>>(
-    new Set()
+    new Set(),
   );
-  const [statusMenuOpen, setStatusMenuOpen] = useState(false);
-  const [batchSettings, setBatchSettings] = useState<BatchSendSettings>(
-    defaultBatchSettings
-  );
-  const [enabledStatuses, setEnabledStatuses] = useState<Set<number>>(
-    () =>
-      new Set(
-        Object.values(StatusEnum).filter(
-          (value): value is number =>
-            typeof value === "number" && !DEFAULT_UNCHECKED_STATUSES.has(value)
-        )
-      )
-  );
+  const [batchSettings, setBatchSettings] =
+    useState<BatchSendSettings>(defaultBatchSettings);
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   const selectedGroup = useMemo(
     () => groups.find((group) => group.id === selectedGroupId) ?? null,
-    [groups, selectedGroupId]
+    [groups, selectedGroupId],
   );
 
   const groupRecipients = useMemo(() => {
@@ -140,41 +116,6 @@ export function BatchSendModal({ userId, onClose }: Props) {
     });
     return map;
   }, [groupRecipients]);
-
-  const statusOptions = useMemo(
-    () =>
-      Object.entries(StatusEnum)
-        .filter(([, value]) => typeof value === "number")
-        .map(([label, value]) => ({
-          label: STATUS_LABELS[Number(value)] ?? label,
-          value: Number(value),
-        })),
-    []
-  );
-
-  const normalizeStatus = useCallback((status?: string | number) => {
-    if (typeof status === "number") return status;
-    if (typeof status === "string") {
-      const numeric = Number(status);
-      if (!Number.isNaN(numeric)) return numeric;
-      const match = Object.entries(StatusEnum).find(
-        ([label, value]) =>
-          typeof value === "number" && label === status.trim()
-      );
-      if (match) return Number(match[1]);
-    }
-    return null;
-  }, []);
-
-  const filteredRecipients = useMemo(
-    () =>
-      groupRecipients.filter((conversa) => {
-        const statusValue = normalizeStatus(conversa.venda?.status);
-        if (!statusValue) return true;
-        return enabledStatuses.has(statusValue);
-      }),
-    [groupRecipients, enabledStatuses, normalizeStatus]
-  );
 
   useEffect(() => {
     let mounted = true;
@@ -222,29 +163,6 @@ export function BatchSendModal({ userId, onClose }: Props) {
     setRecipientsModalOpen(false);
     setSelectedRecipients(new Set());
   }, [selectedGroupId]);
-
-  useEffect(() => {
-    if (!recipientsModalOpen) {
-      setStatusMenuOpen(false);
-    }
-  }, [recipientsModalOpen]);
-
-  useEffect(() => {
-    if (groupRecipients.length === 0) return;
-    setSelectedRecipients((prev) => {
-      const next = new Set(prev);
-      groupRecipients.forEach((conversa) => {
-        const statusValue = normalizeStatus(conversa.venda?.status);
-        if (!statusValue) return;
-        if (enabledStatuses.has(statusValue)) {
-          next.add(conversa.whatsappChatId);
-        } else {
-          next.delete(conversa.whatsappChatId);
-        }
-      });
-      return next;
-    });
-  }, [enabledStatuses, groupRecipients, normalizeStatus]);
 
   const handlePreviewSend = (file?: File) => {
     if (!text.trim() && !file) return;
@@ -304,17 +222,10 @@ export function BatchSendModal({ userId, onClose }: Props) {
       return;
     }
 
-    if (groupRecipients.length === 0) {
-      setError("O grupo selecionado não possui conversas vinculadas.");
-      return;
-    }
-
-    const chatIds = filteredRecipients.map(
-      (conversa) => conversa.whatsappChatId
-    );
+    const chatIds = groupRecipients.map((conversa) => conversa.whatsappChatId);
 
     if (chatIds.length === 0) {
-      setError("Nenhuma conversa disponível com os status selecionados.");
+      setError("O grupo selecionado não possui conversas vinculadas.");
       return;
     }
 
@@ -340,20 +251,8 @@ export function BatchSendModal({ userId, onClose }: Props) {
       return;
     }
     setSelectedRecipients(
-      new Set(filteredRecipients.map((conversa) => conversa.whatsappChatId))
+      new Set(groupRecipients.map((conversa) => conversa.whatsappChatId)),
     );
-  };
-
-  const handleToggleStatus = (statusValue: number) => {
-    setEnabledStatuses((prev) => {
-      const next = new Set(prev);
-      if (next.has(statusValue)) {
-        next.delete(statusValue);
-      } else {
-        next.add(statusValue);
-      }
-      return next;
-    });
   };
 
   const handleInsertTemplate = (template: string) => {
@@ -414,7 +313,7 @@ export function BatchSendModal({ userId, onClose }: Props) {
       const intervalMs = Number(batchSettings.intervalMs);
       const bigIntervalMs = Number(batchSettings.bigIntervalMs);
       const messagesUntilBigInterval = Number(
-        batchSettings.messagesUntilBigInterval
+        batchSettings.messagesUntilBigInterval,
       );
 
       await sendBatchMessages(
@@ -424,7 +323,9 @@ export function BatchSendModal({ userId, onClose }: Props) {
         Object.keys(paramsByChatId).length ? paramsByChatId : undefined,
         {
           intervalMs:
-            Number.isFinite(intervalMs) && intervalMs > 0 ? intervalMs : undefined,
+            Number.isFinite(intervalMs) && intervalMs > 0
+              ? intervalMs
+              : undefined,
           bigIntervalMs:
             Number.isFinite(bigIntervalMs) && bigIntervalMs > 0
               ? bigIntervalMs
@@ -434,11 +335,11 @@ export function BatchSendModal({ userId, onClose }: Props) {
             messagesUntilBigInterval > 0
               ? messagesUntilBigInterval
               : undefined,
-        }
+        },
       );
       window.localStorage.setItem(
         BATCH_SETTINGS_STORAGE_KEY,
-        JSON.stringify(batchSettings)
+        JSON.stringify(batchSettings),
       );
       setPreviewMessages([]);
       setText("");
@@ -539,7 +440,7 @@ export function BatchSendModal({ userId, onClose }: Props) {
                 value={selectedGroupId}
                 onChange={(event) =>
                   setSelectedGroupId(
-                    event.target.value ? Number(event.target.value) : ""
+                    event.target.value ? Number(event.target.value) : "",
                   )
                 }
                 className="mt-2 w-full rounded-lg border border-gray-200 bg-white p-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#25d366]"
@@ -555,8 +456,8 @@ export function BatchSendModal({ userId, onClose }: Props) {
                 {loadingGroups
                   ? "Carregando grupos..."
                   : selectedGroup
-                  ? `${selectedGroup.conversas?.length ?? 0} conversas vinculadas`
-                  : "Selecione um grupo para visualizar as conversas"}
+                    ? `${selectedGroup.conversas?.length ?? 0} conversas vinculadas`
+                    : "Selecione um grupo para visualizar as conversas"}
               </div>
             </div>
 
@@ -670,42 +571,10 @@ export function BatchSendModal({ userId, onClose }: Props) {
             <div className="max-h-[360px] overflow-y-auto px-6 py-4">
               <div className="flex flex-wrap items-center justify-between gap-2 pb-3 text-xs text-gray-500">
                 <span>
-                  {selectedRecipients.size} de {filteredRecipients.length}{" "}
+                  {selectedRecipients.size} de {groupRecipients.length}{" "}
                   selecionados
                 </span>
                 <div className="flex items-center gap-2">
-                  <div className="relative">
-                    <button
-                      type="button"
-                      onClick={() => setStatusMenuOpen((prev) => !prev)}
-                      className="rounded-full border border-gray-200 px-3 py-1 text-xs text-gray-600 hover:bg-gray-50"
-                    >
-                      Status
-                    </button>
-                    {statusMenuOpen && (
-                      <div className="absolute left-0 z-10 mt-2 w-56 rounded-lg border border-gray-200 bg-white shadow-lg">
-                        <div className="border-b border-gray-100 px-3 py-2 text-[11px] text-gray-500">
-                          Filtrar participantes por status.
-                        </div>
-                        <div className="max-h-48 space-y-2 overflow-y-auto px-3 py-2">
-                          {statusOptions.map((status) => (
-                            <label
-                              key={status.value}
-                              className="flex items-center gap-2 text-xs text-gray-700"
-                            >
-                              <input
-                                type="checkbox"
-                                checked={enabledStatuses.has(status.value)}
-                                onChange={() => handleToggleStatus(status.value)}
-                                className="h-4 w-4 accent-[#25d366]"
-                              />
-                              <span>{status.label}</span>
-                            </label>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
                   <button
                     type="button"
                     onClick={() => handleSelectAllRecipients(true)}
@@ -724,49 +593,45 @@ export function BatchSendModal({ userId, onClose }: Props) {
               </div>
 
               <div className="space-y-2">
-                {filteredRecipients.length === 0 ? (
-                  <div className="rounded-lg border border-dashed border-gray-200 px-3 py-6 text-center text-xs text-gray-500">
-                    Nenhuma conversa disponível com os status selecionados.
-                  </div>
-                ) : (
-                  filteredRecipients.map((conversa) => {
-                    const cliente = conversa.venda?.cliente;
-                    const contato = conversa.venda?.contato;
-                    const label =
-                      cliente || contato || `Conversa ${conversa.vendaWhatsappId}`;
-                    const secondary = cliente ? contato : null;
-                    return (
-                      <label
-                        key={conversa.whatsappChatId}
-                        className="flex items-center justify-between gap-3 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700"
-                      >
-                        <div className="flex flex-col">
-                          <span className="font-medium text-gray-900">
-                            {label}
+                {groupRecipients.map((conversa) => {
+                  const cliente = conversa.venda?.cliente;
+                  const contato = conversa.venda?.contato;
+                  const label =
+                    cliente ||
+                    contato ||
+                    `Conversa ${conversa.vendaWhatsappId}`;
+                  const secondary = cliente ? contato : null;
+                  return (
+                    <label
+                      key={conversa.whatsappChatId}
+                      className="flex items-center justify-between gap-3 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700"
+                    >
+                      <div className="flex flex-col">
+                        <span className="font-medium text-gray-900">
+                          {label}
+                        </span>
+                        {secondary && (
+                          <span className="text-xs text-gray-500">
+                            {secondary}
                           </span>
-                          {secondary && (
-                            <span className="text-xs text-gray-500">
-                              {secondary}
-                            </span>
-                          )}
-                          <span className="text-xs text-gray-400">
-                            ID chat: {conversa.whatsappChatId}
-                          </span>
-                        </div>
-                        <input
-                          type="checkbox"
-                          checked={selectedRecipients.has(
-                            conversa.whatsappChatId
-                          )}
-                          onChange={() =>
-                            handleToggleRecipient(conversa.whatsappChatId)
-                          }
-                          className="h-4 w-4 accent-[#25d366]"
-                        />
-                      </label>
-                    );
-                  })
-                )}
+                        )}
+                        <span className="text-xs text-gray-400">
+                          ID chat: {conversa.whatsappChatId}
+                        </span>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={selectedRecipients.has(
+                          conversa.whatsappChatId,
+                        )}
+                        onChange={() =>
+                          handleToggleRecipient(conversa.whatsappChatId)
+                        }
+                        className="h-4 w-4 accent-[#25d366]"
+                      />
+                    </label>
+                  );
+                })}
               </div>
             </div>
 

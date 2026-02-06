@@ -50,7 +50,7 @@ function MessageMeta({ message }: { message: Message }) {
 
 function renderMessageBody(
   text: string,
-  onPhoneNumberClick?: (number: string) => void
+  onPhoneNumberClick?: (number: string) => void,
 ) {
   if (!onPhoneNumberClick) {
     return formatWhatsText(text);
@@ -70,7 +70,7 @@ function renderMessageBody(
       nodes.push(
         <span key={`text-${index}`}>
           {formatWhatsText(text.slice(cursor, start))}
-        </span>
+        </span>,
       );
     }
 
@@ -82,7 +82,7 @@ function renderMessageBody(
         className="text-[#25d366] font-semibold hover:underline"
       >
         {match.raw}
-      </button>
+      </button>,
     );
 
     cursor = start + match.raw.length;
@@ -90,7 +90,7 @@ function renderMessageBody(
 
   if (cursor < text.length) {
     nodes.push(
-      <span key="text-end">{formatWhatsText(text.slice(cursor))}</span>
+      <span key="text-end">{formatWhatsText(text.slice(cursor))}</span>,
     );
   }
 
@@ -219,11 +219,11 @@ function ReplyMenu({ onReply }: { onReply?: () => void }) {
   if (!onReply) return null;
 
   return (
-    <div ref={menuRef} className="absolute right-2 top-2">
+    <div ref={menuRef} className="absolute right-[-4px] top-[-2px]">
       <button
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
-        className="flex h-6 w-6 items-center justify-center rounded-full bg-white/80 text-xs text-gray-600 shadow-sm transition hover:bg-white"
+        className="flex h-6 w-6 items-center justify-center rounded-full bg-white/0 text-xs text-gray-600  transition hover:bg-white "
         aria-label="Opções da mensagem"
       >
         ▾
@@ -246,11 +246,7 @@ function ReplyMenu({ onReply }: { onReply?: () => void }) {
   );
 }
 
-export function MessageBubble({
-  message,
-  onPhoneNumberClick,
-  onReply,
-}: Props) {
+export function MessageBubble({ message, onPhoneNumberClick, onReply }: Props) {
   const base =
     "relative max-w-[70%] rounded-lg text-sm whitespace-pre-wrap break-words flex flex-col";
 
