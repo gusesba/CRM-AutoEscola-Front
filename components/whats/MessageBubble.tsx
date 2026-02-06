@@ -8,6 +8,8 @@ type Props = {
   onPhoneNumberClick?: (number: string) => void;
   onReply?: (message: Message) => void;
   onEdit?: (message: Message) => void;
+  onDeleteForMe?: (message: Message) => void;
+  onDeleteForEveryone?: (message: Message) => void;
 };
 
 const mediaUrl = process.env.NEXT_PUBLIC_WHATS_URL;
@@ -203,9 +205,13 @@ function DocumentMessage({ message, className }: any) {
 function ReplyMenu({
   onReply,
   onEdit,
+  onDeleteForMe,
+  onDeleteForEveryone,
 }: {
   onReply?: () => void;
   onEdit?: () => void;
+  onDeleteForMe?: () => void;
+  onDeleteForEveryone?: () => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -223,7 +229,9 @@ function ReplyMenu({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen]);
 
-  if (!onReply && !onEdit) return null;
+  if (!onReply && !onEdit && !onDeleteForMe && !onDeleteForEveryone) {
+    return null;
+  }
 
   return (
     <div ref={menuRef} className="absolute right-[-4px] top-[-2px]">
@@ -236,7 +244,7 @@ function ReplyMenu({
         ▾
       </button>
       {isOpen && (
-        <div className="absolute right-0 z-10 mt-2 w-32 rounded-lg border border-gray-200 bg-white py-1 text-sm shadow-lg">
+        <div className="absolute right-0 z-10 mt-2 w-44 rounded-lg border border-gray-200 bg-white py-1 text-sm shadow-lg">
           {onReply && (
             <button
               type="button"
@@ -261,6 +269,30 @@ function ReplyMenu({
               Editar
             </button>
           )}
+          {onDeleteForMe && (
+            <button
+              type="button"
+              onClick={() => {
+                onDeleteForMe();
+                setIsOpen(false);
+              }}
+              className="w-full px-3 py-2 text-left text-gray-700 hover:bg-gray-100"
+            >
+              Excluir para mim
+            </button>
+          )}
+          {onDeleteForEveryone && (
+            <button
+              type="button"
+              onClick={() => {
+                onDeleteForEveryone();
+                setIsOpen(false);
+              }}
+              className="w-full px-3 py-2 text-left text-red-600 hover:bg-gray-100"
+            >
+              Excluir para todos
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -272,6 +304,8 @@ export function MessageBubble({
   onPhoneNumberClick,
   onReply,
   onEdit,
+  onDeleteForMe,
+  onDeleteForEveryone,
 }: Props) {
   const base =
     "relative max-w-[70%] rounded-lg text-sm whitespace-pre-wrap break-words flex flex-col";
@@ -282,12 +316,23 @@ export function MessageBubble({
 
   const handleReply = onReply ? () => onReply(message) : undefined;
   const handleEdit = onEdit ? () => onEdit(message) : undefined;
+  const handleDeleteForMe = onDeleteForMe
+    ? () => onDeleteForMe(message)
+    : undefined;
+  const handleDeleteForEveryone = onDeleteForEveryone
+    ? () => onDeleteForEveryone(message)
+    : undefined;
 
   switch (message.type) {
     case "image":
       return (
         <div className={`${base} ${bubble}`}>
-          <ReplyMenu onReply={handleReply} onEdit={handleEdit} />
+          <ReplyMenu
+            onReply={handleReply}
+            onEdit={handleEdit}
+            onDeleteForMe={handleDeleteForMe}
+            onDeleteForEveryone={handleDeleteForEveryone}
+          />
           <ImageMessage
             message={{ ...message, onPhoneNumberClick }}
             className="flex flex-col"
@@ -298,7 +343,12 @@ export function MessageBubble({
     case "video":
       return (
         <div className={`${base} ${bubble}`}>
-          <ReplyMenu onReply={handleReply} onEdit={handleEdit} />
+          <ReplyMenu
+            onReply={handleReply}
+            onEdit={handleEdit}
+            onDeleteForMe={handleDeleteForMe}
+            onDeleteForEveryone={handleDeleteForEveryone}
+          />
           <VideoMessage message={message} className="flex flex-col" />
         </div>
       );
@@ -306,7 +356,12 @@ export function MessageBubble({
     case "sticker":
       return (
         <div className={`${base} ${bubble}`}>
-          <ReplyMenu onReply={handleReply} onEdit={handleEdit} />
+          <ReplyMenu
+            onReply={handleReply}
+            onEdit={handleEdit}
+            onDeleteForMe={handleDeleteForMe}
+            onDeleteForEveryone={handleDeleteForEveryone}
+          />
           <StickerMessage message={message} className="flex flex-col" />
         </div>
       );
@@ -314,7 +369,12 @@ export function MessageBubble({
     case "audio":
       return (
         <div className={`${base} ${bubble}`}>
-          <ReplyMenu onReply={handleReply} onEdit={handleEdit} />
+          <ReplyMenu
+            onReply={handleReply}
+            onEdit={handleEdit}
+            onDeleteForMe={handleDeleteForMe}
+            onDeleteForEveryone={handleDeleteForEveryone}
+          />
           <AudioMessage
             message={message}
             className={`self-${message.fromMe ? "end" : "start"}`}
@@ -325,7 +385,12 @@ export function MessageBubble({
     case "document":
       return (
         <div className={`${base} ${bubble}`}>
-          <ReplyMenu onReply={handleReply} onEdit={handleEdit} />
+          <ReplyMenu
+            onReply={handleReply}
+            onEdit={handleEdit}
+            onDeleteForMe={handleDeleteForMe}
+            onDeleteForEveryone={handleDeleteForEveryone}
+          />
           <DocumentMessage
             message={{ ...message, onPhoneNumberClick }}
             className="flex flex-col"
@@ -336,7 +401,12 @@ export function MessageBubble({
     default:
       return (
         <div className={`${base} ${bubble} px-3 py-2`}>
-          <ReplyMenu onReply={handleReply} onEdit={handleEdit} />
+          <ReplyMenu
+            onReply={handleReply}
+            onEdit={handleEdit}
+            onDeleteForMe={handleDeleteForMe}
+            onDeleteForEveryone={handleDeleteForEveryone}
+          />
           {renderMessageBody(message.body, onPhoneNumberClick)}
           <MessageMeta message={message} />
         </div>
