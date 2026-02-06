@@ -12,6 +12,7 @@ import {
   replyToMessage,
   toggleArchiveChat,
   upsertAddressBookContact,
+  editMessage,
 } from "@/services/whatsapp";
 import { MessageBubble } from "./MessageBubble";
 import { MessageInput } from "./MessageInput";
@@ -112,6 +113,7 @@ export const ChatWindow = React.memo(function ChatWindow({
   const [contactLastName, setContactLastName] = useState("");
   const [isSavingContact, setIsSavingContact] = useState(false);
   const [replyTo, setReplyTo] = useState<Message | null>(null);
+  const [editingMessage, setEditingMessage] = useState<Message | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
   const shouldAutoScrollRef = useRef(true);
@@ -166,6 +168,7 @@ export const ChatWindow = React.memo(function ChatWindow({
     setSendError(null);
     setArchiveError(null);
     setReplyTo(null);
+    setEditingMessage(null);
     setIsContactModalOpen(false);
   }, [isNewChat, pendingNumber]);
 
@@ -192,6 +195,7 @@ export const ChatWindow = React.memo(function ChatWindow({
     setSendError(null);
     setArchiveError(null);
     setReplyTo(null);
+    setEditingMessage(null);
     shouldAutoScrollRef.current = true;
 
     fetchMessagesHandler(whatsappUserId, chat.id, 50)
@@ -266,8 +270,8 @@ export const ChatWindow = React.memo(function ChatWindow({
       if (disableSend) return;
       if (!whatsappUserId) return;
       if (!text.trim() && !file) return;
-      if (replyTo && file) {
-        setSendError("Não é possível responder com mídia.");
+      if ((replyTo || editingMessage) && file) {
+        setSendError("Não é possível responder ou editar com mídia.");
         return;
       }
 
@@ -299,6 +303,28 @@ export const ChatWindow = React.memo(function ChatWindow({
         }
 
         if (!chat) return;
+        if (editingMessage) {
+          const response = await editMessage(
+            whatsappUserId,
+            editingMessage.id,
+            currentText,
+          );
+          if (response?.success) {
+            setMessages((prev) =>
+              prev.map((msg) =>
+                msg.id === editingMessage.id
+                  ? {
+                      ...msg,
+                      body: response.body ?? currentText,
+                    }
+                  : msg,
+              ),
+            );
+            setEditingMessage(null);
+          }
+          return;
+        }
+
         if (replyTo) {
           await replyToMessage(whatsappUserId, replyTo.id, currentText);
           setReplyTo(null);
@@ -316,6 +342,7 @@ export const ChatWindow = React.memo(function ChatWindow({
           await sendMessage(whatsappUserId, chat.id, currentText);
         }
         setReplyTo(null);
+        setEditingMessage(null);
       } catch (err) {
         console.error(err);
         setSendError(
@@ -332,6 +359,7 @@ export const ChatWindow = React.memo(function ChatWindow({
       pendingNumber,
       onChatCreated,
       replyTo,
+      editingMessage,
     ],
   );
 
@@ -398,11 +426,23 @@ export const ChatWindow = React.memo(function ChatWindow({
   ]);
 
   const handleReply = useCallback((message: Message) => {
+    setEditingMessage(null);
     setReplyTo(message);
   }, []);
 
   const handleCancelReply = useCallback(() => {
     setReplyTo(null);
+  }, []);
+
+  const handleEdit = useCallback((message: Message) => {
+    setReplyTo(null);
+    setEditingMessage(message);
+    setText(message.body ?? "");
+  }, []);
+
+  const handleCancelEdit = useCallback(() => {
+    setEditingMessage(null);
+    setText("");
   }, []);
 
   if (!chat && !pendingNumber) {
@@ -537,6 +577,11 @@ export const ChatWindow = React.memo(function ChatWindow({
                 message={msg}
                 onPhoneNumberClick={onPhoneNumberClick}
                 onReply={!isNewChat ? handleReply : undefined}
+                onEdit={
+                  !isNewChat && msg.fromMe && msg.type === "chat"
+                    ? handleEdit
+                    : undefined
+                }
               />
             </React.Fragment>
           );
@@ -562,9 +607,11 @@ export const ChatWindow = React.memo(function ChatWindow({
           onChange={setText}
           onSend={handleSend}
           disabled={disableSend}
-          disableAttachments={isNewChat}
+          disableAttachments={isNewChat || Boolean(editingMessage)}
           replyTo={replyTo}
           onCancelReply={handleCancelReply}
+          editMessage={editingMessage}
+          onCancelEdit={handleCancelEdit}
         />
       </footer>
 

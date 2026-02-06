@@ -110,6 +110,30 @@ export async function replyToMessage(
   });
 }
 
+export async function editMessage(
+  userId: string,
+  messageId: string,
+  message: string
+) {
+  const token = getWhatsappToken();
+
+  const res = await fetch(buildWhatsappUrl(`/${userId}/messages/${messageId}`), {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message, ...(token ? { token } : {}) }),
+  });
+
+  const payload = await res.json().catch(() => null);
+
+  if (!res.ok) {
+    const message = payload?.error || "Erro ao editar mensagem";
+    toast.error(message);
+    throw new Error(message);
+  }
+
+  return payload;
+}
+
 export type SendNumberMessageResponse = {
   success: true;
   chat: Chat;

@@ -13,6 +13,8 @@ type Props = {
   disableAttachments?: boolean;
   replyTo?: Message | null;
   onCancelReply?: () => void;
+  editMessage?: Message | null;
+  onCancelEdit?: () => void;
 };
 
 type Attachment = {
@@ -29,6 +31,8 @@ export function MessageInput({
   disableAttachments,
   replyTo,
   onCancelReply,
+  editMessage,
+  onCancelEdit,
 }: Props) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
@@ -105,7 +109,27 @@ export function MessageInput({
   return (
     <div className="w-full px-4 py-3">
       <div className="max-w-full  rounded-xl flex flex-col gap-3">
-        {replyTo && (
+        {editMessage && (
+          <div className="flex items-center justify-between gap-3 rounded-lg border border-gray-200 bg-white px-4 py-2 shadow-sm">
+            <div className="min-w-0">
+              <p className="text-xs font-semibold text-gray-500">
+                Editando mensagem
+              </p>
+              <p className="truncate text-sm text-gray-700">
+                {getReplyPreview(editMessage)}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={onCancelEdit}
+              className="rounded-full p-1 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600"
+              aria-label="Cancelar edição"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+        {replyTo && !editMessage && (
           <div className="flex items-center justify-between gap-3 rounded-lg border border-gray-200 bg-white px-4 py-2 shadow-sm">
             <div className="min-w-0">
               <p className="text-xs font-semibold text-gray-500">
