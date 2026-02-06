@@ -7,6 +7,7 @@ type Props = {
   message: Message;
   onPhoneNumberClick?: (number: string) => void;
   onReply?: (message: Message) => void;
+  onEdit?: (message: Message) => void;
 };
 
 const mediaUrl = process.env.NEXT_PUBLIC_WHATS_URL;
@@ -199,7 +200,13 @@ function DocumentMessage({ message, className }: any) {
   );
 }
 
-function ReplyMenu({ onReply }: { onReply?: () => void }) {
+function ReplyMenu({
+  onReply,
+  onEdit,
+}: {
+  onReply?: () => void;
+  onEdit?: () => void;
+}) {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -216,7 +223,7 @@ function ReplyMenu({ onReply }: { onReply?: () => void }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen]);
 
-  if (!onReply) return null;
+  if (!onReply && !onEdit) return null;
 
   return (
     <div ref={menuRef} className="absolute right-[-4px] top-[-2px]">
@@ -230,23 +237,42 @@ function ReplyMenu({ onReply }: { onReply?: () => void }) {
       </button>
       {isOpen && (
         <div className="absolute right-0 z-10 mt-2 w-32 rounded-lg border border-gray-200 bg-white py-1 text-sm shadow-lg">
-          <button
-            type="button"
-            onClick={() => {
-              onReply();
-              setIsOpen(false);
-            }}
-            className="w-full px-3 py-2 text-left text-gray-700 hover:bg-gray-100"
-          >
-            Responder
-          </button>
+          {onReply && (
+            <button
+              type="button"
+              onClick={() => {
+                onReply();
+                setIsOpen(false);
+              }}
+              className="w-full px-3 py-2 text-left text-gray-700 hover:bg-gray-100"
+            >
+              Responder
+            </button>
+          )}
+          {onEdit && (
+            <button
+              type="button"
+              onClick={() => {
+                onEdit();
+                setIsOpen(false);
+              }}
+              className="w-full px-3 py-2 text-left text-gray-700 hover:bg-gray-100"
+            >
+              Editar
+            </button>
+          )}
         </div>
       )}
     </div>
   );
 }
 
-export function MessageBubble({ message, onPhoneNumberClick, onReply }: Props) {
+export function MessageBubble({
+  message,
+  onPhoneNumberClick,
+  onReply,
+  onEdit,
+}: Props) {
   const base =
     "relative max-w-[70%] rounded-lg text-sm whitespace-pre-wrap break-words flex flex-col";
 
@@ -255,12 +281,13 @@ export function MessageBubble({ message, onPhoneNumberClick, onReply }: Props) {
     : "bg-white self-start";
 
   const handleReply = onReply ? () => onReply(message) : undefined;
+  const handleEdit = onEdit ? () => onEdit(message) : undefined;
 
   switch (message.type) {
     case "image":
       return (
         <div className={`${base} ${bubble}`}>
-          <ReplyMenu onReply={handleReply} />
+          <ReplyMenu onReply={handleReply} onEdit={handleEdit} />
           <ImageMessage
             message={{ ...message, onPhoneNumberClick }}
             className="flex flex-col"
@@ -271,7 +298,7 @@ export function MessageBubble({ message, onPhoneNumberClick, onReply }: Props) {
     case "video":
       return (
         <div className={`${base} ${bubble}`}>
-          <ReplyMenu onReply={handleReply} />
+          <ReplyMenu onReply={handleReply} onEdit={handleEdit} />
           <VideoMessage message={message} className="flex flex-col" />
         </div>
       );
@@ -279,7 +306,7 @@ export function MessageBubble({ message, onPhoneNumberClick, onReply }: Props) {
     case "sticker":
       return (
         <div className={`${base} ${bubble}`}>
-          <ReplyMenu onReply={handleReply} />
+          <ReplyMenu onReply={handleReply} onEdit={handleEdit} />
           <StickerMessage message={message} className="flex flex-col" />
         </div>
       );
@@ -287,7 +314,7 @@ export function MessageBubble({ message, onPhoneNumberClick, onReply }: Props) {
     case "audio":
       return (
         <div className={`${base} ${bubble}`}>
-          <ReplyMenu onReply={handleReply} />
+          <ReplyMenu onReply={handleReply} onEdit={handleEdit} />
           <AudioMessage
             message={message}
             className={`self-${message.fromMe ? "end" : "start"}`}
@@ -298,7 +325,7 @@ export function MessageBubble({ message, onPhoneNumberClick, onReply }: Props) {
     case "document":
       return (
         <div className={`${base} ${bubble}`}>
-          <ReplyMenu onReply={handleReply} />
+          <ReplyMenu onReply={handleReply} onEdit={handleEdit} />
           <DocumentMessage
             message={{ ...message, onPhoneNumberClick }}
             className="flex flex-col"
@@ -309,7 +336,7 @@ export function MessageBubble({ message, onPhoneNumberClick, onReply }: Props) {
     default:
       return (
         <div className={`${base} ${bubble} px-3 py-2`}>
-          <ReplyMenu onReply={handleReply} />
+          <ReplyMenu onReply={handleReply} onEdit={handleEdit} />
           {renderMessageBody(message.body, onPhoneNumberClick)}
           <MessageMeta message={message} />
         </div>

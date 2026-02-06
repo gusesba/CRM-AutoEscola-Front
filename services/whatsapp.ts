@@ -110,6 +110,20 @@ export async function replyToMessage(
   });
 }
 
+export async function editMessage(
+  userId: string,
+  messageId: string,
+  message: string
+) {
+  const token = getWhatsappToken();
+
+  await fetch(buildWhatsappUrl(`/${userId}/messages/${messageId}`), {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message, ...(token ? { token } : {}) }),
+  });
+}
+
 export type SendNumberMessageResponse = {
   success: true;
   chat: Chat;
