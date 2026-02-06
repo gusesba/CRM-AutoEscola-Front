@@ -235,7 +235,10 @@ export function BatchSendModal({ userId, onClose }: Props) {
       const next = new Set(prev);
       groupRecipients.forEach((conversa) => {
         const statusValue = normalizeStatus(conversa.venda?.status);
-        if (statusValue && !enabledStatuses.has(statusValue)) {
+        if (!statusValue) return;
+        if (enabledStatuses.has(statusValue)) {
+          next.add(conversa.whatsappChatId);
+        } else {
           next.delete(conversa.whatsappChatId);
         }
       });
