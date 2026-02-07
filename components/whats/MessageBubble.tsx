@@ -7,6 +7,7 @@ type Props = {
   message: Message;
   onPhoneNumberClick?: (number: string) => void;
   onReply?: (message: Message) => void;
+  onForward?: (message: Message) => void;
   onEdit?: (message: Message) => void;
   onDeleteForMe?: (message: Message) => void;
   onDeleteForEveryone?: (message: Message) => void;
@@ -253,11 +254,13 @@ function DocumentMessage({ message, className }: any) {
 
 function ReplyMenu({
   onReply,
+  onForward,
   onEdit,
   onDeleteForMe,
   onDeleteForEveryone,
 }: {
   onReply?: () => void;
+  onForward?: () => void;
   onEdit?: () => void;
   onDeleteForMe?: () => void;
   onDeleteForEveryone?: () => void;
@@ -278,7 +281,13 @@ function ReplyMenu({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen]);
 
-  if (!onReply && !onEdit && !onDeleteForMe && !onDeleteForEveryone) {
+  if (
+    !onReply &&
+    !onForward &&
+    !onEdit &&
+    !onDeleteForMe &&
+    !onDeleteForEveryone
+  ) {
     return null;
   }
 
@@ -304,6 +313,18 @@ function ReplyMenu({
               className="w-full px-3 py-2 text-left text-gray-700 hover:bg-gray-100"
             >
               Responder
+            </button>
+          )}
+          {onForward && (
+            <button
+              type="button"
+              onClick={() => {
+                onForward();
+                setIsOpen(false);
+              }}
+              className="w-full px-3 py-2 text-left text-gray-700 hover:bg-gray-100"
+            >
+              Encaminhar
             </button>
           )}
           {onEdit && (
@@ -352,6 +373,7 @@ export function MessageBubble({
   message,
   onPhoneNumberClick,
   onReply,
+  onForward,
   onEdit,
   onDeleteForMe,
   onDeleteForEveryone,
@@ -364,6 +386,7 @@ export function MessageBubble({
     : "bg-white self-start";
 
   const handleReply = onReply ? () => onReply(message) : undefined;
+  const handleForward = onForward ? () => onForward(message) : undefined;
   const handleEdit = onEdit ? () => onEdit(message) : undefined;
   const handleDeleteForMe = onDeleteForMe
     ? () => onDeleteForMe(message)
@@ -378,6 +401,7 @@ export function MessageBubble({
         <div className={`${base} ${bubble}`}>
           <ReplyMenu
             onReply={handleReply}
+            onForward={handleForward}
             onEdit={handleEdit}
             onDeleteForMe={handleDeleteForMe}
             onDeleteForEveryone={handleDeleteForEveryone}
@@ -394,6 +418,7 @@ export function MessageBubble({
         <div className={`${base} ${bubble}`}>
           <ReplyMenu
             onReply={handleReply}
+            onForward={handleForward}
             onEdit={handleEdit}
             onDeleteForMe={handleDeleteForMe}
             onDeleteForEveryone={handleDeleteForEveryone}
@@ -407,6 +432,7 @@ export function MessageBubble({
         <div className={`${base} ${bubble}`}>
           <ReplyMenu
             onReply={handleReply}
+            onForward={handleForward}
             onEdit={handleEdit}
             onDeleteForMe={handleDeleteForMe}
             onDeleteForEveryone={handleDeleteForEveryone}
@@ -420,6 +446,7 @@ export function MessageBubble({
         <div className={`${base} ${bubble}`}>
           <ReplyMenu
             onReply={handleReply}
+            onForward={handleForward}
             onEdit={handleEdit}
             onDeleteForMe={handleDeleteForMe}
             onDeleteForEveryone={handleDeleteForEveryone}
@@ -436,6 +463,7 @@ export function MessageBubble({
         <div className={`${base} ${bubble}`}>
           <ReplyMenu
             onReply={handleReply}
+            onForward={handleForward}
             onEdit={handleEdit}
             onDeleteForMe={handleDeleteForMe}
             onDeleteForEveryone={handleDeleteForEveryone}
@@ -452,6 +480,7 @@ export function MessageBubble({
         <div className={`${base} ${bubble} px-3 py-2`}>
           <ReplyMenu
             onReply={handleReply}
+            onForward={handleForward}
             onEdit={handleEdit}
             onDeleteForMe={handleDeleteForMe}
             onDeleteForEveryone={handleDeleteForEveryone}

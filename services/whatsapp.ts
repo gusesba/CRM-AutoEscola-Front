@@ -110,6 +110,32 @@ export async function replyToMessage(
   });
 }
 
+export async function forwardMessage(
+  userId: string,
+  messageId: string,
+  chatId: string
+) {
+  const token = getWhatsappToken();
+  const res = await fetch(
+    buildWhatsappUrl(`/${userId}/messages/${messageId}/forward`),
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chatId, ...(token ? { token } : {}) }),
+    }
+  );
+
+  const payload = await res.json().catch(() => null);
+
+  if (!res.ok) {
+    const message = payload?.error || "Erro ao encaminhar mensagem";
+    toast.error(message);
+    throw new Error(message);
+  }
+
+  return payload;
+}
+
 export async function editMessage(
   userId: string,
   messageId: string,

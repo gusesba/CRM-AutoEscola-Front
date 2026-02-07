@@ -527,6 +527,7 @@ export default function Home({ onDisconnect, disconnecting }: HomeProps) {
 
           <ChatWindow
             chat={selectedChat}
+            chats={chats}
             whatsappUserId={activeUserId}
             pendingNumber={pendingChatNumber}
             onArchiveToggle={handleArchiveToggle}

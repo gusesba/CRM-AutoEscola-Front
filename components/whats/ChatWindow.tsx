@@ -6,6 +6,7 @@ import { Chat, ChatStatusDto } from "@/types/chat";
 import { Message } from "@/types/messages";
 import {
   fetchMessages,
+  forwardMessage,
   sendMediaMessage,
   sendMessage,
   sendMessageToNumber,
@@ -57,6 +58,27 @@ function formatDayLabel(timestamp: number) {
   });
 }
 
+function getForwardPreview(message: Message) {
+  if (message.body?.trim()) {
+    return message.body;
+  }
+
+  switch (message.type) {
+    case "image":
+      return "Imagem";
+    case "video":
+      return "Vídeo";
+    case "audio":
+      return "Áudio";
+    case "document":
+      return "Documento";
+    case "sticker":
+      return "Sticker";
+    default:
+      return "Mensagem";
+  }
+}
+
 function lastMessageToMessage(
   last: NonNullable<Chat["lastMessage"]>,
   chatId: string,
@@ -73,6 +95,7 @@ function lastMessageToMessage(
 
 type Props = {
   chat?: Chat;
+  chats?: Chat[];
   whatsappUserId?: string;
   fetchMessagesFn?: (
     userId: string,
@@ -89,6 +112,7 @@ type Props = {
 
 export const ChatWindow = React.memo(function ChatWindow({
   chat,
+  chats,
   whatsappUserId,
   fetchMessagesFn,
   disableSend,
@@ -115,6 +139,12 @@ export const ChatWindow = React.memo(function ChatWindow({
   const [isSavingContact, setIsSavingContact] = useState(false);
   const [replyTo, setReplyTo] = useState<Message | null>(null);
   const [editingMessage, setEditingMessage] = useState<Message | null>(null);
+  const [forwardingMessage, setForwardingMessage] = useState<Message | null>(
+    null,
+  );
+  const [forwardChatId, setForwardChatId] = useState("");
+  const [forwardSearch, setForwardSearch] = useState("");
+  const [isForwarding, setIsForwarding] = useState(false);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
   const shouldAutoScrollRef = useRef(true);
@@ -170,6 +200,9 @@ export const ChatWindow = React.memo(function ChatWindow({
     setArchiveError(null);
     setReplyTo(null);
     setEditingMessage(null);
+    setForwardingMessage(null);
+    setForwardChatId("");
+    setForwardSearch("");
     setIsContactModalOpen(false);
   }, [isNewChat, pendingNumber]);
 
@@ -197,6 +230,9 @@ export const ChatWindow = React.memo(function ChatWindow({
     setArchiveError(null);
     setReplyTo(null);
     setEditingMessage(null);
+    setForwardingMessage(null);
+    setForwardChatId("");
+    setForwardSearch("");
     shouldAutoScrollRef.current = true;
 
     fetchMessagesHandler(whatsappUserId, chat.id, 50)
@@ -472,6 +508,52 @@ export const ChatWindow = React.memo(function ChatWindow({
     [editingMessage?.id, replyTo?.id, whatsappUserId],
   );
 
+  const handleForward = useCallback((message: Message) => {
+    setForwardingMessage(message);
+    setForwardChatId("");
+    setForwardSearch("");
+  }, []);
+
+  const handleCancelForward = useCallback(() => {
+    setForwardingMessage(null);
+    setForwardChatId("");
+    setForwardSearch("");
+  }, []);
+
+  const handleConfirmForward = useCallback(async () => {
+    if (!whatsappUserId || !forwardingMessage) return;
+    if (!forwardChatId.trim()) {
+      toast.error("Selecione um chat para encaminhar.");
+      return;
+    }
+
+    setIsForwarding(true);
+    try {
+      await forwardMessage(
+        whatsappUserId,
+        forwardingMessage.id,
+        forwardChatId.trim(),
+      );
+      toast.success("Mensagem encaminhada.");
+      setForwardingMessage(null);
+      setForwardChatId("");
+      setForwardSearch("");
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsForwarding(false);
+    }
+  }, [forwardChatId, forwardingMessage, whatsappUserId]);
+
+  const availableForwardChats = (chats ?? []).filter((chatItem) => {
+    const term = forwardSearch.trim().toLowerCase();
+    if (!term) return true;
+    return (
+      chatItem.name.toLowerCase().includes(term) ||
+      chatItem.id.toLowerCase().includes(term)
+    );
+  });
+
   if (!chat && !pendingNumber) {
     return (
       <main className="flex-1 flex items-center justify-center bg-[#f7f8fa]">
@@ -604,6 +686,7 @@ export const ChatWindow = React.memo(function ChatWindow({
                 message={msg}
                 onPhoneNumberClick={onPhoneNumberClick}
                 onReply={!isNewChat ? handleReply : undefined}
+                onForward={!isNewChat ? handleForward : undefined}
                 onEdit={
                   !isNewChat && msg.fromMe && msg.type === "chat"
                     ? handleEdit
@@ -651,6 +734,95 @@ export const ChatWindow = React.memo(function ChatWindow({
           onCancelEdit={handleCancelEdit}
         />
       </footer>
+
+      {forwardingMessage && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white shadow-xl">
+            <div className="flex items-start justify-between border-b border-gray-200 px-6 py-4">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Encaminhar mensagem
+                </h2>
+                <p className="mt-1 text-sm text-gray-500">
+                  Escolha o chat para encaminhar esta mensagem.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleCancelForward}
+                className="rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 cursor-pointer"
+                aria-label="Fechar modal"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-4 px-6 py-5">
+              <div className="rounded-lg border border-emerald-100 bg-emerald-50/60 px-3 py-2 text-xs text-emerald-900">
+                <span className="font-semibold">Mensagem: </span>
+                {getForwardPreview(forwardingMessage)}
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">
+                  Buscar chat
+                </label>
+                <input
+                  type="text"
+                  value={forwardSearch}
+                  onChange={(event) => setForwardSearch(event.target.value)}
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#25d366]"
+                  placeholder="Digite o nome ou número"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">
+                  Chat
+                </label>
+                <select
+                  value={forwardChatId}
+                  onChange={(event) => setForwardChatId(event.target.value)}
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#25d366]"
+                >
+                  <option value="">Selecione um chat</option>
+                  {availableForwardChats.map((chatItem) => {
+                    const label = chatItem.name?.trim();
+                    return (
+                      <option key={chatItem.id} value={chatItem.id}>
+                        {label
+                          ? `${label} (${chatItem.id})`
+                          : chatItem.id}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+              {availableForwardChats.length === 0 && (
+                <p className="text-xs text-gray-500">
+                  Nenhuma conversa encontrada com este filtro.
+                </p>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-3 border-t border-gray-200 px-6 py-4">
+              <button
+                type="button"
+                onClick={handleCancelForward}
+                className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50 cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmForward}
+                disabled={isForwarding}
+                className="rounded-lg bg-[#25d366] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#1ebe5d] disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
+              >
+                {isForwarding ? "Encaminhando..." : "Encaminhar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {isContactModalOpen && chat && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
