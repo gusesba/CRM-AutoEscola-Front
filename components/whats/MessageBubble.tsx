@@ -40,13 +40,57 @@ function getMediaSrc(url?: string) {
 function MessageMeta({ message }: { message: Message }) {
   const time = formatTime(message.timestamp);
   if (!time) return null;
+  const labels: string[] = [];
+  if (message.isForwarded) {
+    labels.push("Encaminhada");
+  }
+  if (message.isEdited) {
+    labels.push("Editada");
+  }
   return (
     <div
       className={`mt-1 flex items-center gap-2 text-[10px] text-gray-500 ${
         message.fromMe ? "self-end" : "self-start"
       }`}
     >
+      {labels.length > 0 && (
+        <span className="italic text-gray-400">{labels.join(" · ")}</span>
+      )}
       <span>{time}</span>
+    </div>
+  );
+}
+
+function getMessagePreview(message: Message | Message["replyTo"]) {
+  if (!message) return "Mensagem";
+  if (message.body?.trim()) {
+    return message.body;
+  }
+
+  switch (message.type) {
+    case "image":
+      return "Imagem";
+    case "video":
+      return "Vídeo";
+    case "audio":
+      return "Áudio";
+    case "document":
+      return "Documento";
+    case "sticker":
+      return "Sticker";
+    default:
+      return "Mensagem";
+  }
+}
+
+function ReplyPreview({ message }: { message: Message }) {
+  if (!message.replyTo) return null;
+  const authorLabel = message.replyTo.fromMe ? "Você" : "Contato";
+
+  return (
+    <div className="mb-2 border-l-4 border-emerald-400/70 bg-emerald-50/40 px-2 py-1 text-xs text-gray-600">
+      <p className="font-semibold text-emerald-700">{authorLabel}</p>
+      <p className="truncate">{getMessagePreview(message.replyTo)}</p>
     </div>
   );
 }
@@ -103,6 +147,7 @@ function renderMessageBody(
 function ImageMessage({ message, className }: any) {
   return (
     <div className={`${className} p-1 flex flex-col`}>
+      <ReplyPreview message={message} />
       <img
         src={getMediaSrc(message.mediaUrl)}
         alt="imagem"
@@ -129,6 +174,7 @@ function ImageMessage({ message, className }: any) {
 function VideoMessage({ message, className }: any) {
   return (
     <div className={`${className} p-1 flex flex-col`}>
+      <ReplyPreview message={message} />
       <video
         controls
         src={getMediaSrc(message.mediaUrl)}
@@ -143,6 +189,7 @@ function VideoMessage({ message, className }: any) {
 function AudioMessage({ message, className }: any) {
   return (
     <div className={`${className} p-2 flex flex-col`}>
+      <ReplyPreview message={message} />
       <audio controls src={getMediaSrc(message.mediaUrl)} />
       <MessageMeta message={message} />
     </div>
@@ -156,6 +203,7 @@ function StickerMessage({ message, className }: any) {
         message.fromMe ? "self-end" : "self-start"
       }`}
     >
+      <ReplyPreview message={message} />
       <img
         src={getMediaSrc(message.mediaUrl)}
         alt="sticker"
@@ -171,6 +219,7 @@ function DocumentMessage({ message, className }: any) {
 
   return (
     <div className={`${className} p-1 flex flex-col gap-1`}>
+      <ReplyPreview message={message} />
       <a
         href={getMediaSrc(message.mediaUrl)}
         target="_blank"
@@ -407,6 +456,7 @@ export function MessageBubble({
             onDeleteForMe={handleDeleteForMe}
             onDeleteForEveryone={handleDeleteForEveryone}
           />
+          <ReplyPreview message={message} />
           {renderMessageBody(message.body, onPhoneNumberClick)}
           <MessageMeta message={message} />
         </div>
