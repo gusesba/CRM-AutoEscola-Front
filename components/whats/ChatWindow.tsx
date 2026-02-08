@@ -788,9 +788,7 @@ export const ChatWindow = React.memo(function ChatWindow({
                     const label = chatItem.name?.trim();
                     return (
                       <option key={chatItem.id} value={chatItem.id}>
-                        {label
-                          ? `${label} (${chatItem.id})`
-                          : chatItem.id}
+                        {label ? `${label}` : chatItem.id}
                       </option>
                     );
                   })}
