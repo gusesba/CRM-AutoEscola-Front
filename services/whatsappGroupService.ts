@@ -8,6 +8,11 @@ export type GrupoWhatsappConversa = {
     cliente: string;
     contato: string;
     status: string | number;
+    servicoId?: number;
+    servico?: {
+      id: number;
+      nome: string;
+    };
   };
   whatsappChatId: string;
   whatsappUserId: string;
