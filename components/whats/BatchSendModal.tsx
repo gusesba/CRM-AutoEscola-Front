@@ -5,6 +5,7 @@ import { MessageBubble } from "@/components/whats/MessageBubble";
 import { MessageInput } from "@/components/whats/MessageInput";
 import {
   buscarGruposWhatsapp,
+  buscarVinculosWhatsapp,
   GrupoWhatsapp,
   GrupoWhatsappConversa,
 } from "@/services/whatsappGroupService";
@@ -47,6 +48,7 @@ const DEFAULT_UNCHECKED_STATUSES = new Set<number>([
   StatusEnum.OptouPelaConcorrencia,
   StatusEnum.NaoEnviarMais,
 ]);
+const ALL_LINKED_OPTION = "all-linked";
 const STATUS_LABELS: Record<number, string> = {
   1: "Agendar contato",
   2: "Venda efetivada",
@@ -98,10 +100,13 @@ function normalizeBase64(dataUrl: string) {
 
 export function BatchSendModal({ userId, onClose }: Props) {
   const [groups, setGroups] = useState<GrupoWhatsapp[]>([]);
-  const [selectedGroupId, setSelectedGroupId] = useState<number | "">("");
+  const [selectedGroupId, setSelectedGroupId] = useState<
+    number | typeof ALL_LINKED_OPTION | ""
+  >("");
   const [previewMessages, setPreviewMessages] = useState<PreviewMessage[]>([]);
   const [text, setText] = useState("");
   const [loadingGroups, setLoadingGroups] = useState(false);
+  const [loadingAllLinked, setLoadingAllLinked] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [recipientsModalOpen, setRecipientsModalOpen] = useState(false);
@@ -126,22 +131,32 @@ export function BatchSendModal({ userId, onClose }: Props) {
     () => new Set(),
   );
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const [allLinkedRecipients, setAllLinkedRecipients] = useState<
+    GrupoWhatsappConversa[]
+  >([]);
 
   const selectedGroup = useMemo(
-    () => groups.find((group) => group.id === selectedGroupId) ?? null,
+    () =>
+      typeof selectedGroupId === "number"
+        ? groups.find((group) => group.id === selectedGroupId) ?? null
+        : null,
     [groups, selectedGroupId],
   );
+  const isAllLinkedSelected = selectedGroupId === ALL_LINKED_OPTION;
 
   const groupRecipients = useMemo(() => {
-    if (!selectedGroup) return [];
+    const source = isAllLinkedSelected
+      ? allLinkedRecipients
+      : selectedGroup?.conversas ?? [];
+    if (source.length === 0) return [];
     const unique = new Map<string, GrupoWhatsappConversa>();
-    selectedGroup.conversas.forEach((conversa) => {
+    source.forEach((conversa) => {
       if (conversa.whatsappChatId) {
         unique.set(conversa.whatsappChatId, conversa);
       }
     });
     return Array.from(unique.values());
-  }, [selectedGroup]);
+  }, [allLinkedRecipients, isAllLinkedSelected, selectedGroup]);
 
   const groupRecipientsByChatId = useMemo(() => {
     const map = new Map<string, GrupoWhatsappConversa>();
@@ -284,6 +299,42 @@ export function BatchSendModal({ userId, onClose }: Props) {
   }, [recipientsModalOpen]);
 
   useEffect(() => {
+    if (!isAllLinkedSelected) return;
+    let mounted = true;
+    setLoadingAllLinked(true);
+    buscarVinculosWhatsapp()
+      .then((data) => {
+        if (!mounted) return;
+        const unique = new Map<string, GrupoWhatsappConversa>();
+        (data ?? []).forEach((vinculo) => {
+          if (!vinculo.whatsappChatId) return;
+          unique.set(vinculo.whatsappChatId, {
+            id: vinculo.id,
+            vendaWhatsappId: vinculo.vendaId ?? vinculo.id,
+            vendaId: vinculo.vendaId,
+            venda: vinculo.venda ?? undefined,
+            whatsappChatId: vinculo.whatsappChatId,
+            whatsappUserId: vinculo.whatsappUserId,
+          });
+        });
+        setAllLinkedRecipients(Array.from(unique.values()));
+      })
+      .catch((err) => {
+        console.error(err);
+        if (!mounted) return;
+        setError("Não foi possível carregar os vinculados.");
+      })
+      .finally(() => {
+        if (!mounted) return;
+        setLoadingAllLinked(false);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [isAllLinkedSelected]);
+
+  useEffect(() => {
     if (groupRecipients.length === 0) return;
     setSelectedRecipients((prev) => {
       const next = new Set(prev);
@@ -359,7 +410,7 @@ export function BatchSendModal({ userId, onClose }: Props) {
   const handleOpenRecipientsModal = () => {
     setError(null);
 
-    if (!selectedGroup) {
+    if (!selectedGroup && !isAllLinkedSelected) {
       setError("Selecione um grupo para enviar.");
       return;
     }
@@ -370,7 +421,11 @@ export function BatchSendModal({ userId, onClose }: Props) {
     }
 
     if (groupRecipients.length === 0) {
-      setError("O grupo selecionado não possui conversas vinculadas.");
+      setError(
+        isAllLinkedSelected
+          ? "Nenhuma conversa vinculada encontrada."
+          : "O grupo selecionado não possui conversas vinculadas.",
+      );
       return;
     }
 
@@ -442,7 +497,7 @@ export function BatchSendModal({ userId, onClose }: Props) {
   const handleSendBatch = async () => {
     setError(null);
 
-    if (!selectedGroup) {
+    if (!selectedGroup && !isAllLinkedSelected) {
       setError("Selecione um grupo para enviar.");
       return;
     }
@@ -620,12 +675,17 @@ export function BatchSendModal({ userId, onClose }: Props) {
                 value={selectedGroupId}
                 onChange={(event) =>
                   setSelectedGroupId(
-                    event.target.value ? Number(event.target.value) : "",
+                    event.target.value
+                      ? event.target.value === ALL_LINKED_OPTION
+                        ? ALL_LINKED_OPTION
+                        : Number(event.target.value)
+                      : "",
                   )
                 }
                 className="mt-2 w-full rounded-lg border border-gray-200 bg-white p-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#25d366]"
               >
                 <option value="">Selecione um grupo</option>
+                <option value={ALL_LINKED_OPTION}>Todos vinculados</option>
                 {groups.map((group) => (
                   <option key={group.id} value={group.id}>
                     {group.nome}
@@ -633,11 +693,13 @@ export function BatchSendModal({ userId, onClose }: Props) {
                 ))}
               </select>
               <div className="mt-3 text-xs text-gray-500">
-                {loadingGroups
-                  ? "Carregando grupos..."
-                  : selectedGroup
-                    ? `${selectedGroup.conversas?.length ?? 0} conversas vinculadas`
-                    : "Selecione um grupo para visualizar as conversas"}
+                {loadingGroups || loadingAllLinked
+                  ? "Carregando conversas..."
+                  : isAllLinkedSelected
+                    ? `${groupRecipients.length} conversas vinculadas`
+                    : selectedGroup
+                      ? `${selectedGroup.conversas?.length ?? 0} conversas vinculadas`
+                      : "Selecione um grupo para visualizar as conversas"}
               </div>
             </div>
 
