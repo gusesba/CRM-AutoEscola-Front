@@ -9,6 +9,7 @@ import {
   GrupoWhatsappConversa,
 } from "@/services/whatsappGroupService";
 import { sendBatchMessages } from "@/services/whatsapp";
+import { BuscarServicos } from "@/services/servicoService";
 import { Message } from "@/types/messages";
 import { StatusEnum } from "@/enums";
 
@@ -60,6 +61,11 @@ type BatchSendSettings = {
   messagesUntilBigInterval: string;
 };
 
+type ServiceOption = {
+  id: number;
+  nome: string;
+};
+
 const defaultBatchSettings: BatchSendSettings = {
   intervalMs: "",
   bigIntervalMs: "",
@@ -103,8 +109,10 @@ export function BatchSendModal({ userId, onClose }: Props) {
     new Set(),
   );
   const [statusMenuOpen, setStatusMenuOpen] = useState(false);
+  const [serviceMenuOpen, setServiceMenuOpen] = useState(false);
   const [batchSettings, setBatchSettings] =
     useState<BatchSendSettings>(defaultBatchSettings);
+  const [services, setServices] = useState<ServiceOption[]>([]);
   const [enabledStatuses, setEnabledStatuses] = useState<Set<number>>(
     () =>
       new Set(
@@ -113,6 +121,9 @@ export function BatchSendModal({ userId, onClose }: Props) {
             typeof value === "number" && !DEFAULT_UNCHECKED_STATUSES.has(value),
         ),
       ),
+  );
+  const [enabledServices, setEnabledServices] = useState<Set<number>>(
+    () => new Set(),
   );
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
@@ -165,14 +176,34 @@ export function BatchSendModal({ userId, onClose }: Props) {
     return null;
   }, []);
 
+  const resolveServiceId = useCallback((conversa: GrupoWhatsappConversa) => {
+    return (
+      conversa.venda?.servicoId ??
+      conversa.venda?.servico?.id ??
+      null
+    );
+  }, []);
+
   const filteredRecipients = useMemo(
     () =>
       groupRecipients.filter((conversa) => {
         const statusValue = normalizeStatus(conversa.venda?.status);
         if (!statusValue) return true;
-        return enabledStatuses.has(statusValue);
+        const serviceId = resolveServiceId(conversa);
+        const matchesStatus = enabledStatuses.has(statusValue);
+        const matchesService =
+          enabledServices.size === 0 || !serviceId
+            ? true
+            : enabledServices.has(serviceId);
+        return matchesStatus && matchesService;
       }),
-    [groupRecipients, enabledStatuses, normalizeStatus],
+    [
+      groupRecipients,
+      enabledStatuses,
+      enabledServices,
+      normalizeStatus,
+      resolveServiceId,
+    ],
   );
 
   useEffect(() => {
@@ -197,6 +228,29 @@ export function BatchSendModal({ userId, onClose }: Props) {
       mounted = false;
     };
   }, [userId]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    BuscarServicos("pageSize=1000")
+      .then((data) => {
+        if (!mounted) return;
+        const items = data?.items ?? [];
+        setServices(items);
+        setEnabledServices(
+          new Set(items.map((servico: ServiceOption) => servico.id)),
+        );
+      })
+      .catch((err) => {
+        console.error(err);
+        if (!mounted) return;
+        setError("Não foi possível carregar os serviços.");
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -225,6 +279,7 @@ export function BatchSendModal({ userId, onClose }: Props) {
   useEffect(() => {
     if (!recipientsModalOpen) {
       setStatusMenuOpen(false);
+      setServiceMenuOpen(false);
     }
   }, [recipientsModalOpen]);
 
@@ -235,7 +290,12 @@ export function BatchSendModal({ userId, onClose }: Props) {
       groupRecipients.forEach((conversa) => {
         const statusValue = normalizeStatus(conversa.venda?.status);
         if (!statusValue) return;
-        if (enabledStatuses.has(statusValue)) {
+        const serviceId = resolveServiceId(conversa);
+        const matchesService =
+          enabledServices.size === 0 || !serviceId
+            ? true
+            : enabledServices.has(serviceId);
+        if (enabledStatuses.has(statusValue) && matchesService) {
           next.add(conversa.whatsappChatId);
         } else {
           next.delete(conversa.whatsappChatId);
@@ -243,7 +303,13 @@ export function BatchSendModal({ userId, onClose }: Props) {
       });
       return next;
     });
-  }, [enabledStatuses, groupRecipients, normalizeStatus]);
+  }, [
+    enabledStatuses,
+    enabledServices,
+    groupRecipients,
+    normalizeStatus,
+    resolveServiceId,
+  ]);
 
   const handlePreviewSend = (file?: File) => {
     if (!text.trim() && !file) return;
@@ -335,6 +401,18 @@ export function BatchSendModal({ userId, onClose }: Props) {
     });
   };
 
+  const handleToggleService = (serviceId: number) => {
+    setEnabledServices((prev) => {
+      const next = new Set(prev);
+      if (next.has(serviceId)) {
+        next.delete(serviceId);
+      } else {
+        next.add(serviceId);
+      }
+      return next;
+    });
+  };
+
   const handleToggleRecipient = (chatId: string) => {
     setSelectedRecipients((prev) => {
       const next = new Set(prev);
@@ -353,7 +431,7 @@ export function BatchSendModal({ userId, onClose }: Props) {
       return;
     }
     setSelectedRecipients(
-      new Set(groupRecipients.map((conversa) => conversa.whatsappChatId)),
+      new Set(filteredRecipients.map((conversa) => conversa.whatsappChatId)),
     );
   };
 
@@ -707,6 +785,46 @@ export function BatchSendModal({ userId, onClose }: Props) {
                               <span>{status.label}</span>
                             </label>
                           ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setServiceMenuOpen((prev) => !prev)}
+                      className="rounded-full border border-gray-200 px-3 py-1 text-xs text-gray-600 hover:bg-gray-50"
+                    >
+                      Serviço
+                    </button>
+                    {serviceMenuOpen && (
+                      <div className="absolute left-0 z-10 mt-2 w-56 rounded-lg border border-gray-200 bg-white shadow-lg">
+                        <div className="border-b border-gray-100 px-3 py-2 text-[11px] text-gray-500">
+                          Filtrar participantes por serviço.
+                        </div>
+                        <div className="max-h-48 space-y-2 overflow-y-auto px-3 py-2">
+                          {services.length === 0 ? (
+                            <span className="text-xs text-gray-500">
+                              Nenhum serviço disponível.
+                            </span>
+                          ) : (
+                            services.map((servico) => (
+                              <label
+                                key={servico.id}
+                                className="flex items-center gap-2 text-xs text-gray-700"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={enabledServices.has(servico.id)}
+                                  onChange={() =>
+                                    handleToggleService(servico.id)
+                                  }
+                                  className="h-4 w-4 accent-[#25d366]"
+                                />
+                                <span>{servico.nome}</span>
+                              </label>
+                            ))
+                          )}
                         </div>
                       </div>
                     )}
