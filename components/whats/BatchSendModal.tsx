@@ -118,6 +118,9 @@ export function BatchSendModal({ userId, onClose }: Props) {
   const [batchSettings, setBatchSettings] =
     useState<BatchSendSettings>(defaultBatchSettings);
   const [services, setServices] = useState<ServiceOption[]>([]);
+  const [dateFilterModalOpen, setDateFilterModalOpen] = useState(false);
+  const [initialDateStart, setInitialDateStart] = useState("");
+  const [initialDateEnd, setInitialDateEnd] = useState("");
   const [enabledStatuses, setEnabledStatuses] = useState<Set<number>>(
     () =>
       new Set(
@@ -199,23 +202,48 @@ export function BatchSendModal({ userId, onClose }: Props) {
     );
   }, []);
 
+  const matchesInitialDate = useCallback(
+    (conversa: GrupoWhatsappConversa) => {
+      if (!initialDateStart && !initialDateEnd) return true;
+      const leadDate = conversa.venda?.dataInicial;
+      if (!leadDate) return false;
+      const parsedLeadDate = new Date(leadDate);
+      if (Number.isNaN(parsedLeadDate.getTime())) return false;
+
+      const startDate = initialDateStart ? new Date(initialDateStart) : null;
+      const endDate = initialDateEnd ? new Date(initialDateEnd) : null;
+
+      if (startDate && Number.isNaN(startDate.getTime())) return true;
+      if (endDate && Number.isNaN(endDate.getTime())) return true;
+
+      if (startDate) startDate.setHours(0, 0, 0, 0);
+      if (endDate) endDate.setHours(23, 59, 59, 999);
+
+      if (startDate && parsedLeadDate < startDate) return false;
+      if (endDate && parsedLeadDate > endDate) return false;
+      return true;
+    },
+    [initialDateEnd, initialDateStart],
+  );
+
   const filteredRecipients = useMemo(
     () =>
       groupRecipients.filter((conversa) => {
         const statusValue = normalizeStatus(conversa.venda?.status);
-        if (!statusValue) return true;
+        if (!statusValue) return matchesInitialDate(conversa);
         const serviceId = resolveServiceId(conversa);
         const matchesStatus = enabledStatuses.has(statusValue);
         const matchesService =
           enabledServices.size === 0 || !serviceId
             ? true
             : enabledServices.has(serviceId);
-        return matchesStatus && matchesService;
+        return matchesStatus && matchesService && matchesInitialDate(conversa);
       }),
     [
       groupRecipients,
       enabledStatuses,
       enabledServices,
+      matchesInitialDate,
       normalizeStatus,
       resolveServiceId,
     ],
@@ -295,6 +323,7 @@ export function BatchSendModal({ userId, onClose }: Props) {
     if (!recipientsModalOpen) {
       setStatusMenuOpen(false);
       setServiceMenuOpen(false);
+      setDateFilterModalOpen(false);
     }
   }, [recipientsModalOpen]);
 
@@ -340,13 +369,24 @@ export function BatchSendModal({ userId, onClose }: Props) {
       const next = new Set(prev);
       groupRecipients.forEach((conversa) => {
         const statusValue = normalizeStatus(conversa.venda?.status);
-        if (!statusValue) return;
         const serviceId = resolveServiceId(conversa);
         const matchesService =
           enabledServices.size === 0 || !serviceId
             ? true
             : enabledServices.has(serviceId);
-        if (enabledStatuses.has(statusValue) && matchesService) {
+        if (!statusValue) {
+          if (matchesService && matchesInitialDate(conversa)) {
+            next.add(conversa.whatsappChatId);
+          } else {
+            next.delete(conversa.whatsappChatId);
+          }
+          return;
+        }
+        if (
+          enabledStatuses.has(statusValue) &&
+          matchesService &&
+          matchesInitialDate(conversa)
+        ) {
           next.add(conversa.whatsappChatId);
         } else {
           next.delete(conversa.whatsappChatId);
@@ -358,6 +398,7 @@ export function BatchSendModal({ userId, onClose }: Props) {
     enabledStatuses,
     enabledServices,
     groupRecipients,
+    matchesInitialDate,
     normalizeStatus,
     resolveServiceId,
   ]);
@@ -434,7 +475,7 @@ export function BatchSendModal({ userId, onClose }: Props) {
     );
 
     if (chatIds.length === 0) {
-      setError("Nenhuma conversa disponível com os status selecionados.");
+      setError("Nenhuma conversa disponível com os filtros selecionados.");
       return;
     }
 
@@ -891,6 +932,56 @@ export function BatchSendModal({ userId, onClose }: Props) {
                       </div>
                     )}
                   </div>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setDateFilterModalOpen((prev) => !prev)}
+                      className="rounded-full border border-gray-200 px-3 py-1 text-xs text-gray-600 hover:bg-gray-50"
+                    >
+                      Data de cadastro
+                    </button>
+                    {dateFilterModalOpen && (
+                      <div className="absolute left-0 z-10 mt-2 w-64 rounded-lg border border-gray-200 bg-white p-3 text-xs text-gray-600 shadow-lg">
+                        <div className="mb-2 text-[11px] text-gray-500">
+                          Defina o período mínimo e máximo do lead.
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          <label className="flex flex-col gap-1">
+                            Data mínima
+                            <input
+                              type="date"
+                              value={initialDateStart}
+                              onChange={(event) =>
+                                setInitialDateStart(event.target.value)
+                              }
+                              className="rounded-md border border-gray-200 px-2 py-1 text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#25d366]"
+                            />
+                          </label>
+                          <label className="flex flex-col gap-1">
+                            Data máxima
+                            <input
+                              type="date"
+                              value={initialDateEnd}
+                              onChange={(event) =>
+                                setInitialDateEnd(event.target.value)
+                              }
+                              className="rounded-md border border-gray-200 px-2 py-1 text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#25d366]"
+                            />
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setInitialDateStart("");
+                              setInitialDateEnd("");
+                            }}
+                            className="mt-1 self-start text-[11px] text-gray-500 hover:text-gray-700"
+                          >
+                            Limpar datas
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                   <button
                     type="button"
                     onClick={() => handleSelectAllRecipients(true)}
@@ -911,7 +1002,7 @@ export function BatchSendModal({ userId, onClose }: Props) {
               <div className="space-y-2">
                 {filteredRecipients.length === 0 ? (
                   <div className="rounded-lg border border-dashed border-gray-200 px-3 py-6 text-center text-xs text-gray-500">
-                    Nenhuma conversa disponível com os status selecionados.
+                    Nenhuma conversa disponível com os filtros selecionados.
                   </div>
                 ) : (
                   filteredRecipients.map((conversa) => {
