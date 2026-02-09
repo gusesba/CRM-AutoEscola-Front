@@ -13,6 +13,10 @@ import { Message } from "@/types/messages";
 import { useAuth } from "@/hooks/useAuth";
 import { BuscarUsuarios } from "@/services/authService";
 import {
+  ConversaVinculoResumo,
+  vincularConversasNumero,
+} from "@/services/whatsappBackup";
+import {
   adicionarConversaAoGrupo,
   buscarGruposWhatsapp,
   buscarGruposWhatsappPorChat,
@@ -22,6 +26,7 @@ import {
 import { getChatStatus } from "@/services/vendaService";
 import { ChevronLeft, ChevronRight, Plus, X } from "lucide-react";
 import { getPhoneDigits, isPhoneMatch } from "@/lib/whatsappPhone";
+import { toast } from "sonner";
 
 function ChatsLoadingOverlay() {
   return (
@@ -81,6 +86,9 @@ export default function Home({ onDisconnect, disconnecting }: HomeProps) {
   const [pendingChatNumber, setPendingChatNumber] = useState<string | null>(
     null
   );
+  const [vinculandoConversas, setVinculandoConversas] = useState(false);
+  const [resumoVinculo, setResumoVinculo] =
+    useState<ConversaVinculoResumo | null>(null);
 
   useEffect(() => {
     if (!user?.UserId) return;
@@ -386,6 +394,32 @@ export default function Home({ onDisconnect, disconnecting }: HomeProps) {
     );
   };
 
+  const handleVincularConversas = async () => {
+    if (chats.length === 0) {
+      toast.error("Nenhuma conversa carregada.");
+      return;
+    }
+
+    const conversas = chats.map((chat) => ({
+      whatsappChatId: chat.id,
+      numero: normalizarContato(chat) ?? "",
+    }));
+
+    try {
+      setVinculandoConversas(true);
+      const resumo = await vincularConversasNumero(conversas);
+      setResumoVinculo(resumo);
+    } catch (error) {
+      console.error(error);
+      toast.error("Não foi possível vincular as conversas.", {
+        description:
+          error instanceof Error ? error.message : "Tente novamente mais tarde.",
+      });
+    } finally {
+      setVinculandoConversas(false);
+    }
+  };
+
   return (
     <div className="flex-1 bg-[#f0f2f5]">
       <div className="mx-auto max-w-[1400px] mt-[-30px]">
@@ -485,6 +519,14 @@ export default function Home({ onDisconnect, disconnecting }: HomeProps) {
             className="rounded-lg bg-[#25d366] px-4 py-2 text-sm font-semibold text-white hover:bg-[#1ebe5d] cursor-pointer"
           >
             Envio em grupo
+          </button>
+          <button
+            type="button"
+            onClick={handleVincularConversas}
+            disabled={loadingChats || vinculandoConversas || chats.length === 0}
+            className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
+          >
+            {vinculandoConversas ? "Vinculando..." : "Vincular todos"}
           </button>
           <button
             type="button"
@@ -668,6 +710,54 @@ export default function Home({ onDisconnect, disconnecting }: HomeProps) {
                 className="rounded-lg bg-[#25d366] px-4 py-2 text-sm font-semibold text-white hover:bg-[#1ebe5d] disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
               >
                 {adicionandoGrupo ? "Adicionando..." : "Adicionar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {resumoVinculo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white shadow-xl">
+            <div className="flex items-start justify-between border-b border-gray-200 px-6 py-4">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Resultado do vínculo
+                </h2>
+                <p className="mt-1 text-sm text-gray-500">
+                  Resumo das conversas processadas.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setResumoVinculo(null)}
+                className="rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 cursor-pointer"
+                aria-label="Fechar modal"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className="space-y-3 px-6 py-5 text-sm text-gray-700">
+              <div className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2">
+                <span>Já vinculadas</span>
+                <strong>{resumoVinculo.conversasJaVinculadas}</strong>
+              </div>
+              <div className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2">
+                <span>Vinculadas</span>
+                <strong>{resumoVinculo.conversasVinculadas}</strong>
+              </div>
+              <div className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2">
+                <span>Sem lead encontrado</span>
+                <strong>{resumoVinculo.conversasSemLeadEncontrado}</strong>
+              </div>
+            </div>
+            <div className="flex items-center justify-end border-t border-gray-200 px-6 py-4">
+              <button
+                type="button"
+                onClick={() => setResumoVinculo(null)}
+                className="rounded-lg bg-[#25d366] px-4 py-2 text-sm font-semibold text-white hover:bg-[#1ebe5d] cursor-pointer"
+              >
+                Fechar
               </button>
             </div>
           </div>
