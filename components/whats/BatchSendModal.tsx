@@ -118,6 +118,7 @@ export function BatchSendModal({ userId, onClose }: Props) {
   const [batchSettings, setBatchSettings] =
     useState<BatchSendSettings>(defaultBatchSettings);
   const [services, setServices] = useState<ServiceOption[]>([]);
+  const [initialDateFilter, setInitialDateFilter] = useState("");
   const [enabledStatuses, setEnabledStatuses] = useState<Set<number>>(
     () =>
       new Set(
@@ -199,23 +200,39 @@ export function BatchSendModal({ userId, onClose }: Props) {
     );
   }, []);
 
+  const matchesInitialDate = useCallback(
+    (conversa: GrupoWhatsappConversa) => {
+      if (!initialDateFilter) return true;
+      const leadDate = conversa.venda?.dataInicial;
+      if (!leadDate) return false;
+      const parsedLeadDate = new Date(leadDate);
+      if (Number.isNaN(parsedLeadDate.getTime())) return false;
+      const filterDate = new Date(initialDateFilter);
+      if (Number.isNaN(filterDate.getTime())) return true;
+      filterDate.setHours(0, 0, 0, 0);
+      return parsedLeadDate >= filterDate;
+    },
+    [initialDateFilter],
+  );
+
   const filteredRecipients = useMemo(
     () =>
       groupRecipients.filter((conversa) => {
         const statusValue = normalizeStatus(conversa.venda?.status);
-        if (!statusValue) return true;
+        if (!statusValue) return matchesInitialDate(conversa);
         const serviceId = resolveServiceId(conversa);
         const matchesStatus = enabledStatuses.has(statusValue);
         const matchesService =
           enabledServices.size === 0 || !serviceId
             ? true
             : enabledServices.has(serviceId);
-        return matchesStatus && matchesService;
+        return matchesStatus && matchesService && matchesInitialDate(conversa);
       }),
     [
       groupRecipients,
       enabledStatuses,
       enabledServices,
+      matchesInitialDate,
       normalizeStatus,
       resolveServiceId,
     ],
@@ -340,13 +357,24 @@ export function BatchSendModal({ userId, onClose }: Props) {
       const next = new Set(prev);
       groupRecipients.forEach((conversa) => {
         const statusValue = normalizeStatus(conversa.venda?.status);
-        if (!statusValue) return;
         const serviceId = resolveServiceId(conversa);
         const matchesService =
           enabledServices.size === 0 || !serviceId
             ? true
             : enabledServices.has(serviceId);
-        if (enabledStatuses.has(statusValue) && matchesService) {
+        if (!statusValue) {
+          if (matchesService && matchesInitialDate(conversa)) {
+            next.add(conversa.whatsappChatId);
+          } else {
+            next.delete(conversa.whatsappChatId);
+          }
+          return;
+        }
+        if (
+          enabledStatuses.has(statusValue) &&
+          matchesService &&
+          matchesInitialDate(conversa)
+        ) {
           next.add(conversa.whatsappChatId);
         } else {
           next.delete(conversa.whatsappChatId);
@@ -358,6 +386,7 @@ export function BatchSendModal({ userId, onClose }: Props) {
     enabledStatuses,
     enabledServices,
     groupRecipients,
+    matchesInitialDate,
     normalizeStatus,
     resolveServiceId,
   ]);
@@ -434,7 +463,7 @@ export function BatchSendModal({ userId, onClose }: Props) {
     );
 
     if (chatIds.length === 0) {
-      setError("Nenhuma conversa disponível com os status selecionados.");
+      setError("Nenhuma conversa disponível com os filtros selecionados.");
       return;
     }
 
@@ -852,13 +881,13 @@ export function BatchSendModal({ userId, onClose }: Props) {
                     )}
                   </div>
                   <div className="relative">
-                    <button
-                      type="button"
-                      onClick={() => setServiceMenuOpen((prev) => !prev)}
-                      className="rounded-full border border-gray-200 px-3 py-1 text-xs text-gray-600 hover:bg-gray-50"
-                    >
-                      Serviço
-                    </button>
+                  <button
+                    type="button"
+                    onClick={() => setServiceMenuOpen((prev) => !prev)}
+                    className="rounded-full border border-gray-200 px-3 py-1 text-xs text-gray-600 hover:bg-gray-50"
+                  >
+                    Serviço
+                  </button>
                     {serviceMenuOpen && (
                       <div className="absolute left-0 z-10 mt-2 w-56 rounded-lg border border-gray-200 bg-white shadow-lg">
                         <div className="border-b border-gray-100 px-3 py-2 text-[11px] text-gray-500">
@@ -891,6 +920,17 @@ export function BatchSendModal({ userId, onClose }: Props) {
                       </div>
                     )}
                   </div>
+                  <label className="flex items-center gap-2 text-xs text-gray-500">
+                    Data inicial (a partir de)
+                    <input
+                      type="date"
+                      value={initialDateFilter}
+                      onChange={(event) =>
+                        setInitialDateFilter(event.target.value)
+                      }
+                      className="rounded-full border border-gray-200 px-3 py-1 text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#25d366]"
+                    />
+                  </label>
                   <button
                     type="button"
                     onClick={() => handleSelectAllRecipients(true)}
@@ -911,7 +951,7 @@ export function BatchSendModal({ userId, onClose }: Props) {
               <div className="space-y-2">
                 {filteredRecipients.length === 0 ? (
                   <div className="rounded-lg border border-dashed border-gray-200 px-3 py-6 text-center text-xs text-gray-500">
-                    Nenhuma conversa disponível com os status selecionados.
+                    Nenhuma conversa disponível com os filtros selecionados.
                   </div>
                 ) : (
                   filteredRecipients.map((conversa) => {
