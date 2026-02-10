@@ -9,7 +9,7 @@ export const Sidebar = () => {
   const router = useRouter();
   if (loading) {
     return (
-      <div className="w-64 fixed top-14 left-0 h-full shadow-right border-r-2 border-gray-200 p-5"></div>
+      <div className="w-64 fixed top-14 left-0 h-full shadow-right border-r-2 border-gray-200 p-5 box-border"></div>
     );
   }
   return (
@@ -24,6 +24,7 @@ export const Sidebar = () => {
   border-r-2
   border-gray-200
   p-5
+  box-border
   overflow-y-auto
   scrollbar-thin scrollbar-thumb-gray-100 scrollbar-track-transparent
 "

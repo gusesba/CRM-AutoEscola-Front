@@ -66,12 +66,12 @@ export default function Home({ onDisconnect, disconnecting }: HomeProps) {
     useState<GrupoWhatsapp | null>(null);
   const [modalAdicionarGrupoOpen, setModalAdicionarGrupoOpen] = useState(false);
   const [gruposDisponiveis, setGruposDisponiveis] = useState<GrupoWhatsapp[]>(
-    []
+    [],
   );
   const [grupoSelecionadoId, setGrupoSelecionadoId] = useState<number | "">("");
   const [adicionandoGrupo, setAdicionandoGrupo] = useState(false);
   const [erroAdicionarGrupo, setErroAdicionarGrupo] = useState<string | null>(
-    null
+    null,
   );
   const [carregandoGruposDisponiveis, setCarregandoGruposDisponiveis] =
     useState(false);
@@ -84,7 +84,7 @@ export default function Home({ onDisconnect, disconnecting }: HomeProps) {
   const [selectedUserId, setSelectedUserId] = useState("");
   const [chatFilter, setChatFilter] = useState("");
   const [pendingChatNumber, setPendingChatNumber] = useState<string | null>(
-    null
+    null,
   );
   const [vinculandoConversas, setVinculandoConversas] = useState(false);
   const [resumoVinculo, setResumoVinculo] =
@@ -220,11 +220,11 @@ export default function Home({ onDisconnect, disconnecting }: HomeProps) {
   const gruposPorPagina = 3;
   const gruposChatPaginados = gruposChat.slice(
     grupoChatIndex * gruposPorPagina,
-    grupoChatIndex * gruposPorPagina + gruposPorPagina
+    grupoChatIndex * gruposPorPagina + gruposPorPagina,
   );
   const totalPaginasGrupoChat = Math.max(
     1,
-    Math.ceil(gruposChat.length / gruposPorPagina)
+    Math.ceil(gruposChat.length / gruposPorPagina),
   );
 
   useEffect(() => {
@@ -308,7 +308,7 @@ export default function Home({ onDisconnect, disconnecting }: HomeProps) {
 
     if (!vendaWhatsappId) {
       setErroAdicionarGrupo(
-        "É necessário vincular a conversa a uma venda antes de adicionar ao grupo."
+        "É necessário vincular a conversa a uma venda antes de adicionar ao grupo.",
       );
       return;
     }
@@ -328,9 +328,8 @@ export default function Home({ onDisconnect, disconnecting }: HomeProps) {
       });
 
       setLoadingGruposChat(true);
-      const gruposAtualizados = await buscarGruposWhatsappPorChat(
-        selectedChatId
-      );
+      const gruposAtualizados =
+        await buscarGruposWhatsappPorChat(selectedChatId);
       setGruposChat(gruposAtualizados);
       setGrupoChatIndex(0);
       fecharModalAdicionarGrupo();
@@ -371,7 +370,7 @@ export default function Home({ onDisconnect, disconnecting }: HomeProps) {
         idsVendaWhats,
       });
       setGruposChat((prev) =>
-        prev.filter((item) => item.id !== grupoChatParaRemover.id)
+        prev.filter((item) => item.id !== grupoChatParaRemover.id),
       );
     } catch (error) {
       console.error(error);
@@ -384,13 +383,13 @@ export default function Home({ onDisconnect, disconnecting }: HomeProps) {
 
   const handleArchiveToggle = (chatId: string, archived: boolean) => {
     setChats((prev) =>
-      prev.map((chat) => (chat.id === chatId ? { ...chat, archived } : chat))
+      prev.map((chat) => (chat.id === chatId ? { ...chat, archived } : chat)),
     );
   };
 
   const handleChatNameUpdated = (chatId: string, name: string) => {
     setChats((prev) =>
-      prev.map((chat) => (chat.id === chatId ? { ...chat, name } : chat))
+      prev.map((chat) => (chat.id === chatId ? { ...chat, name } : chat)),
     );
   };
 
@@ -413,7 +412,9 @@ export default function Home({ onDisconnect, disconnecting }: HomeProps) {
       console.error(error);
       toast.error("Não foi possível vincular as conversas.", {
         description:
-          error instanceof Error ? error.message : "Tente novamente mais tarde.",
+          error instanceof Error
+            ? error.message
+            : "Tente novamente mais tarde.",
       });
     } finally {
       setVinculandoConversas(false);
@@ -422,7 +423,7 @@ export default function Home({ onDisconnect, disconnecting }: HomeProps) {
 
   return (
     <div className="flex-1 bg-[#f0f2f5]">
-      <div className="mx-auto max-w-[1400px] mt-[-30px]">
+      <div className="mx-auto max-w-[calc(100vw-20rem)] mt-[-30px]">
         <div className="flex flex-wrap items-center gap-3 px-2 py-3">
           <div className="flex flex-1 items-center gap-2 overflow-hidden">
             {grupoChatIndex !== 0 && (
@@ -484,7 +485,7 @@ export default function Home({ onDisconnect, disconnecting }: HomeProps) {
                 type="button"
                 onClick={() =>
                   setGrupoChatIndex((prev) =>
-                    Math.min(totalPaginasGrupoChat - 1, prev + 1)
+                    Math.min(totalPaginasGrupoChat - 1, prev + 1),
                   )
                 }
                 className="h-8 w-8 flex items-center justify-center rounded-full border border-gray-200 text-gray-500 disabled:opacity-40 cursor-pointer"
@@ -562,7 +563,7 @@ export default function Home({ onDisconnect, disconnecting }: HomeProps) {
 
               // zera unread ao abrir
               setChats((prev) =>
-                prev.map((c) => (c.id === id ? { ...c, unreadCount: 0 } : c))
+                prev.map((c) => (c.id === id ? { ...c, unreadCount: 0 } : c)),
               );
             }}
           />
@@ -595,7 +596,7 @@ export default function Home({ onDisconnect, disconnecting }: HomeProps) {
             onChatCreated={(newChat) => {
               setChats((prev) => {
                 const existingIndex = prev.findIndex(
-                  (chat) => chat.id === newChat.id
+                  (chat) => chat.id === newChat.id,
                 );
                 if (existingIndex === -1) {
                   return [newChat, ...prev];
@@ -650,7 +651,7 @@ export default function Home({ onDisconnect, disconnecting }: HomeProps) {
                   value={grupoSelecionadoId}
                   onChange={(event) =>
                     setGrupoSelecionadoId(
-                      event.target.value ? Number(event.target.value) : ""
+                      event.target.value ? Number(event.target.value) : "",
                     )
                   }
                   className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#25d366]"
