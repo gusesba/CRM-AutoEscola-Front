@@ -79,6 +79,34 @@ function getForwardPreview(message: Message) {
   }
 }
 
+
+function formatLeadContact(contato?: string | null) {
+  const digits = getPhoneDigits(contato ?? "");
+  if (!digits) return "";
+
+  let normalized = digits;
+  if (normalized.startsWith("55") && (normalized.length === 12 || normalized.length === 13)) {
+    normalized = normalized.slice(2);
+  }
+
+  if (normalized.length > 11) {
+    normalized = normalized.slice(-11);
+  }
+
+  if (normalized.length < 10) {
+    return contato?.trim() ?? "";
+  }
+
+  const ddd = normalized.slice(0, 2);
+  const restante = normalized.slice(2);
+
+  if (restante.length === 8) {
+    return `(${ddd}) ${restante.slice(0, 4)}-${restante.slice(4)}`;
+  }
+
+  return `(${ddd}) ${restante.slice(0, 5)}-${restante.slice(5, 9)}`;
+}
+
 function lastMessageToMessage(
   last: NonNullable<Chat["lastMessage"]>,
   chatId: string,
@@ -566,7 +594,7 @@ export const ChatWindow = React.memo(function ChatWindow({
   const leadVinculado =
     status?.status === WhatsStatusEnum.Criado ? status.venda : null;
   const headerTitle = leadVinculado?.cliente?.trim() || headerName;
-  const headerSubtitle = leadVinculado?.contato?.trim() || "";
+  const headerSubtitle = formatLeadContact(leadVinculado?.contato);
 
   return (
     <main className="flex-1 flex flex-col min-w-0">
