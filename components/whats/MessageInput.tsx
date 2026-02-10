@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { ClipboardEvent, useEffect, useRef, useState } from "react";
 import { formatWhatsText } from "@/lib/formatWhatsText";
 import { Paperclip, Send, Mic } from "lucide-react";
 import { Message } from "@/types/messages";
@@ -40,6 +40,14 @@ export function MessageInput({
 
   const [attachment, setAttachment] = useState<Attachment | null>(null);
 
+  useEffect(() => {
+    return () => {
+      if (attachment?.previewUrl) {
+        URL.revokeObjectURL(attachment.previewUrl);
+      }
+    };
+  }, [attachment]);
+
   function getReplyPreview(message: Message) {
     if (message.body?.trim()) {
       return message.body;
@@ -75,6 +83,11 @@ export function MessageInput({
   /** Seleção de arquivo */
   function handleFileSelect(file: File) {
     if (disabled || disableAttachments) return;
+
+    if (attachment?.previewUrl) {
+      URL.revokeObjectURL(attachment.previewUrl);
+    }
+
     const type = file.type.startsWith("image")
       ? "image"
       : file.type.startsWith("video")
@@ -104,6 +117,31 @@ export function MessageInput({
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
+  }
+
+  function clearAttachment() {
+    if (attachment?.previewUrl) {
+      URL.revokeObjectURL(attachment.previewUrl);
+    }
+    setAttachment(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  }
+
+  function handlePaste(event: ClipboardEvent<HTMLTextAreaElement>) {
+    if (disabled || disableAttachments) return;
+
+    const clipboardItems = Array.from(event.clipboardData.items ?? []);
+    const fileItem = clipboardItems.find((item) => item.kind === "file");
+
+    if (!fileItem) return;
+
+    const file = fileItem.getAsFile();
+    if (!file) return;
+
+    event.preventDefault();
+    handleFileSelect(file);
   }
 
   return (
@@ -154,14 +192,9 @@ export function MessageInput({
           <div className="relative bg-white rounded-xl p-3 shadow-sm w-fit max-w-full mt-[-140px]">
             {/* ❌ remover */}
             <button
-              onClick={() => {
-                setAttachment(null);
-
-                if (fileInputRef.current) {
-                  fileInputRef.current.value = "";
-                }
-              }}
-              className="absolute top-2 right-2 text-gray-500 hover:text-red-500"
+              type="button"
+              onClick={clearAttachment}
+              className="absolute top-2 right-2 text-gray-500 hover:text-red-500 cursor-pointer"
             >
               ✕
             </button>
@@ -171,6 +204,7 @@ export function MessageInput({
               {attachment.type === "image" && (
                 <img
                   src={attachment.previewUrl}
+                  alt={attachment.file.name}
                   className="max-w-full max-h-full object-contain"
                 />
               )}
@@ -238,6 +272,7 @@ export function MessageInput({
               ref={textareaRef}
               value={value}
               onChange={(e) => onChange(e.target.value)}
+              onPaste={handlePaste}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
