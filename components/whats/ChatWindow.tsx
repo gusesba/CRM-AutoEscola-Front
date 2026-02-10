@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { toast } from "sonner";
-import { Chat, ChatStatusDto } from "@/types/chat";
+import { useRouter } from "next/navigation";
+import { Chat, ChatStatusDto, WhatsStatusEnum } from "@/types/chat";
 import { Message } from "@/types/messages";
 import {
   fetchMessages,
@@ -122,6 +123,7 @@ export const ChatWindow = React.memo(function ChatWindow({
   onArchiveToggle,
   onChatNameUpdated,
 }: Props) {
+  const router = useRouter();
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
@@ -604,7 +606,16 @@ export const ChatWindow = React.memo(function ChatWindow({
               onClick={handleOpenContactModal}
               className="rounded-lg border border-gray-200 px-3 py-2 text-xs font-semibold text-gray-600 transition hover:bg-gray-100 cursor-pointer"
             >
-              Adicionar/Editar
+              Adicionar contato
+            </button>
+          )}
+          {status?.status === WhatsStatusEnum.Criado && status.venda?.id && (
+            <button
+              type="button"
+              onClick={() => router.push(`/venda/editar/${status.venda?.id}`)}
+              className="rounded-lg border border-gray-200 px-3 py-2 text-xs font-semibold text-gray-600 transition hover:bg-gray-100 cursor-pointer"
+            >
+              Abrir lead
             </button>
           )}
           {chat && !isNewChat && whatsappUserId && (
