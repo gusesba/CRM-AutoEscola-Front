@@ -1,15 +1,18 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MessageBubble } from "@/components/whats/MessageBubble";
 import { MessageInput } from "@/components/whats/MessageInput";
 import {
   buscarGruposWhatsapp,
+  buscarVinculosWhatsapp,
   GrupoWhatsapp,
   GrupoWhatsappConversa,
 } from "@/services/whatsappGroupService";
 import { sendBatchMessages } from "@/services/whatsapp";
+import { BuscarServicos } from "@/services/servicoService";
 import { Message } from "@/types/messages";
+import { StatusEnum } from "@/enums";
 
 type PreviewMessage = Message & {
   file?: File;
@@ -40,11 +43,29 @@ const EMPTY_MESSAGE = "Digite uma mensagem para o preview.";
 const TEMPLATE_FIRST_NAME = "${PrimeiroNome}";
 const TEMPLATE_FULL_NAME = "${NomeCompleto}";
 const BATCH_SETTINGS_STORAGE_KEY = "batch-send-settings";
+const DEFAULT_UNCHECKED_STATUSES = new Set<number>([
+  StatusEnum.VendaEfetivada,
+  StatusEnum.OptouPelaConcorrencia,
+  StatusEnum.NaoEnviarMais,
+]);
+const ALL_LINKED_OPTION = "all-linked";
+const STATUS_LABELS: Record<number, string> = {
+  1: "Agendar contato",
+  2: "Venda efetivada",
+  3: "Stand by",
+  4: "Optou pela concorrência",
+  5: "Não enviar mais",
+};
 
 type BatchSendSettings = {
   intervalMs: string;
   bigIntervalMs: string;
   messagesUntilBigInterval: string;
+};
+
+type ServiceOption = {
+  id: number;
+  nome: string;
 };
 
 const defaultBatchSettings: BatchSendSettings = {
@@ -79,36 +100,66 @@ function normalizeBase64(dataUrl: string) {
 
 export function BatchSendModal({ userId, onClose }: Props) {
   const [groups, setGroups] = useState<GrupoWhatsapp[]>([]);
-  const [selectedGroupId, setSelectedGroupId] = useState<number | "">("");
+  const [selectedGroupId, setSelectedGroupId] = useState<
+    number | typeof ALL_LINKED_OPTION | ""
+  >("");
   const [previewMessages, setPreviewMessages] = useState<PreviewMessage[]>([]);
   const [text, setText] = useState("");
   const [loadingGroups, setLoadingGroups] = useState(false);
+  const [loadingAllLinked, setLoadingAllLinked] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [recipientsModalOpen, setRecipientsModalOpen] = useState(false);
   const [selectedRecipients, setSelectedRecipients] = useState<Set<string>>(
-    new Set()
+    new Set(),
   );
-  const [batchSettings, setBatchSettings] = useState<BatchSendSettings>(
-    defaultBatchSettings
+  const [statusMenuOpen, setStatusMenuOpen] = useState(false);
+  const [serviceMenuOpen, setServiceMenuOpen] = useState(false);
+  const [batchSettings, setBatchSettings] =
+    useState<BatchSendSettings>(defaultBatchSettings);
+  const [services, setServices] = useState<ServiceOption[]>([]);
+  const [dateFilterModalOpen, setDateFilterModalOpen] = useState(false);
+  const [initialDateStart, setInitialDateStart] = useState("");
+  const [initialDateEnd, setInitialDateEnd] = useState("");
+  const [enabledStatuses, setEnabledStatuses] = useState<Set<number>>(
+    () =>
+      new Set(
+        Object.values(StatusEnum).filter(
+          (value): value is number =>
+            typeof value === "number" && !DEFAULT_UNCHECKED_STATUSES.has(value),
+        ),
+      ),
+  );
+  const [enabledServices, setEnabledServices] = useState<Set<number>>(
+    () => new Set(),
   );
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const [allLinkedRecipients, setAllLinkedRecipients] = useState<
+    GrupoWhatsappConversa[]
+  >([]);
 
   const selectedGroup = useMemo(
-    () => groups.find((group) => group.id === selectedGroupId) ?? null,
-    [groups, selectedGroupId]
+    () =>
+      typeof selectedGroupId === "number"
+        ? groups.find((group) => group.id === selectedGroupId) ?? null
+        : null,
+    [groups, selectedGroupId],
   );
+  const isAllLinkedSelected = selectedGroupId === ALL_LINKED_OPTION;
 
   const groupRecipients = useMemo(() => {
-    if (!selectedGroup) return [];
+    const source = isAllLinkedSelected
+      ? allLinkedRecipients
+      : selectedGroup?.conversas ?? [];
+    if (source.length === 0) return [];
     const unique = new Map<string, GrupoWhatsappConversa>();
-    selectedGroup.conversas.forEach((conversa) => {
+    source.forEach((conversa) => {
       if (conversa.whatsappChatId) {
         unique.set(conversa.whatsappChatId, conversa);
       }
     });
     return Array.from(unique.values());
-  }, [selectedGroup]);
+  }, [allLinkedRecipients, isAllLinkedSelected, selectedGroup]);
 
   const groupRecipientsByChatId = useMemo(() => {
     const map = new Map<string, GrupoWhatsappConversa>();
@@ -117,6 +168,86 @@ export function BatchSendModal({ userId, onClose }: Props) {
     });
     return map;
   }, [groupRecipients]);
+
+  const statusOptions = useMemo(
+    () =>
+      Object.entries(StatusEnum)
+        .filter(([, value]) => typeof value === "number")
+        .map(([label, value]) => ({
+          label: STATUS_LABELS[Number(value)] ?? label,
+          value: Number(value),
+        })),
+    [],
+  );
+
+  const normalizeStatus = useCallback((status?: string | number) => {
+    if (typeof status === "number") return status;
+    if (typeof status === "string") {
+      const numeric = Number(status);
+      if (!Number.isNaN(numeric)) return numeric;
+      const match = Object.entries(StatusEnum).find(
+        ([label, value]) =>
+          typeof value === "number" && label === status.trim(),
+      );
+      if (match) return Number(match[1]);
+    }
+    return null;
+  }, []);
+
+  const resolveServiceId = useCallback((conversa: GrupoWhatsappConversa) => {
+    return (
+      conversa.venda?.servicoId ??
+      conversa.venda?.servico?.id ??
+      null
+    );
+  }, []);
+
+  const matchesInitialDate = useCallback(
+    (conversa: GrupoWhatsappConversa) => {
+      if (!initialDateStart && !initialDateEnd) return true;
+      const leadDate = conversa.venda?.dataInicial;
+      if (!leadDate) return false;
+      const parsedLeadDate = new Date(leadDate);
+      if (Number.isNaN(parsedLeadDate.getTime())) return false;
+
+      const startDate = initialDateStart ? new Date(initialDateStart) : null;
+      const endDate = initialDateEnd ? new Date(initialDateEnd) : null;
+
+      if (startDate && Number.isNaN(startDate.getTime())) return true;
+      if (endDate && Number.isNaN(endDate.getTime())) return true;
+
+      if (startDate) startDate.setHours(0, 0, 0, 0);
+      if (endDate) endDate.setHours(23, 59, 59, 999);
+
+      if (startDate && parsedLeadDate < startDate) return false;
+      if (endDate && parsedLeadDate > endDate) return false;
+      return true;
+    },
+    [initialDateEnd, initialDateStart],
+  );
+
+  const filteredRecipients = useMemo(
+    () =>
+      groupRecipients.filter((conversa) => {
+        const statusValue = normalizeStatus(conversa.venda?.status);
+        if (!statusValue) return matchesInitialDate(conversa);
+        const serviceId = resolveServiceId(conversa);
+        const matchesStatus = enabledStatuses.has(statusValue);
+        const matchesService =
+          enabledServices.size === 0 || !serviceId
+            ? true
+            : enabledServices.has(serviceId);
+        return matchesStatus && matchesService && matchesInitialDate(conversa);
+      }),
+    [
+      groupRecipients,
+      enabledStatuses,
+      enabledServices,
+      matchesInitialDate,
+      normalizeStatus,
+      resolveServiceId,
+    ],
+  );
 
   useEffect(() => {
     let mounted = true;
@@ -142,6 +273,29 @@ export function BatchSendModal({ userId, onClose }: Props) {
   }, [userId]);
 
   useEffect(() => {
+    let mounted = true;
+
+    BuscarServicos("pageSize=1000")
+      .then((data) => {
+        if (!mounted) return;
+        const items = data?.items ?? [];
+        setServices(items);
+        setEnabledServices(
+          new Set(items.map((servico: ServiceOption) => servico.id)),
+        );
+      })
+      .catch((err) => {
+        console.error(err);
+        if (!mounted) return;
+        setError("Não foi possível carregar os serviços.");
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [previewMessages]);
 
@@ -164,6 +318,90 @@ export function BatchSendModal({ userId, onClose }: Props) {
     setRecipientsModalOpen(false);
     setSelectedRecipients(new Set());
   }, [selectedGroupId]);
+
+  useEffect(() => {
+    if (!recipientsModalOpen) {
+      setStatusMenuOpen(false);
+      setServiceMenuOpen(false);
+      setDateFilterModalOpen(false);
+    }
+  }, [recipientsModalOpen]);
+
+  useEffect(() => {
+    if (!isAllLinkedSelected) return;
+    let mounted = true;
+    setLoadingAllLinked(true);
+    buscarVinculosWhatsapp()
+      .then((data) => {
+        if (!mounted) return;
+        const unique = new Map<string, GrupoWhatsappConversa>();
+        (data ?? []).forEach((vinculo) => {
+          if (!vinculo.whatsappChatId) return;
+          unique.set(vinculo.whatsappChatId, {
+            id: vinculo.id,
+            vendaWhatsappId: vinculo.vendaId ?? vinculo.id,
+            vendaId: vinculo.vendaId,
+            venda: vinculo.venda ?? undefined,
+            whatsappChatId: vinculo.whatsappChatId,
+            whatsappUserId: vinculo.whatsappUserId,
+          });
+        });
+        setAllLinkedRecipients(Array.from(unique.values()));
+      })
+      .catch((err) => {
+        console.error(err);
+        if (!mounted) return;
+        setError("Não foi possível carregar os vinculados.");
+      })
+      .finally(() => {
+        if (!mounted) return;
+        setLoadingAllLinked(false);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [isAllLinkedSelected]);
+
+  useEffect(() => {
+    if (groupRecipients.length === 0) return;
+    setSelectedRecipients((prev) => {
+      const next = new Set(prev);
+      groupRecipients.forEach((conversa) => {
+        const statusValue = normalizeStatus(conversa.venda?.status);
+        const serviceId = resolveServiceId(conversa);
+        const matchesService =
+          enabledServices.size === 0 || !serviceId
+            ? true
+            : enabledServices.has(serviceId);
+        if (!statusValue) {
+          if (matchesService && matchesInitialDate(conversa)) {
+            next.add(conversa.whatsappChatId);
+          } else {
+            next.delete(conversa.whatsappChatId);
+          }
+          return;
+        }
+        if (
+          enabledStatuses.has(statusValue) &&
+          matchesService &&
+          matchesInitialDate(conversa)
+        ) {
+          next.add(conversa.whatsappChatId);
+        } else {
+          next.delete(conversa.whatsappChatId);
+        }
+      });
+      return next;
+    });
+  }, [
+    enabledStatuses,
+    enabledServices,
+    groupRecipients,
+    matchesInitialDate,
+    normalizeStatus,
+    resolveServiceId,
+  ]);
 
   const handlePreviewSend = (file?: File) => {
     if (!text.trim() && !file) return;
@@ -213,7 +451,7 @@ export function BatchSendModal({ userId, onClose }: Props) {
   const handleOpenRecipientsModal = () => {
     setError(null);
 
-    if (!selectedGroup) {
+    if (!selectedGroup && !isAllLinkedSelected) {
       setError("Selecione um grupo para enviar.");
       return;
     }
@@ -223,15 +461,52 @@ export function BatchSendModal({ userId, onClose }: Props) {
       return;
     }
 
-    const chatIds = groupRecipients.map((conversa) => conversa.whatsappChatId);
-
-    if (chatIds.length === 0) {
-      setError("O grupo selecionado não possui conversas vinculadas.");
+    if (groupRecipients.length === 0) {
+      setError(
+        isAllLinkedSelected
+          ? "Nenhuma conversa vinculada encontrada."
+          : "O grupo selecionado não possui conversas vinculadas.",
+      );
       return;
     }
 
-    setSelectedRecipients(new Set(chatIds));
+    const chatIds = filteredRecipients.map(
+      (conversa) => conversa.whatsappChatId,
+    );
+
+    if (chatIds.length === 0) {
+      setError("Nenhuma conversa disponível com os filtros selecionados.");
+      return;
+    }
+
+    setSelectedRecipients(
+      new Set(filteredRecipients.map((conversa) => conversa.whatsappChatId)),
+    );
     setRecipientsModalOpen(true);
+  };
+
+  const handleToggleStatus = (statusValue: number) => {
+    setEnabledStatuses((prev) => {
+      const next = new Set(prev);
+      if (next.has(statusValue)) {
+        next.delete(statusValue);
+      } else {
+        next.add(statusValue);
+      }
+      return next;
+    });
+  };
+
+  const handleToggleService = (serviceId: number) => {
+    setEnabledServices((prev) => {
+      const next = new Set(prev);
+      if (next.has(serviceId)) {
+        next.delete(serviceId);
+      } else {
+        next.add(serviceId);
+      }
+      return next;
+    });
   };
 
   const handleToggleRecipient = (chatId: string) => {
@@ -252,7 +527,7 @@ export function BatchSendModal({ userId, onClose }: Props) {
       return;
     }
     setSelectedRecipients(
-      new Set(groupRecipients.map((conversa) => conversa.whatsappChatId))
+      new Set(filteredRecipients.map((conversa) => conversa.whatsappChatId)),
     );
   };
 
@@ -263,7 +538,7 @@ export function BatchSendModal({ userId, onClose }: Props) {
   const handleSendBatch = async () => {
     setError(null);
 
-    if (!selectedGroup) {
+    if (!selectedGroup && !isAllLinkedSelected) {
       setError("Selecione um grupo para enviar.");
       return;
     }
@@ -314,7 +589,7 @@ export function BatchSendModal({ userId, onClose }: Props) {
       const intervalMs = Number(batchSettings.intervalMs);
       const bigIntervalMs = Number(batchSettings.bigIntervalMs);
       const messagesUntilBigInterval = Number(
-        batchSettings.messagesUntilBigInterval
+        batchSettings.messagesUntilBigInterval,
       );
 
       await sendBatchMessages(
@@ -324,7 +599,9 @@ export function BatchSendModal({ userId, onClose }: Props) {
         Object.keys(paramsByChatId).length ? paramsByChatId : undefined,
         {
           intervalMs:
-            Number.isFinite(intervalMs) && intervalMs > 0 ? intervalMs : undefined,
+            Number.isFinite(intervalMs) && intervalMs > 0
+              ? intervalMs
+              : undefined,
           bigIntervalMs:
             Number.isFinite(bigIntervalMs) && bigIntervalMs > 0
               ? bigIntervalMs
@@ -334,11 +611,11 @@ export function BatchSendModal({ userId, onClose }: Props) {
             messagesUntilBigInterval > 0
               ? messagesUntilBigInterval
               : undefined,
-        }
+        },
       );
       window.localStorage.setItem(
         BATCH_SETTINGS_STORAGE_KEY,
-        JSON.stringify(batchSettings)
+        JSON.stringify(batchSettings),
       );
       setPreviewMessages([]);
       setText("");
@@ -439,12 +716,17 @@ export function BatchSendModal({ userId, onClose }: Props) {
                 value={selectedGroupId}
                 onChange={(event) =>
                   setSelectedGroupId(
-                    event.target.value ? Number(event.target.value) : ""
+                    event.target.value
+                      ? event.target.value === ALL_LINKED_OPTION
+                        ? ALL_LINKED_OPTION
+                        : Number(event.target.value)
+                      : "",
                   )
                 }
                 className="mt-2 w-full rounded-lg border border-gray-200 bg-white p-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#25d366]"
               >
                 <option value="">Selecione um grupo</option>
+                <option value={ALL_LINKED_OPTION}>Todos vinculados</option>
                 {groups.map((group) => (
                   <option key={group.id} value={group.id}>
                     {group.nome}
@@ -452,11 +734,13 @@ export function BatchSendModal({ userId, onClose }: Props) {
                 ))}
               </select>
               <div className="mt-3 text-xs text-gray-500">
-                {loadingGroups
-                  ? "Carregando grupos..."
-                  : selectedGroup
-                  ? `${selectedGroup.conversas?.length ?? 0} conversas vinculadas`
-                  : "Selecione um grupo para visualizar as conversas"}
+                {loadingGroups || loadingAllLinked
+                  ? "Carregando conversas..."
+                  : isAllLinkedSelected
+                    ? `${groupRecipients.length} conversas vinculadas`
+                    : selectedGroup
+                      ? `${selectedGroup.conversas?.length ?? 0} conversas vinculadas`
+                      : "Selecione um grupo para visualizar as conversas"}
               </div>
             </div>
 
@@ -570,10 +854,134 @@ export function BatchSendModal({ userId, onClose }: Props) {
             <div className="max-h-[360px] overflow-y-auto px-6 py-4">
               <div className="flex flex-wrap items-center justify-between gap-2 pb-3 text-xs text-gray-500">
                 <span>
-                  {selectedRecipients.size} de {groupRecipients.length}{" "}
+                  {selectedRecipients.size} de {filteredRecipients.length}{" "}
                   selecionados
                 </span>
                 <div className="flex items-center gap-2">
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setStatusMenuOpen((prev) => !prev)}
+                      className="rounded-full border border-gray-200 px-3 py-1 text-xs text-gray-600 hover:bg-gray-50"
+                    >
+                      Status
+                    </button>
+                    {statusMenuOpen && (
+                      <div className="absolute left-0 z-10 mt-2 w-56 rounded-lg border border-gray-200 bg-white shadow-lg">
+                        <div className="border-b border-gray-100 px-3 py-2 text-[11px] text-gray-500">
+                          Filtrar participantes por status.
+                        </div>
+                        <div className="max-h-48 space-y-2 overflow-y-auto px-3 py-2">
+                          {statusOptions.map((status) => (
+                            <label
+                              key={status.value}
+                              className="flex items-center gap-2 text-xs text-gray-700"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={enabledStatuses.has(status.value)}
+                                onChange={() =>
+                                  handleToggleStatus(status.value)
+                                }
+                                className="h-4 w-4 accent-[#25d366]"
+                              />
+                              <span>{status.label}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setServiceMenuOpen((prev) => !prev)}
+                      className="rounded-full border border-gray-200 px-3 py-1 text-xs text-gray-600 hover:bg-gray-50"
+                    >
+                      Serviço
+                    </button>
+                    {serviceMenuOpen && (
+                      <div className="absolute left-0 z-10 mt-2 w-56 rounded-lg border border-gray-200 bg-white shadow-lg">
+                        <div className="border-b border-gray-100 px-3 py-2 text-[11px] text-gray-500">
+                          Filtrar participantes por serviço.
+                        </div>
+                        <div className="max-h-48 space-y-2 overflow-y-auto px-3 py-2">
+                          {services.length === 0 ? (
+                            <span className="text-xs text-gray-500">
+                              Nenhum serviço disponível.
+                            </span>
+                          ) : (
+                            services.map((servico) => (
+                              <label
+                                key={servico.id}
+                                className="flex items-center gap-2 text-xs text-gray-700"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={enabledServices.has(servico.id)}
+                                  onChange={() =>
+                                    handleToggleService(servico.id)
+                                  }
+                                  className="h-4 w-4 accent-[#25d366]"
+                                />
+                                <span>{servico.nome}</span>
+                              </label>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setDateFilterModalOpen((prev) => !prev)}
+                      className="rounded-full border border-gray-200 px-3 py-1 text-xs text-gray-600 hover:bg-gray-50"
+                    >
+                      Data de cadastro
+                    </button>
+                    {dateFilterModalOpen && (
+                      <div className="absolute left-0 z-10 mt-2 w-64 rounded-lg border border-gray-200 bg-white p-3 text-xs text-gray-600 shadow-lg">
+                        <div className="mb-2 text-[11px] text-gray-500">
+                          Defina o período mínimo e máximo do lead.
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          <label className="flex flex-col gap-1">
+                            Data mínima
+                            <input
+                              type="date"
+                              value={initialDateStart}
+                              onChange={(event) =>
+                                setInitialDateStart(event.target.value)
+                              }
+                              className="rounded-md border border-gray-200 px-2 py-1 text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#25d366]"
+                            />
+                          </label>
+                          <label className="flex flex-col gap-1">
+                            Data máxima
+                            <input
+                              type="date"
+                              value={initialDateEnd}
+                              onChange={(event) =>
+                                setInitialDateEnd(event.target.value)
+                              }
+                              className="rounded-md border border-gray-200 px-2 py-1 text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#25d366]"
+                            />
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setInitialDateStart("");
+                              setInitialDateEnd("");
+                            }}
+                            className="mt-1 self-start text-[11px] text-gray-500 hover:text-gray-700"
+                          >
+                            Limpar datas
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                   <button
                     type="button"
                     onClick={() => handleSelectAllRecipients(true)}
@@ -592,42 +1000,51 @@ export function BatchSendModal({ userId, onClose }: Props) {
               </div>
 
               <div className="space-y-2">
-                {groupRecipients.map((conversa) => {
-                  const cliente = conversa.venda?.cliente;
-                  const contato = conversa.venda?.contato;
-                  const label = cliente || contato || `Conversa ${conversa.vendaWhatsappId}`;
-                  const secondary = cliente ? contato : null;
-                  return (
-                    <label
-                      key={conversa.whatsappChatId}
-                      className="flex items-center justify-between gap-3 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700"
-                    >
-                      <div className="flex flex-col">
-                        <span className="font-medium text-gray-900">
-                          {label}
-                        </span>
-                        {secondary && (
-                          <span className="text-xs text-gray-500">
-                            {secondary}
+                {filteredRecipients.length === 0 ? (
+                  <div className="rounded-lg border border-dashed border-gray-200 px-3 py-6 text-center text-xs text-gray-500">
+                    Nenhuma conversa disponível com os filtros selecionados.
+                  </div>
+                ) : (
+                  filteredRecipients.map((conversa) => {
+                    const cliente = conversa.venda?.cliente;
+                    const contato = conversa.venda?.contato;
+                    const label =
+                      cliente ||
+                      contato ||
+                      `Conversa ${conversa.vendaWhatsappId}`;
+                    const secondary = cliente ? contato : null;
+                    return (
+                      <label
+                        key={conversa.whatsappChatId}
+                        className="flex items-center justify-between gap-3 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700"
+                      >
+                        <div className="flex flex-col">
+                          <span className="font-medium text-gray-900">
+                            {label}
                           </span>
-                        )}
-                        <span className="text-xs text-gray-400">
-                          ID chat: {conversa.whatsappChatId}
-                        </span>
-                      </div>
-                      <input
-                        type="checkbox"
-                        checked={selectedRecipients.has(
-                          conversa.whatsappChatId
-                        )}
-                        onChange={() =>
-                          handleToggleRecipient(conversa.whatsappChatId)
-                        }
-                        className="h-4 w-4 accent-[#25d366]"
-                      />
-                    </label>
-                  );
-                })}
+                          {secondary && (
+                            <span className="text-xs text-gray-500">
+                              {secondary}
+                            </span>
+                          )}
+                          <span className="text-xs text-gray-400">
+                            ID chat: {conversa.whatsappChatId}
+                          </span>
+                        </div>
+                        <input
+                          type="checkbox"
+                          checked={selectedRecipients.has(
+                            conversa.whatsappChatId,
+                          )}
+                          onChange={() =>
+                            handleToggleRecipient(conversa.whatsappChatId)
+                          }
+                          className="h-4 w-4 accent-[#25d366]"
+                        />
+                      </label>
+                    );
+                  })
+                )}
               </div>
             </div>
 

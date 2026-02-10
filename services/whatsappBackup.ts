@@ -2,6 +2,17 @@ import { apiFetch } from "./api";
 import { Chat } from "@/types/chat";
 import { Message } from "@/types/messages";
 
+export type ConversaNumeroInput = {
+  whatsappChatId: string;
+  numero: string;
+};
+
+export type ConversaVinculoResumo = {
+  conversasJaVinculadas: number;
+  conversasVinculadas: number;
+  conversasSemLeadEncontrado: number;
+};
+
 type BackupChatPayload = {
   id?: string | number;
   chatWhatsappId?: string | number;
@@ -175,4 +186,13 @@ export async function fetchBackupMessages(
   }
 
   return normalized.slice(-limit);
+}
+
+export async function vincularConversasNumero(
+  conversas: ConversaNumeroInput[]
+): Promise<ConversaVinculoResumo> {
+  return (await apiFetch("/whatsapp/conversas/vincular", {
+    method: "POST",
+    body: JSON.stringify({ conversas }),
+  })) as ConversaVinculoResumo;
 }

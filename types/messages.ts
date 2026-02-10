@@ -6,8 +6,22 @@ export type Message = {
   type: "chat" | "image" | "video" | "audio" | "sticker" | "document";
   hasMedia: boolean;
   author?: string | null;
+  isEdited?: boolean;
+  isForwarded?: boolean;
+  replyTo?: QuotedMessage | null;
 
   mediaUrl?: string;
   mimetype?: string;
   filename?: string;
+};
+
+export type QuotedMessage = {
+  id: string;
+  body: string;
+  fromMe: boolean;
+  timestamp: number;
+  type: "chat" | "image" | "video" | "audio" | "sticker" | "document";
+  hasMedia: boolean;
+  author?: string | null;
+  mediaUrl?: string;
 };

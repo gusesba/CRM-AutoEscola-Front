@@ -1,3 +1,4 @@
+import { toast } from "sonner";
 import { Chat } from "@/types/chat";
 import { Message } from "@/types/messages";
 
@@ -93,6 +94,95 @@ export async function sendMessage(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ message, ...(token ? { token } : {}) }),
   });
+}
+
+export async function replyToMessage(
+  userId: string,
+  messageId: string,
+  message: string
+) {
+  const token = getWhatsappToken();
+
+  await fetch(buildWhatsappUrl(`/${userId}/messages/${messageId}/reply`), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message, ...(token ? { token } : {}) }),
+  });
+}
+
+export async function forwardMessage(
+  userId: string,
+  messageId: string,
+  chatId: string
+) {
+  const token = getWhatsappToken();
+  const res = await fetch(
+    buildWhatsappUrl(`/${userId}/messages/${messageId}/forward`),
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chatId, ...(token ? { token } : {}) }),
+    }
+  );
+
+  const payload = await res.json().catch(() => null);
+
+  if (!res.ok) {
+    const message = payload?.error || "Erro ao encaminhar mensagem";
+    toast.error(message);
+    throw new Error(message);
+  }
+
+  return payload;
+}
+
+export async function editMessage(
+  userId: string,
+  messageId: string,
+  message: string
+) {
+  const token = getWhatsappToken();
+
+  const res = await fetch(buildWhatsappUrl(`/${userId}/messages/${messageId}`), {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message, ...(token ? { token } : {}) }),
+  });
+
+  const payload = await res.json().catch(() => null);
+
+  if (!res.ok) {
+    const message = payload?.error || "Erro ao editar mensagem";
+    toast.error(message);
+    throw new Error(message);
+  }
+
+  return payload;
+}
+
+export async function deleteMessage(
+  userId: string,
+  messageId: string,
+  forEveryone: boolean
+) {
+  const res = await fetch(
+    buildWhatsappUrl(`/${userId}/messages/${messageId}`, {
+      forEveryone: String(forEveryone),
+    }),
+    {
+      method: "DELETE",
+    }
+  );
+
+  const payload = await res.json().catch(() => null);
+
+  if (!res.ok) {
+    const message = payload?.error || "Erro ao excluir mensagem";
+    toast.error(message);
+    throw new Error(message);
+  }
+
+  return payload;
 }
 
 export type SendNumberMessageResponse = {
@@ -220,4 +310,34 @@ export async function toggleArchiveChat(
   }
 
   return res.json().catch(() => null);
+}
+
+export type AddressBookContactPayload = {
+  phoneNumber: string;
+  firstName: string;
+  lastName: string;
+};
+
+export async function upsertAddressBookContact(
+  userId: string,
+  payload: AddressBookContactPayload
+) {
+  const res = await fetch(buildWhatsappUrl(`/${userId}/addressbook/contact`), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await res.json().catch(() => null);
+
+  if (!res.ok) {
+    const message =
+      data?.message ||
+      data?.error ||
+      "Erro ao salvar contato no catálogo.";
+    toast.error(message);
+    throw new Error(message);
+  }
+
+  return data;
 }

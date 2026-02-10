@@ -7,7 +7,13 @@ export type GrupoWhatsappConversa = {
   venda?: {
     cliente: string;
     contato: string;
+    dataInicial?: string;
     status: string | number;
+    servicoId?: number;
+    servico?: {
+      id: number;
+      nome: string;
+    };
   };
   whatsappChatId: string;
   whatsappUserId: string;
@@ -27,7 +33,14 @@ export type VendaWhatsappVinculo = {
   venda?: {
     cliente: string;
     contato: string;
-  } | null;
+    dataInicial?: string;
+    status: string | number;
+    servicoId?: number;
+    servico?: {
+      id: number;
+      nome: string;
+    };
+  };
 };
 
 export type BuscarGruposWhatsappParams = {
@@ -36,7 +49,7 @@ export type BuscarGruposWhatsappParams = {
 };
 
 export async function buscarGruposWhatsapp(
-  params: BuscarGruposWhatsappParams = {}
+  params: BuscarGruposWhatsappParams = {},
 ): Promise<GrupoWhatsapp[]> {
   const query = new URLSearchParams();
 
@@ -52,7 +65,7 @@ export async function buscarGruposWhatsapp(
 }
 
 export async function buscarVinculosWhatsapp(
-  pesquisa?: string
+  pesquisa?: string,
 ): Promise<VendaWhatsappVinculo[]> {
   const query = new URLSearchParams();
 
@@ -69,7 +82,7 @@ export async function buscarVinculosWhatsapp(
 }
 
 export async function buscarGruposWhatsappPorVenda(
-  vendaId: number | string
+  vendaId: number | string,
 ): Promise<GrupoWhatsapp[]> {
   return await apiFetch(`/venda/whatsapp/grupos/venda/${vendaId}`, {
     method: "GET",
@@ -77,7 +90,7 @@ export async function buscarGruposWhatsappPorVenda(
 }
 
 export async function buscarGruposWhatsappPorChat(
-  whatsappChatId: string
+  whatsappChatId: string,
 ): Promise<GrupoWhatsapp[]> {
   return await apiFetch(`/venda/whatsapp/grupos/chat/${whatsappChatId}`, {
     method: "GET",
