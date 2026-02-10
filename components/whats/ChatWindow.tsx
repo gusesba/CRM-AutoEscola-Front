@@ -79,13 +79,15 @@ function getForwardPreview(message: Message) {
   }
 }
 
-
 function formatLeadContact(contato?: string | null) {
   const digits = getPhoneDigits(contato ?? "");
   if (!digits) return "";
 
   let normalized = digits;
-  if (normalized.startsWith("55") && (normalized.length === 12 || normalized.length === 13)) {
+  if (
+    normalized.startsWith("55") &&
+    (normalized.length === 12 || normalized.length === 13)
+  ) {
     normalized = normalized.slice(2);
   }
 
@@ -619,7 +621,9 @@ export const ChatWindow = React.memo(function ChatWindow({
         <div className="flex flex-col min-w-0">
           <p className="font-medium text-gray-900 truncate">{headerTitle}</p>
           {headerSubtitle && (
-            <span className="text-xs text-gray-500 truncate">{headerSubtitle}</span>
+            <span className="text-xs text-gray-500 truncate">
+              {headerSubtitle}
+            </span>
           )}
         </div>
         <div className="ml-auto flex items-center gap-3">
@@ -631,15 +635,31 @@ export const ChatWindow = React.memo(function ChatWindow({
               chat={chat}
             />
           )}
+          {status?.status === WhatsStatusEnum.Criado && status.venda?.id && (
+            <button
+              type="button"
+              onClick={() =>
+                window.open(
+                  `/venda/editar/${status.venda?.id}`,
+                  "_blank",
+                  "noopener,noreferrer",
+                )
+              }
+              className="rounded-lg border border-gray-200 px-3 py-2 text-xs font-semibold text-gray-600 transition hover:bg-gray-100 cursor-pointer"
+            >
+              Abrir lead
+            </button>
+          )}
           {chat && !isNewChat && whatsappUserId && !chat.isGroup && (
             <button
               type="button"
               onClick={handleOpenContactModal}
               className="rounded-lg border border-gray-200 px-3 py-2 text-xs font-semibold text-gray-600 transition hover:bg-gray-100 cursor-pointer"
             >
-              Adicionar/Editar
+              Adicionar contato
             </button>
           )}
+
           {chat && !isNewChat && whatsappUserId && (
             <button
               type="button"
