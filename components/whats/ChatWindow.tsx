@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { toast } from "sonner";
-import { Chat, ChatStatusDto } from "@/types/chat";
+import { Chat, ChatStatusDto, WhatsStatusEnum } from "@/types/chat";
 import { Message } from "@/types/messages";
 import {
   fetchMessages,
@@ -563,6 +563,10 @@ export const ChatWindow = React.memo(function ChatWindow({
   }
 
   const headerName = chat?.name ?? pendingNumber ?? "";
+  const leadVinculado =
+    status?.status === WhatsStatusEnum.Criado ? status.venda : null;
+  const headerTitle = leadVinculado?.cliente?.trim() || headerName;
+  const headerSubtitle = leadVinculado?.contato?.trim() || "";
 
   return (
     <main className="flex-1 flex flex-col min-w-0">
@@ -573,21 +577,22 @@ export const ChatWindow = React.memo(function ChatWindow({
           {chat?.profilePicUrl ? (
             <img
               src={`${process.env.NEXT_PUBLIC_WHATS_URL}${chat.profilePicUrl}`}
-              alt={headerName}
+              alt={headerTitle}
               className="w-full h-full object-cover"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-gray-500">
-              {headerName.charAt(0).toUpperCase()}
+              {headerTitle.charAt(0).toUpperCase()}
             </div>
           )}
         </div>
 
         {/* Info */}
         <div className="flex flex-col min-w-0">
-          <p className="font-medium text-gray-900 truncate">{headerName}</p>
-          {/* <span className="text-xs text-gray-500">Status aqui</span> */}
-          {/* depois dá pra ligar isso ao socket */}
+          <p className="font-medium text-gray-900 truncate">{headerTitle}</p>
+          {headerSubtitle && (
+            <span className="text-xs text-gray-500 truncate">{headerSubtitle}</span>
+          )}
         </div>
         <div className="ml-auto flex items-center gap-3">
           {status && chat && (
