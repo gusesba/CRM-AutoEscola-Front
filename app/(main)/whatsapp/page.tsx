@@ -86,7 +86,7 @@ export default function WhatsPage() {
         className="
           mx-auto
           h-[calc(100vh-7rem)]
-          max-w-[1400px]
+          max-w-[calc(100vw-16rem)]
           bg-white
           rounded-xl
           shadow-md
