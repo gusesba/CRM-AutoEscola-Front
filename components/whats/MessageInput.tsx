@@ -1,6 +1,6 @@
 "use client";
 
-import { ClipboardEvent, useEffect, useRef, useState } from "react";
+import { ClipboardEvent, useMemo, useEffect, useRef, useState } from "react";
 import { formatWhatsText } from "@/lib/formatWhatsText";
 import { Paperclip, Send, Mic, Smile } from "lucide-react";
 import { Message } from "@/types/messages";
@@ -42,7 +42,44 @@ export function MessageInput({
   const [attachment, setAttachment] = useState<Attachment | null>(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
-  const quickEmojis = ["😀", "😂", "😍", "🙏", "👍", "🎉", "❤️", "🔥"];
+  const [emojiSearch, setEmojiSearch] = useState("");
+
+  const allEmojis = useMemo(() => {
+    const emojiSet = new Set<string>();
+    const emojiRegex = /\p{Extended_Pictographic}/u;
+
+    const ranges: Array<[number, number]> = [
+      [0x1f300, 0x1f5ff],
+      [0x1f600, 0x1f64f],
+      [0x1f680, 0x1f6ff],
+      [0x1f700, 0x1f77f],
+      [0x1f780, 0x1f7ff],
+      [0x1f800, 0x1f8ff],
+      [0x1f900, 0x1f9ff],
+      [0x1fa00, 0x1faff],
+      [0x2600, 0x26ff],
+      [0x2700, 0x27bf],
+    ];
+
+    for (const [start, end] of ranges) {
+      for (let codePoint = start; codePoint <= end; codePoint += 1) {
+        const emoji = String.fromCodePoint(codePoint);
+
+        if (emojiRegex.test(emoji)) {
+          emojiSet.add(emoji);
+        }
+      }
+    }
+
+    return Array.from(emojiSet);
+  }, []);
+
+  const visibleEmojis = useMemo(() => {
+    const search = emojiSearch.trim();
+    if (!search) return allEmojis;
+
+    return allEmojis.filter((emoji) => emoji.includes(search));
+  }, [allEmojis, emojiSearch]);
 
   useEffect(() => {
     return () => {
@@ -58,6 +95,7 @@ export function MessageInput({
 
       if (!emojiPickerRef.current.contains(event.target as Node)) {
         setShowEmojiPicker(false);
+        setEmojiSearch("");
       }
     }
 
@@ -130,6 +168,7 @@ export function MessageInput({
     onSend(attachment?.file);
     onChange("");
     setShowEmojiPicker(false);
+    setEmojiSearch("");
     setAttachment(null);
 
     if (fileInputRef.current) {
@@ -296,7 +335,17 @@ export function MessageInput({
           <div className="relative" ref={emojiPickerRef}>
             <button
               type="button"
-              onClick={() => setShowEmojiPicker((prev) => !prev)}
+              onClick={() => {
+                setShowEmojiPicker((prev) => {
+                  const next = !prev;
+
+                  if (!next) {
+                    setEmojiSearch("");
+                  }
+
+                  return next;
+                });
+              }}
               className="p-2 text-gray-600 hover:bg-black/5 rounded-full disabled:cursor-not-allowed disabled:opacity-60"
               disabled={disabled}
               aria-label="Abrir emojis"
@@ -305,19 +354,33 @@ export function MessageInput({
             </button>
 
             {showEmojiPicker && (
-              <div className="absolute bottom-12 left-0 z-20 w-48 rounded-xl border border-gray-200 bg-white p-2 shadow-lg">
-                <div className="grid grid-cols-4 gap-1">
-                  {quickEmojis.map((emoji) => (
+              <div className="absolute bottom-12 left-0 z-20 w-72 rounded-xl border border-gray-200 bg-white p-2 shadow-lg">
+                <input
+                  type="text"
+                  value={emojiSearch}
+                  onChange={(event) => setEmojiSearch(event.target.value)}
+                  placeholder="Buscar emoji"
+                  className="mb-2 w-full rounded-md border border-gray-200 px-2 py-1 text-sm outline-none focus:border-gray-400"
+                />
+
+                <div className="grid max-h-56 grid-cols-8 gap-1 overflow-y-auto pr-1">
+                  {visibleEmojis.map((emoji) => (
                     <button
                       key={emoji}
                       type="button"
-                      className="flex h-9 w-9 items-center justify-center rounded-md text-xl leading-none transition hover:bg-gray-100"
+                      className="flex h-8 w-8 items-center justify-center rounded-md text-xl leading-none transition hover:bg-gray-100"
                       onClick={() => handleAddEmoji(emoji)}
                       aria-label={`Inserir emoji ${emoji}`}
                     >
                       {emoji}
                     </button>
                   ))}
+
+                  {visibleEmojis.length === 0 && (
+                    <p className="col-span-8 py-2 text-center text-xs text-gray-500">
+                      Nenhum emoji encontrado.
+                    </p>
+                  )}
                 </div>
               </div>
             )}
