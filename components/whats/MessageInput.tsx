@@ -2,7 +2,7 @@
 
 import { ClipboardEvent, useEffect, useRef, useState } from "react";
 import { formatWhatsText } from "@/lib/formatWhatsText";
-import { Paperclip, Send, Mic } from "lucide-react";
+import { Paperclip, Send, Mic, Smile } from "lucide-react";
 import { Message } from "@/types/messages";
 
 type Props = {
@@ -37,8 +37,12 @@ export function MessageInput({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const emojiPickerRef = useRef<HTMLDivElement>(null);
 
   const [attachment, setAttachment] = useState<Attachment | null>(null);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+
+  const quickEmojis = ["😀", "😂", "😍", "🙏", "👍", "🎉", "❤️", "🔥"];
 
   useEffect(() => {
     return () => {
@@ -47,6 +51,19 @@ export function MessageInput({
       }
     };
   }, [attachment]);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (!emojiPickerRef.current) return;
+
+      if (!emojiPickerRef.current.contains(event.target as Node)) {
+        setShowEmojiPicker(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   function getReplyPreview(message: Message) {
     if (message.body?.trim()) {
@@ -112,6 +129,7 @@ export function MessageInput({
 
     onSend(attachment?.file);
     onChange("");
+    setShowEmojiPicker(false);
     setAttachment(null);
 
     if (fileInputRef.current) {
@@ -142,6 +160,29 @@ export function MessageInput({
 
     event.preventDefault();
     handleFileSelect(file);
+  }
+
+  function handleAddEmoji(emoji: string) {
+    if (disabled) return;
+
+    const textarea = textareaRef.current;
+
+    if (!textarea) {
+      onChange(`${value}${emoji}`);
+      return;
+    }
+
+    const start = textarea.selectionStart ?? value.length;
+    const end = textarea.selectionEnd ?? value.length;
+    const nextValue = `${value.slice(0, start)}${emoji}${value.slice(end)}`;
+
+    onChange(nextValue);
+
+    requestAnimationFrame(() => {
+      const nextCursor = start + emoji.length;
+      textarea.focus();
+      textarea.setSelectionRange(nextCursor, nextCursor);
+    });
   }
 
   return (
@@ -250,6 +291,36 @@ export function MessageInput({
               if (file) handleFileSelect(file);
             }}
           />
+
+          {/* 😊 Emoji */}
+          <div className="relative" ref={emojiPickerRef}>
+            <button
+              type="button"
+              onClick={() => setShowEmojiPicker((prev) => !prev)}
+              className="p-2 text-gray-600 hover:bg-black/5 rounded-full disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={disabled}
+              aria-label="Abrir emojis"
+            >
+              <Smile size={20} />
+            </button>
+
+            {showEmojiPicker && (
+              <div className="absolute bottom-12 left-0 z-10 rounded-lg border border-gray-200 bg-white p-2 shadow-md">
+                <div className="grid grid-cols-4 gap-1">
+                  {quickEmojis.map((emoji) => (
+                    <button
+                      key={emoji}
+                      type="button"
+                      className="rounded p-1 text-xl hover:bg-gray-100"
+                      onClick={() => handleAddEmoji(emoji)}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* ✍️ Input */}
           <div className="relative flex-1">
