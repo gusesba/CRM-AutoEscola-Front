@@ -305,14 +305,15 @@ export function MessageInput({
             </button>
 
             {showEmojiPicker && (
-              <div className="absolute bottom-12 left-0 z-10 rounded-lg border border-gray-200 bg-white p-2 shadow-md">
+              <div className="absolute bottom-12 left-0 z-20 w-48 rounded-xl border border-gray-200 bg-white p-2 shadow-lg">
                 <div className="grid grid-cols-4 gap-1">
                   {quickEmojis.map((emoji) => (
                     <button
                       key={emoji}
                       type="button"
-                      className="rounded p-1 text-xl hover:bg-gray-100"
+                      className="flex h-9 w-9 items-center justify-center rounded-md text-xl leading-none transition hover:bg-gray-100"
                       onClick={() => handleAddEmoji(emoji)}
+                      aria-label={`Inserir emoji ${emoji}`}
                     >
                       {emoji}
                     </button>
