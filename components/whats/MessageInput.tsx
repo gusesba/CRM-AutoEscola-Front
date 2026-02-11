@@ -23,6 +23,125 @@ type Attachment = {
   previewUrl?: string;
 };
 
+type EmojiItem = {
+  emoji: string;
+  name: string;
+  keywords: string[];
+};
+
+const EMOJI_CATALOG: EmojiItem[] = [
+  { emoji: "😀", name: "sorriso", keywords: ["feliz", "alegre", "smile"] },
+  { emoji: "😁", name: "sorriso aberto", keywords: ["feliz", "dentes"] },
+  { emoji: "😂", name: "rindo", keywords: ["risada", "engraçado", "kkk"] },
+  { emoji: "🤣", name: "rolando de rir", keywords: ["risada", "kkk"] },
+  { emoji: "😊", name: "sorriso suave", keywords: ["fofo", "feliz"] },
+  { emoji: "😍", name: "apaixonado", keywords: ["amor", "coração"] },
+  { emoji: "😘", name: "beijo", keywords: ["amor", "carinho"] },
+  { emoji: "😎", name: "óculos escuros", keywords: ["cool", "estilo"] },
+  { emoji: "🤩", name: "maravilhado", keywords: ["uau", "estrela"] },
+  { emoji: "🥳", name: "festa", keywords: ["comemorar", "aniversário"] },
+  { emoji: "😢", name: "chorando", keywords: ["triste", "lágrima"] },
+  { emoji: "😭", name: "choro alto", keywords: ["triste", "muito triste"] },
+  { emoji: "😡", name: "bravo", keywords: ["raiva", "irritado"] },
+  { emoji: "😴", name: "sono", keywords: ["dormir", "cansado"] },
+  { emoji: "🤔", name: "pensando", keywords: ["duvida", "hmm"] },
+  { emoji: "🙄", name: "revirando olhos", keywords: ["tédio"] },
+  { emoji: "🙏", name: "mãos juntas", keywords: ["obrigado", "por favor", "oração"] },
+  { emoji: "👍", name: "joinha", keywords: ["ok", "bom", "aprovar"] },
+  { emoji: "👎", name: "não curti", keywords: ["ruim", "reprovar"] },
+  { emoji: "👏", name: "palmas", keywords: ["aplauso"] },
+  { emoji: "🙌", name: "mãos para cima", keywords: ["vitória", "comemorar"] },
+  { emoji: "🤝", name: "aperto de mão", keywords: ["acordo", "parceria"] },
+  { emoji: "💪", name: "força", keywords: ["musculo", "treino"] },
+  { emoji: "🫶", name: "coração com mãos", keywords: ["amor", "carinho"] },
+  { emoji: "❤️", name: "coração vermelho", keywords: ["amor", "paixão"] },
+  { emoji: "🧡", name: "coração laranja", keywords: ["amor"] },
+  { emoji: "💛", name: "coração amarelo", keywords: ["amor"] },
+  { emoji: "💚", name: "coração verde", keywords: ["amor"] },
+  { emoji: "💙", name: "coração azul", keywords: ["amor"] },
+  { emoji: "💜", name: "coração roxo", keywords: ["amor"] },
+  { emoji: "🖤", name: "coração preto", keywords: ["amor"] },
+  { emoji: "🤍", name: "coração branco", keywords: ["amor"] },
+  { emoji: "🤎", name: "coração marrom", keywords: ["amor"] },
+  { emoji: "💔", name: "coração partido", keywords: ["triste", "término"] },
+  { emoji: "🔥", name: "fogo", keywords: ["quente", "top"] },
+  { emoji: "✨", name: "brilhos", keywords: ["estrela", "destaque"] },
+  { emoji: "🎉", name: "confete", keywords: ["festa", "comemorar"] },
+  { emoji: "🎊", name: "serpentina", keywords: ["festa"] },
+  { emoji: "🎂", name: "bolo", keywords: ["aniversário"] },
+  { emoji: "🎁", name: "presente", keywords: ["gift"] },
+  { emoji: "🏆", name: "troféu", keywords: ["vitória", "premio"] },
+  { emoji: "⚽", name: "futebol", keywords: ["bola", "esporte"] },
+  { emoji: "🏀", name: "basquete", keywords: ["esporte"] },
+  { emoji: "🎵", name: "nota musical", keywords: ["música", "som"] },
+  { emoji: "🎶", name: "músicas", keywords: ["música", "som"] },
+  { emoji: "📸", name: "camera", keywords: ["foto"] },
+  { emoji: "📞", name: "telefone", keywords: ["ligação", "call"] },
+  { emoji: "📱", name: "celular", keywords: ["telefone", "mobile"] },
+  { emoji: "💻", name: "notebook", keywords: ["computador", "pc"] },
+  { emoji: "🧠", name: "cérebro", keywords: ["pensar", "mente"] },
+  { emoji: "💡", name: "ideia", keywords: ["luz", "dica"] },
+  { emoji: "✅", name: "check", keywords: ["ok", "feito", "confirmado"] },
+  { emoji: "❌", name: "x", keywords: ["erro", "cancelar", "não"] },
+  { emoji: "⚠️", name: "alerta", keywords: ["atenção", "cuidado"] },
+  { emoji: "🚀", name: "foguete", keywords: ["lançamento", "rápido"] },
+  { emoji: "🛠️", name: "ferramentas", keywords: ["conserto", "ajuste"] },
+  { emoji: "📌", name: "alfinete", keywords: ["fixar", "importante"] },
+  { emoji: "📍", name: "localização", keywords: ["endereço", "mapa"] },
+  { emoji: "📝", name: "anotação", keywords: ["nota", "texto"] },
+  { emoji: "📅", name: "calendário", keywords: ["data", "agenda"] },
+  { emoji: "⏰", name: "despertador", keywords: ["hora", "tempo"] },
+  { emoji: "⌛", name: "ampulheta", keywords: ["espera", "tempo"] },
+  { emoji: "💰", name: "dinheiro", keywords: ["grana", "financeiro"] },
+  { emoji: "💸", name: "dinheiro voando", keywords: ["gasto", "pagamento"] },
+  { emoji: "🧾", name: "recibo", keywords: ["nota fiscal", "pagamento"] },
+  { emoji: "🏠", name: "casa", keywords: ["lar"] },
+  { emoji: "🚗", name: "carro", keywords: ["veículo", "auto"] },
+  { emoji: "🚌", name: "ônibus", keywords: ["transporte"] },
+  { emoji: "✈️", name: "avião", keywords: ["viagem"] },
+  { emoji: "🌞", name: "sol", keywords: ["calor", "dia"] },
+  { emoji: "🌧️", name: "chuva", keywords: ["clima"] },
+  { emoji: "🌈", name: "arco íris", keywords: ["cores"] },
+  { emoji: "🌹", name: "rosa", keywords: ["flor", "amor"] },
+  { emoji: "🍀", name: "trevo", keywords: ["sorte"] },
+  { emoji: "🍕", name: "pizza", keywords: ["comida"] },
+  { emoji: "🍔", name: "hamburguer", keywords: ["comida"] },
+  { emoji: "🍟", name: "batata frita", keywords: ["comida"] },
+  { emoji: "☕", name: "café", keywords: ["bebida"] },
+  { emoji: "🍺", name: "cerveja", keywords: ["bebida"] },
+  { emoji: "🥤", name: "refrigerante", keywords: ["bebida"] },
+  { emoji: "🐶", name: "cachorro", keywords: ["pet", "animal"] },
+  { emoji: "🐱", name: "gato", keywords: ["pet", "animal"] },
+  { emoji: "🐼", name: "panda", keywords: ["animal"] },
+  { emoji: "🦁", name: "leão", keywords: ["animal"] },
+  { emoji: "🐴", name: "cavalo", keywords: ["animal"] },
+  { emoji: "🙋", name: "levantando a mão", keywords: ["eu", "pergunta"] },
+  { emoji: "🤷", name: "não sei", keywords: ["dúvida", "sei lá"] },
+  { emoji: "💃", name: "dançando", keywords: ["festa", "dança"] },
+  { emoji: "🕺", name: "dançando", keywords: ["festa", "dança"] },
+  { emoji: "👀", name: "olhos", keywords: ["vendo", "atenção"] },
+  { emoji: "🫡", name: "saudação", keywords: ["respeito"] },
+  { emoji: "🤗", name: "abraço", keywords: ["carinho"] },
+  { emoji: "🤙", name: "me liga", keywords: ["telefone"] },
+  { emoji: "🤞", name: "dedos cruzados", keywords: ["sorte"] },
+  { emoji: "👌", name: "ok", keywords: ["certo"] },
+  { emoji: "💬", name: "balão de fala", keywords: ["mensagem", "chat"] },
+  { emoji: "📢", name: "alto falante", keywords: ["aviso", "anúncio"] },
+  { emoji: "🔒", name: "cadeado", keywords: ["segurança"] },
+  { emoji: "🔓", name: "cadeado aberto", keywords: ["desbloquear"] },
+  { emoji: "🗑️", name: "lixeira", keywords: ["apagar", "deletar"] },
+  { emoji: "🔍", name: "lupa", keywords: ["buscar", "pesquisar"] },
+  { emoji: "📎", name: "clipe", keywords: ["anexo"] },
+  { emoji: "📤", name: "enviar", keywords: ["upload", "mandar"] },
+  { emoji: "📥", name: "receber", keywords: ["download"] },
+  { emoji: "🧩", name: "quebra cabeça", keywords: ["peça", "solução"] },
+  { emoji: "🧪", name: "teste", keywords: ["experimento"] },
+  { emoji: "🛡️", name: "escudo", keywords: ["proteção"] },
+  { emoji: "📈", name: "gráfico subindo", keywords: ["crescimento", "vendas"] },
+  { emoji: "📉", name: "gráfico caindo", keywords: ["queda", "vendas"] },
+  { emoji: "🤖", name: "robô", keywords: ["bot", "ia"] },
+];
+
 export function MessageInput({
   value,
   onChange,
@@ -44,42 +163,19 @@ export function MessageInput({
 
   const [emojiSearch, setEmojiSearch] = useState("");
 
-  const allEmojis = useMemo(() => {
-    const emojiSet = new Set<string>();
-    const emojiRegex = /\p{Extended_Pictographic}/u;
+  const visibleEmojis = useMemo(() => {
+    const term = emojiSearch.trim().toLocaleLowerCase();
 
-    const ranges: Array<[number, number]> = [
-      [0x1f300, 0x1f5ff],
-      [0x1f600, 0x1f64f],
-      [0x1f680, 0x1f6ff],
-      [0x1f700, 0x1f77f],
-      [0x1f780, 0x1f7ff],
-      [0x1f800, 0x1f8ff],
-      [0x1f900, 0x1f9ff],
-      [0x1fa00, 0x1faff],
-      [0x2600, 0x26ff],
-      [0x2700, 0x27bf],
-    ];
-
-    for (const [start, end] of ranges) {
-      for (let codePoint = start; codePoint <= end; codePoint += 1) {
-        const emoji = String.fromCodePoint(codePoint);
-
-        if (emojiRegex.test(emoji)) {
-          emojiSet.add(emoji);
-        }
-      }
+    if (!term) {
+      return EMOJI_CATALOG;
     }
 
-    return Array.from(emojiSet);
-  }, []);
-
-  const visibleEmojis = useMemo(() => {
-    const search = emojiSearch.trim();
-    if (!search) return allEmojis;
-
-    return allEmojis.filter((emoji) => emoji.includes(search));
-  }, [allEmojis, emojiSearch]);
+    return EMOJI_CATALOG.filter(({ emoji, name, keywords }) =>
+      emoji.includes(term) ||
+      name.toLocaleLowerCase().includes(term) ||
+      keywords.some((keyword) => keyword.toLocaleLowerCase().includes(term)),
+    );
+  }, [emojiSearch]);
 
   useEffect(() => {
     return () => {
@@ -364,13 +460,13 @@ export function MessageInput({
                 />
 
                 <div className="grid max-h-56 grid-cols-8 gap-1 overflow-y-auto pr-1">
-                  {visibleEmojis.map((emoji) => (
+                  {visibleEmojis.map(({ emoji, name }) => (
                     <button
                       key={emoji}
                       type="button"
                       className="flex h-8 w-8 items-center justify-center rounded-md text-xl leading-none transition hover:bg-gray-100"
                       onClick={() => handleAddEmoji(emoji)}
-                      aria-label={`Inserir emoji ${emoji}`}
+                      aria-label={`Inserir emoji ${name}`}
                     >
                       {emoji}
                     </button>
