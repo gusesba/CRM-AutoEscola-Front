@@ -142,6 +142,9 @@ const EMOJI_CATALOG: EmojiItem[] = [
   { emoji: "🤖", name: "robô", keywords: ["bot", "ia"] },
 ];
 
+const RECENT_EMOJIS_STORAGE_KEY = "whatsapp-recent-emojis";
+const MAX_RECENT_EMOJIS = 10;
+
 export function MessageInput({
   value,
   onChange,
@@ -162,6 +165,7 @@ export function MessageInput({
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   const [emojiSearch, setEmojiSearch] = useState("");
+  const [recentEmojis, setRecentEmojis] = useState<string[]>([]);
 
   const visibleEmojis = useMemo(() => {
     const term = emojiSearch.trim().toLocaleLowerCase();
@@ -176,6 +180,27 @@ export function MessageInput({
       keywords.some((keyword) => keyword.toLocaleLowerCase().includes(term)),
     );
   }, [emojiSearch]);
+
+  useEffect(() => {
+    const saved = localStorage.getItem(RECENT_EMOJIS_STORAGE_KEY);
+
+    if (!saved) return;
+
+    try {
+      const parsed = JSON.parse(saved);
+
+      if (!Array.isArray(parsed)) return;
+
+      const validRecent = parsed
+        .filter((item): item is string => typeof item === "string")
+        .filter((emoji) => EMOJI_CATALOG.some((catalogEmoji) => catalogEmoji.emoji === emoji))
+        .slice(0, MAX_RECENT_EMOJIS);
+
+      setRecentEmojis(validRecent);
+    } catch {
+      localStorage.removeItem(RECENT_EMOJIS_STORAGE_KEY);
+    }
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -299,6 +324,17 @@ export function MessageInput({
 
   function handleAddEmoji(emoji: string) {
     if (disabled) return;
+
+    setRecentEmojis((current) => {
+      const next = [emoji, ...current.filter((item) => item !== emoji)].slice(
+        0,
+        MAX_RECENT_EMOJIS,
+      );
+
+      localStorage.setItem(RECENT_EMOJIS_STORAGE_KEY, JSON.stringify(next));
+
+      return next;
+    });
 
     const textarea = textareaRef.current;
 
@@ -458,6 +494,33 @@ export function MessageInput({
                   placeholder="Buscar emoji"
                   className="mb-2 w-full rounded-md border border-gray-200 px-2 py-1 text-sm outline-none focus:border-gray-400"
                 />
+
+                {emojiSearch.trim() === "" && recentEmojis.length > 0 && (
+                  <div className="mb-2 border-b border-gray-100 pb-2">
+                    <p className="mb-1 text-xs font-medium text-gray-500">
+                      Últimos utilizados
+                    </p>
+                    <div className="grid grid-cols-10 gap-1">
+                      {recentEmojis.map((emoji) => {
+                        const emojiLabel =
+                          EMOJI_CATALOG.find((catalogEmoji) => catalogEmoji.emoji === emoji)
+                            ?.name ?? emoji;
+
+                        return (
+                          <button
+                            key={`recent-${emoji}`}
+                            type="button"
+                            className="flex h-7 w-7 items-center justify-center rounded-md text-lg leading-none transition hover:bg-gray-100"
+                            onClick={() => handleAddEmoji(emoji)}
+                            aria-label={`Inserir emoji recente ${emojiLabel}`}
+                          >
+                            {emoji}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 <div className="grid max-h-56 grid-cols-8 gap-1 overflow-y-auto pr-1">
                   {visibleEmojis.map(({ emoji, name }) => (
