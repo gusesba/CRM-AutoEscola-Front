@@ -42,7 +42,7 @@ type BatchItem = BatchMediaItem | BatchTextItem;
 const EMPTY_MESSAGE = "Digite uma mensagem para o preview.";
 const TEMPLATE_FIRST_NAME = "${PrimeiroNome}";
 const TEMPLATE_FULL_NAME = "${NomeCompleto}";
-const BATCH_SETTINGS_STORAGE_KEY = "batch-send-settings";
+const BATCH_SETTINGS_STORAGE_KEY = "batch-send-settings-seconds";
 const DEFAULT_UNCHECKED_STATUSES = new Set<number>([
   StatusEnum.VendaEfetivada,
   StatusEnum.OptouPelaConcorrencia,
@@ -586,8 +586,8 @@ export function BatchSendModal({ userId, onClose }: Props) {
         };
       });
 
-      const intervalMs = Number(batchSettings.intervalMs);
-      const bigIntervalMs = Number(batchSettings.bigIntervalMs);
+      const intervalSeconds = Number(batchSettings.intervalMs);
+      const bigIntervalSeconds = Number(batchSettings.bigIntervalMs);
       const messagesUntilBigInterval = Number(
         batchSettings.messagesUntilBigInterval,
       );
@@ -599,12 +599,12 @@ export function BatchSendModal({ userId, onClose }: Props) {
         Object.keys(paramsByChatId).length ? paramsByChatId : undefined,
         {
           intervalMs:
-            Number.isFinite(intervalMs) && intervalMs > 0
-              ? intervalMs
+            Number.isFinite(intervalSeconds) && intervalSeconds > 0
+              ? Math.round(intervalSeconds * 1000)
               : undefined,
           bigIntervalMs:
-            Number.isFinite(bigIntervalMs) && bigIntervalMs > 0
-              ? bigIntervalMs
+            Number.isFinite(bigIntervalSeconds) && bigIntervalSeconds > 0
+              ? Math.round(bigIntervalSeconds * 1000)
               : undefined,
           messagesUntilBigInterval:
             Number.isFinite(messagesUntilBigInterval) &&
@@ -755,10 +755,11 @@ export function BatchSendModal({ userId, onClose }: Props) {
               </div>
               <div className="mt-4 grid gap-3">
                 <label className="flex flex-col gap-1 text-xs text-gray-600">
-                  Intervalo entre mensagens (ms)
+                  Intervalo entre mensagens (s)
                   <input
                     type="number"
                     min="0"
+                    step="0.1"
                     value={batchSettings.intervalMs}
                     onChange={(event) =>
                       setBatchSettings((prev) => ({
@@ -767,14 +768,15 @@ export function BatchSendModal({ userId, onClose }: Props) {
                       }))
                     }
                     className="rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#25d366]"
-                    placeholder="Ex: 1200"
+                    placeholder="Ex: 1.2"
                   />
                 </label>
                 <label className="flex flex-col gap-1 text-xs text-gray-600">
-                  Intervalo maior (ms)
+                  Intervalo maior (s)
                   <input
                     type="number"
                     min="0"
+                    step="0.1"
                     value={batchSettings.bigIntervalMs}
                     onChange={(event) =>
                       setBatchSettings((prev) => ({
@@ -783,7 +785,7 @@ export function BatchSendModal({ userId, onClose }: Props) {
                       }))
                     }
                     className="rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#25d366]"
-                    placeholder="Ex: 5000"
+                    placeholder="Ex: 5"
                   />
                 </label>
                 <label className="flex flex-col gap-1 text-xs text-gray-600">
