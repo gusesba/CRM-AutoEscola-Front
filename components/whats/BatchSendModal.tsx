@@ -13,6 +13,8 @@ import { sendBatchMessages } from "@/services/whatsapp";
 import { BuscarServicos } from "@/services/servicoService";
 import { Message } from "@/types/messages";
 import { StatusEnum } from "@/enums";
+import { useAuth } from "@/hooks/useAuth";
+import { BuscarUsuarios } from "@/services/authService";
 
 type PreviewMessage = Message & {
   file?: File;
@@ -68,6 +70,11 @@ type ServiceOption = {
   nome: string;
 };
 
+type UserOption = {
+  id: number;
+  nome: string;
+};
+
 const defaultBatchSettings: BatchSendSettings = {
   intervalMs: "",
   bigIntervalMs: "",
@@ -118,6 +125,8 @@ export function BatchSendModal({ userId, onClose }: Props) {
   const [batchSettings, setBatchSettings] =
     useState<BatchSendSettings>(defaultBatchSettings);
   const [services, setServices] = useState<ServiceOption[]>([]);
+  const [vendors, setVendors] = useState<UserOption[]>([]);
+  const [selectedVendorId, setSelectedVendorId] = useState("");
   const [dateFilterModalOpen, setDateFilterModalOpen] = useState(false);
   const [initialDateStart, setInitialDateStart] = useState("");
   const [initialDateEnd, setInitialDateEnd] = useState("");
@@ -137,6 +146,7 @@ export function BatchSendModal({ userId, onClose }: Props) {
   const [allLinkedRecipients, setAllLinkedRecipients] = useState<
     GrupoWhatsappConversa[]
   >([]);
+  const { user, isAdmin } = useAuth();
 
   const selectedGroup = useMemo(
     () =>
@@ -146,6 +156,8 @@ export function BatchSendModal({ userId, onClose }: Props) {
     [groups, selectedGroupId],
   );
   const isAllLinkedSelected = selectedGroupId === ALL_LINKED_OPTION;
+
+  const normalizedVendorId = isAdmin && selectedVendorId ? Number(selectedVendorId) : undefined;
 
   const groupRecipients = useMemo(() => {
     const source = isAllLinkedSelected
@@ -273,6 +285,41 @@ export function BatchSendModal({ userId, onClose }: Props) {
   }, [userId]);
 
   useEffect(() => {
+    if (!isAdmin || !user?.UserId) return;
+    setSelectedVendorId((current) => current || String(user.UserId));
+  }, [isAdmin, user?.UserId]);
+
+  useEffect(() => {
+    if (!isAdmin || !user?.UserId) return;
+    let mounted = true;
+    const params = new URLSearchParams({
+      page: "1",
+      pageSize: "200",
+      orderBy: "nome",
+      orderDirection: "asc",
+    });
+
+    BuscarUsuarios(params.toString())
+      .then((data) => {
+        if (!mounted) return;
+        const items = data?.items ?? [];
+        setVendors(
+          items.map((item: { id: number; nome: string }) => ({
+            id: item.id,
+            nome: item.nome,
+          })),
+        );
+      })
+      .catch((err) => {
+        console.error(err);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [isAdmin, user?.UserId]);
+
+  useEffect(() => {
     let mounted = true;
 
     BuscarServicos("pageSize=1000")
@@ -331,7 +378,7 @@ export function BatchSendModal({ userId, onClose }: Props) {
     if (!isAllLinkedSelected) return;
     let mounted = true;
     setLoadingAllLinked(true);
-    buscarVinculosWhatsapp()
+    buscarVinculosWhatsapp({ vendedorId: normalizedVendorId })
       .then((data) => {
         if (!mounted) return;
         const unique = new Map<string, GrupoWhatsappConversa>();
@@ -361,7 +408,7 @@ export function BatchSendModal({ userId, onClose }: Props) {
     return () => {
       mounted = false;
     };
-  }, [isAllLinkedSelected]);
+  }, [isAllLinkedSelected, normalizedVendorId]);
 
   useEffect(() => {
     if (groupRecipients.length === 0) return;
@@ -860,6 +907,22 @@ export function BatchSendModal({ userId, onClose }: Props) {
                   selecionados
                 </span>
                 <div className="flex items-center gap-2">
+                  {isAdmin && (
+                    <select
+                      value={selectedVendorId}
+                      onChange={(event) =>
+                        setSelectedVendorId(event.target.value)
+                      }
+                      className="rounded-full border border-gray-200 px-3 py-1 text-xs text-gray-600 focus:outline-none focus:ring-2 focus:ring-[#25d366]"
+                    >
+                      <option value="">Todos os vendedores</option>
+                      {vendors.map((vendor) => (
+                        <option key={vendor.id} value={vendor.id}>
+                          {vendor.nome}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                   <div className="relative">
                     <button
                       type="button"
