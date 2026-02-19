@@ -65,12 +65,16 @@ export async function buscarGruposWhatsapp(
 }
 
 export async function buscarVinculosWhatsapp(
-  pesquisa?: string,
+  params: { pesquisa?: string; vendedorId?: number } = {},
 ): Promise<VendaWhatsappVinculo[]> {
   const query = new URLSearchParams();
 
-  if (pesquisa?.trim()) {
-    query.append("Pesquisa", pesquisa.trim());
+  if (params.pesquisa?.trim()) {
+    query.append("Pesquisa", params.pesquisa.trim());
+  }
+
+  if (params.vendedorId) {
+    query.append("VendedorId", String(params.vendedorId));
   }
 
   const queryString = query.toString();
