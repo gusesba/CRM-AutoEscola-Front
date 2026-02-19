@@ -68,11 +68,11 @@ export default function GruposWhatsappPage() {
           label,
           value: Number(value),
         })),
-    []
+    [],
   );
   const statusLabelMap = useMemo(
     () => new Map(statusOptions.map((status) => [status.value, status.label])),
-    [statusOptions]
+    [statusOptions],
   );
 
   const formatDateTime = (date: Date) => {
@@ -126,7 +126,9 @@ export default function GruposWhatsappPage() {
       try {
         setCarregandoVinculos(true);
         setErroVinculos(null);
-        const data = await buscarVinculosWhatsapp(pesquisaVinculo);
+        const data = await buscarVinculosWhatsapp({
+          pesquisa: pesquisaVinculo,
+        });
         if (!ativo) return;
         setVinculos(data ?? []);
       } catch (error) {
@@ -238,7 +240,7 @@ export default function GruposWhatsappPage() {
 
   const confirmarRemoverConversa = async (
     grupoId: number,
-    vendaWhatsappId: number
+    vendaWhatsappId: number,
   ) => {
     const key = `${grupoId}-${vendaWhatsappId}`;
 
@@ -300,7 +302,7 @@ export default function GruposWhatsappPage() {
                 value={statusSelecionado}
                 onChange={(event) =>
                   setStatusSelecionado(
-                    event.target.value ? Number(event.target.value) : ""
+                    event.target.value ? Number(event.target.value) : "",
                   )
                 }
                 className="mt-2 w-full p-2 border rounded-lg bg-background text-sm focus:ring-2 focus:ring-primary outline-none transition"
@@ -355,7 +357,7 @@ export default function GruposWhatsappPage() {
                 value={grupoSelecionado}
                 onChange={(event) =>
                   setGrupoSelecionado(
-                    event.target.value ? Number(event.target.value) : ""
+                    event.target.value ? Number(event.target.value) : "",
                   )
                 }
                 className="mt-2 w-full p-2 border rounded-lg bg-background text-sm focus:ring-2 focus:ring-primary outline-none transition"
@@ -513,12 +515,12 @@ export default function GruposWhatsappPage() {
                                 </div>
                                 <div className="mt-1 flex items-center justify-between gap-3 text-xs text-muted-foreground">
                                   <span>
-                                    Contato:{" "}
-                                    {conversa.venda?.contato ?? "N/A"} - Status:{" "}
+                                    Contato: {conversa.venda?.contato ?? "N/A"}{" "}
+                                    - Status:{" "}
                                     {typeof conversa.venda?.status === "number"
-                                      ? statusLabelMap.get(
-                                          conversa.venda.status
-                                        ) ?? "N/A"
+                                      ? (statusLabelMap.get(
+                                          conversa.venda.status,
+                                        ) ?? "N/A")
                                       : "N/A"}
                                   </span>
                                   <div className="flex items-center gap-2">
@@ -527,7 +529,7 @@ export default function GruposWhatsappPage() {
                                       onClick={() =>
                                         handleRemoverConversa(
                                           grupo.id,
-                                          conversa.vendaWhatsappId
+                                          conversa.vendaWhatsappId,
                                         )
                                       }
                                       disabled={
@@ -545,7 +547,7 @@ export default function GruposWhatsappPage() {
                                       type="button"
                                       onClick={() =>
                                         router.push(
-                                          `/venda/editar/${conversa.vendaId}`
+                                          `/venda/editar/${conversa.vendaId}`,
                                         )
                                       }
                                       className="inline-flex h-7 w-7 items-center justify-center rounded-sm bg-green-600 border border-border text-white cursor-pointer hover:bg-green-700 transition"
@@ -598,7 +600,7 @@ export default function GruposWhatsappPage() {
           if (!confirmacaoAberta || !confirmacaoAberta.vendaWhatsappId) return;
           confirmarRemoverConversa(
             confirmacaoAberta.grupoId,
-            confirmacaoAberta.vendaWhatsappId
+            confirmacaoAberta.vendaWhatsappId,
           );
           setConfirmacaoAberta(null);
         }}
