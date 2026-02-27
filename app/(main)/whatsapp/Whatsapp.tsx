@@ -206,7 +206,7 @@ export default function Home({ onDisconnect, disconnecting }: HomeProps) {
     });
   });
 
-  const selectedChat = chats.find((c) => c.id === selectedChatId);
+  const selectedChat = chats.find((c) => c?.id === selectedChatId);
   const filteredChats = useMemo(() => {
     const term = chatFilter.trim().toLowerCase();
     if (!term) return chats;
