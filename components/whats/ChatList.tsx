@@ -29,9 +29,10 @@ export function ChatList({
   );
 
   const { activeChats, archivedChats, shouldExpandArchived } = useMemo(() => {
-    const archived = chats.filter((chat) => chat.archived);
-    const active = chats.filter((chat) => !chat.archived);
+    const archived = chats.filter((chat) => chat?.archived);
+    const active = chats.filter((chat) => chat && !chat.archived);
     const hasSearch = filterValue.trim().length > 0;
+
     return {
       activeChats: active,
       archivedChats: archived,
