@@ -90,6 +90,10 @@ export default function Home({ onDisconnect, disconnecting }: HomeProps) {
   const [resumoVinculo, setResumoVinculo] =
     useState<ConversaVinculoResumo | null>(null);
 
+  const sanitizeChats = (data: (Chat | null | undefined)[]) => {
+    return data.filter((chat): chat is Chat => Boolean(chat));
+  };
+
   useEffect(() => {
     if (!user?.UserId) return;
     setSelectedUserId((current) => current || String(user.UserId));
@@ -157,7 +161,7 @@ export default function Home({ onDisconnect, disconnecting }: HomeProps) {
           try {
             const data = await getConversations(activeUserId);
             if (!mounted) return;
-            setChats(data);
+            setChats(sanitizeChats(data));
             return;
           } catch (error) {
             console.error(error);
