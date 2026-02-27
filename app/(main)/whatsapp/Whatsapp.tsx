@@ -211,10 +211,10 @@ export default function Home({ onDisconnect, disconnecting }: HomeProps) {
     const term = chatFilter.trim().toLowerCase();
     if (!term) return chats;
     return chats.filter((chat) => {
-      return (
-        chat.name.toLowerCase().includes(term) ||
-        chat.id.toLowerCase().includes(term)
-      );
+      const name = String(chat.name ?? "").toLowerCase();
+      const id = String(chat.id ?? "").toLowerCase();
+
+      return name.includes(term) || id.includes(term);
     });
   }, [chatFilter, chats]);
   const gruposPorPagina = 3;
