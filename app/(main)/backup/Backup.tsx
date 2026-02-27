@@ -453,7 +453,7 @@ export default function Backup() {
 
               // zera unread ao abrir
               setChats((prev) =>
-                prev.map((c) => (c.id === id ? { ...c, unreadCount: 0 } : c)),
+                prev.map((c) => (c?.id === id ? { ...c, unreadCount: 0 } : c)),
               );
             }}
           />
