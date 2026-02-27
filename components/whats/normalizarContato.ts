@@ -6,10 +6,10 @@ type ContatoEntrada =
   | undefined;
 
 export function normalizarContato(chat: ContatoEntrada) {
-  if (!chat || chat.isGroup) return null;
+  if (!chat || chat?.isGroup) return null;
 
-  const id = chat.id ?? "";
-  const name = chat.name ?? "";
+  const id = chat?.id ?? "";
+  const name = chat?.name ?? "";
 
   // 1) ID padrão de telefone: 55...@c.us
   if (id.endsWith("@c.us")) {
@@ -17,8 +17,8 @@ export function normalizarContato(chat: ContatoEntrada) {
     return somenteDigitos.replace(/^(00)?55/, ""); // tira 55 (e 0055)
   }
 
-  if (id.endsWith("@lid") && chat.nmr) {
-    return chat.nmr.replace(/\D/g, "").replace(/^(00)?55/, "");
+  if (id.endsWith("@lid") && chat?.nmr) {
+    return chat?.nmr.replace(/\D/g, "").replace(/^(00)?55/, "");
   }
 
   // 2) Se for @lid (ou outro), tenta pegar do "name" caso seja telefone

@@ -54,12 +54,12 @@ export default function Backup() {
     useState<GrupoWhatsapp | null>(null);
   const [modalAdicionarGrupoOpen, setModalAdicionarGrupoOpen] = useState(false);
   const [gruposDisponiveis, setGruposDisponiveis] = useState<GrupoWhatsapp[]>(
-    []
+    [],
   );
   const [grupoSelecionadoId, setGrupoSelecionadoId] = useState<number | "">("");
   const [adicionandoGrupo, setAdicionandoGrupo] = useState(false);
   const [erroAdicionarGrupo, setErroAdicionarGrupo] = useState<string | null>(
-    null
+    null,
   );
   const [carregandoGruposDisponiveis, setCarregandoGruposDisponiveis] =
     useState(false);
@@ -144,19 +144,19 @@ export default function Backup() {
     if (!term) return chats;
     return chats.filter((chat) => {
       return (
-        chat.name.toLowerCase().includes(term) ||
-        chat.id.toLowerCase().includes(term)
+        chat?.name.toLowerCase().includes(term) ||
+        chat?.id.toLowerCase().includes(term)
       );
     });
   }, [chatFilter, chats]);
   const gruposPorPagina = 3;
   const gruposChatPaginados = gruposChat.slice(
     grupoChatIndex * gruposPorPagina,
-    grupoChatIndex * gruposPorPagina + gruposPorPagina
+    grupoChatIndex * gruposPorPagina + gruposPorPagina,
   );
   const totalPaginasGrupoChat = Math.max(
     1,
-    Math.ceil(gruposChat.length / gruposPorPagina)
+    Math.ceil(gruposChat.length / gruposPorPagina),
   );
 
   useEffect(() => {
@@ -240,7 +240,7 @@ export default function Backup() {
 
     if (!vendaWhatsappId) {
       setErroAdicionarGrupo(
-        "É necessário vincular a conversa a uma venda antes de adicionar ao grupo."
+        "É necessário vincular a conversa a uma venda antes de adicionar ao grupo.",
       );
       return;
     }
@@ -260,9 +260,8 @@ export default function Backup() {
       });
 
       setLoadingGruposChat(true);
-      const gruposAtualizados = await buscarGruposWhatsappPorChat(
-        selectedChatId
-      );
+      const gruposAtualizados =
+        await buscarGruposWhatsappPorChat(selectedChatId);
       setGruposChat(gruposAtualizados);
       setGrupoChatIndex(0);
       fecharModalAdicionarGrupo();
@@ -303,7 +302,7 @@ export default function Backup() {
         idsVendaWhats,
       });
       setGruposChat((prev) =>
-        prev.filter((item) => item.id !== grupoChatParaRemover.id)
+        prev.filter((item) => item.id !== grupoChatParaRemover.id),
       );
     } catch (error) {
       console.error(error);
@@ -316,7 +315,7 @@ export default function Backup() {
 
   const handleArchiveToggle = (chatId: string, archived: boolean) => {
     setChats((prev) =>
-      prev.map((chat) => (chat.id === chatId ? { ...chat, archived } : chat))
+      prev.map((chat) => (chat?.id === chatId ? { ...chat, archived } : chat)),
     );
   };
 
@@ -384,7 +383,7 @@ export default function Backup() {
                 type="button"
                 onClick={() =>
                   setGrupoChatIndex((prev) =>
-                    Math.min(totalPaginasGrupoChat - 1, prev + 1)
+                    Math.min(totalPaginasGrupoChat - 1, prev + 1),
                   )
                 }
                 className="h-8 w-8 flex items-center justify-center rounded-full border border-gray-200 text-gray-500 disabled:opacity-40 cursor-pointer"
@@ -454,7 +453,7 @@ export default function Backup() {
 
               // zera unread ao abrir
               setChats((prev) =>
-                prev.map((c) => (c.id === id ? { ...c, unreadCount: 0 } : c))
+                prev.map((c) => (c.id === id ? { ...c, unreadCount: 0 } : c)),
               );
             }}
           />
@@ -502,7 +501,7 @@ export default function Backup() {
                   value={grupoSelecionadoId}
                   onChange={(event) =>
                     setGrupoSelecionadoId(
-                      event.target.value ? Number(event.target.value) : ""
+                      event.target.value ? Number(event.target.value) : "",
                     )
                   }
                   className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#25d366]"

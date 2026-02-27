@@ -196,7 +196,7 @@ export const ChatWindow = React.memo(function ChatWindow({
     await desvincularVendaWhats(vendaWhatsappId);
     if (!chat || !whatsappUserId) return;
     const numero = normalizarContato(chat);
-    const updatedStatus = await getChatStatus(chat.id, whatsappUserId, numero);
+    const updatedStatus = await getChatStatus(chat?.id, whatsappUserId, numero);
     setStatus(updatedStatus);
   };
 
@@ -207,9 +207,9 @@ export const ChatWindow = React.memo(function ChatWindow({
     setIsArchiving(true);
     setArchiveError(null);
     try {
-      const nextArchived = !chat.archived;
-      await toggleArchiveChat(whatsappUserId, chat.id, nextArchived);
-      onArchiveToggle?.(chat.id, nextArchived);
+      const nextArchived = !chat?.archived;
+      await toggleArchiveChat(whatsappUserId, chat?.id, nextArchived);
+      onArchiveToggle?.(chat?.id, nextArchived);
     } catch (error) {
       console.error(error);
       setArchiveError(
@@ -239,8 +239,8 @@ export const ChatWindow = React.memo(function ChatWindow({
   useEffect(() => {
     if (!isContactModalOpen || !chat) return;
     const normalizedNumber =
-      normalizarContato(chat) ?? getPhoneDigits(chat.id) ?? "";
-    const trimmedName = chat.name?.trim() ?? "";
+      normalizarContato(chat) ?? getPhoneDigits(chat?.id) ?? "";
+    const trimmedName = chat?.name?.trim() ?? "";
     const [firstName, ...lastNameParts] = trimmedName
       ? trimmedName.split(/\s+/)
       : [""];
@@ -265,7 +265,7 @@ export const ChatWindow = React.memo(function ChatWindow({
     setForwardSearch("");
     shouldAutoScrollRef.current = true;
 
-    fetchMessagesHandler(whatsappUserId, chat.id, 50)
+    fetchMessagesHandler(whatsappUserId, chat?.id, 50)
       .then((data) => {
         setMessages(data);
         setHasReachedStart(data.length < 50);
@@ -282,7 +282,7 @@ export const ChatWindow = React.memo(function ChatWindow({
     pendingScrollHeightRef.current = previousScrollHeight;
     setIsFetchingMore(true);
 
-    fetchMessagesHandler(whatsappUserId, chat.id, limit)
+    fetchMessagesHandler(whatsappUserId, chat?.id, limit)
       .then((data) => {
         setMessages(data);
         setHasReachedStart(data.length < limit);
@@ -296,7 +296,7 @@ export const ChatWindow = React.memo(function ChatWindow({
     if (!chat || !whatsappUserId || isNewChat) return;
 
     const numero = normalizarContato(chat);
-    getChatStatus(chat.id, whatsappUserId, numero)
+    getChatStatus(chat?.id, whatsappUserId, numero)
       .then(setStatus)
       .catch(console.error);
   }, [chat?.id, chat?.isGroup, chat?.name, whatsappUserId]);
@@ -307,10 +307,10 @@ export const ChatWindow = React.memo(function ChatWindow({
     //@ts-expect-error
     setMessages((prev) => {
       //@ts-expect-error
-      const exists = prev.some((m) => m.id === chat.lastMessage!.id);
+      const exists = prev.some((m) => m.id === chat?.lastMessage!.id);
       if (exists) return prev;
       shouldAutoScrollRef.current = true;
-      return [...prev, chat.lastMessage!];
+      return [...prev, chat?.lastMessage!];
     });
     //@ts-expect-error
   }, [chat?.lastMessage?.id]);
@@ -401,12 +401,12 @@ export const ChatWindow = React.memo(function ChatWindow({
         if (file) {
           await sendMediaMessage(
             whatsappUserId,
-            chat.id,
+            chat?.id,
             file,
             currentText, // legenda
           );
         } else {
-          await sendMessage(whatsappUserId, chat.id, currentText);
+          await sendMessage(whatsappUserId, chat?.id, currentText);
         }
         setReplyTo(null);
         setEditingMessage(null);
@@ -475,7 +475,7 @@ export const ChatWindow = React.memo(function ChatWindow({
         .replace(/\s+/g, " ")
         .trim();
       if (updatedName) {
-        onChatNameUpdated?.(chat.id, updatedName);
+        onChatNameUpdated?.(chat?.id, updatedName);
       }
       setIsContactModalOpen(false);
     } catch (error) {
@@ -606,7 +606,7 @@ export const ChatWindow = React.memo(function ChatWindow({
         <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-300 shrink-0">
           {chat?.profilePicUrl ? (
             <img
-              src={`${process.env.NEXT_PUBLIC_WHATS_URL}${chat.profilePicUrl}`}
+              src={`${process.env.NEXT_PUBLIC_WHATS_URL}${chat?.profilePicUrl}`}
               alt={headerTitle}
               className="w-full h-full object-cover"
             />
@@ -650,7 +650,7 @@ export const ChatWindow = React.memo(function ChatWindow({
               Abrir lead
             </button>
           )}
-          {chat && !isNewChat && whatsappUserId && !chat.isGroup && (
+          {chat && !isNewChat && whatsappUserId && !chat?.isGroup && (
             <button
               type="button"
               onClick={handleOpenContactModal}
@@ -669,7 +669,7 @@ export const ChatWindow = React.memo(function ChatWindow({
             >
               {isArchiving
                 ? "Processando..."
-                : chat.archived
+                : chat?.archived
                   ? "Desarquivar"
                   : "Arquivar"}
             </button>
@@ -884,7 +884,7 @@ export const ChatWindow = React.memo(function ChatWindow({
                   Adicionar/Editar contato
                 </h2>
                 <p className="mt-1 text-sm text-gray-500">
-                  Atualize os dados do contato para este chat.
+                  Atualize os dados do contato para este chat?.
                 </p>
               </div>
               <button

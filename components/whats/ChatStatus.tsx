@@ -62,7 +62,7 @@ export function ChatVendaStatus({
 
               const params = new URLSearchParams();
               if (numero) params.set("contato", numero);
-              if (chat?.name) params.set("cliente", chat.name);
+              if (chat?.name) params.set("cliente", chat?.name);
 
               window.open(
                 `/venda/novo?${params.toString()}`,

@@ -194,8 +194,8 @@ export default function Home({ onDisconnect, disconnecting }: HomeProps) {
         ...chat,
         lastMessage: data.message,
         unreadCount: isSelected
-          ? chat.unreadCount
-          : (chat.unreadCount ?? 0) + 1,
+          ? chat?.unreadCount
+          : (chat?.unreadCount ?? 0) + 1,
       };
 
       // move o chat para o topo
@@ -211,8 +211,8 @@ export default function Home({ onDisconnect, disconnecting }: HomeProps) {
     const term = chatFilter.trim().toLowerCase();
     if (!term) return chats;
     return chats.filter((chat) => {
-      const name = String(chat.name ?? "").toLowerCase();
-      const id = String(chat.id ?? "").toLowerCase();
+      const name = String(chat?.name ?? "").toLowerCase();
+      const id = String(chat?.id ?? "").toLowerCase();
 
       return name.includes(term) || id.includes(term);
     });
@@ -383,13 +383,13 @@ export default function Home({ onDisconnect, disconnecting }: HomeProps) {
 
   const handleArchiveToggle = (chatId: string, archived: boolean) => {
     setChats((prev) =>
-      prev.map((chat) => (chat.id === chatId ? { ...chat, archived } : chat)),
+      prev.map((chat) => (chat?.id === chatId ? { ...chat, archived } : chat)),
     );
   };
 
   const handleChatNameUpdated = (chatId: string, name: string) => {
     setChats((prev) =>
-      prev.map((chat) => (chat.id === chatId ? { ...chat, name } : chat)),
+      prev.map((chat) => (chat?.id === chatId ? { ...chat, name } : chat)),
     );
   };
 
@@ -400,7 +400,7 @@ export default function Home({ onDisconnect, disconnecting }: HomeProps) {
     }
 
     const conversas = chats.map((chat) => ({
-      whatsappChatId: chat.id,
+      whatsappChatId: chat?.id,
       numero: normalizarContato(chat) ?? "",
     }));
 
@@ -596,7 +596,7 @@ export default function Home({ onDisconnect, disconnecting }: HomeProps) {
             onChatCreated={(newChat) => {
               setChats((prev) => {
                 const existingIndex = prev.findIndex(
-                  (chat) => chat.id === newChat.id,
+                  (chat) => chat?.id === newChat.id,
                 );
                 if (existingIndex === -1) {
                   return [newChat, ...prev];

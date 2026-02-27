@@ -30,7 +30,7 @@ export function ChatList({
 
   const { activeChats, archivedChats, shouldExpandArchived } = useMemo(() => {
     const archived = chats.filter((chat) => chat?.archived);
-    const active = chats.filter((chat) => chat && !chat.archived);
+    const active = chats.filter((chat) => chat && !chat?.archived);
     const hasSearch = filterValue.trim().length > 0;
 
     return {
@@ -79,9 +79,9 @@ export function ChatList({
           <div className="border-b-2">
             {archivedChats.map((chat) => (
               <ChatItem
-                key={chat.id}
+                key={chat?.id}
                 chat={chat}
-                isSelected={chat.id === selectedChatId}
+                isSelected={chat?.id === selectedChatId}
                 onSelect={handleSelect}
               />
             ))}
@@ -90,9 +90,9 @@ export function ChatList({
 
         {activeChats.map((chat) => (
           <ChatItem
-            key={chat.id}
+            key={chat?.id}
             chat={chat}
-            isSelected={chat.id === selectedChatId}
+            isSelected={chat?.id === selectedChatId}
             onSelect={handleSelect}
           />
         ))}

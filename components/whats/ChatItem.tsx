@@ -17,11 +17,11 @@ function formatTime(timestamp?: number) {
 }
 
 function ChatItemComponent({ chat, isSelected, onSelect }: Props) {
-  const hasUnread = chat.unreadCount > 0 && !isSelected;
+  const hasUnread = chat?.unreadCount > 0 && !isSelected;
 
   return (
     <div
-      onClick={() => onSelect(chat.id)}
+      onClick={() => onSelect(chat?.id)}
       className={`
         mx-3 my-1.5
         px-4 py-3
@@ -34,15 +34,15 @@ function ChatItemComponent({ chat, isSelected, onSelect }: Props) {
     >
       {/* Avatar */}
       <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden">
-        {chat.profilePicUrl ? (
+        {chat?.profilePicUrl ? (
           <img
-            src={`${process.env.NEXT_PUBLIC_WHATS_URL}${chat.profilePicUrl}`}
-            alt={chat.name}
+            src={`${process.env.NEXT_PUBLIC_WHATS_URL}${chat?.profilePicUrl}`}
+            alt={chat?.name}
             className="w-full h-full object-cover"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-gray-500">
-            {chat.name.charAt(0).toUpperCase()}
+            {chat?.name.charAt(0).toUpperCase()}
           </div>
         )}
       </div>
@@ -56,7 +56,7 @@ function ChatItemComponent({ chat, isSelected, onSelect }: Props) {
               hasUnread ? "font-semibold text-gray-900" : "text-gray-900"
             }`}
           >
-            {chat.name}
+            {chat?.name}
           </p>
 
           <span
@@ -64,7 +64,7 @@ function ChatItemComponent({ chat, isSelected, onSelect }: Props) {
               hasUnread ? "text-green-600 font-medium" : "text-gray-400"
             }`}
           >
-            {formatTime(chat.lastMessage?.timestamp)}
+            {formatTime(chat?.lastMessage?.timestamp)}
           </span>
         </div>
 
@@ -75,7 +75,7 @@ function ChatItemComponent({ chat, isSelected, onSelect }: Props) {
               hasUnread ? "font-medium text-gray-900" : "text-gray-500"
             }`}
           >
-            {chat.lastMessage?.body ?? "Sem mensagens"}
+            {chat?.lastMessage?.body ?? "Sem mensagens"}
           </p>
 
           {hasUnread && (
@@ -88,7 +88,7 @@ function ChatItemComponent({ chat, isSelected, onSelect }: Props) {
                 flex items-center justify-center
               "
             >
-              {chat.unreadCount}
+              {chat?.unreadCount}
             </span>
           )}
         </div>
@@ -101,6 +101,6 @@ export const ChatItem = React.memo(
   ChatItemComponent,
   (prev, next) =>
     prev.isSelected === next.isSelected &&
-    prev.chat.unreadCount === next.chat.unreadCount &&
-    prev.chat.lastMessage?.timestamp === next.chat.lastMessage?.timestamp,
+    prev.chat?.unreadCount === next.chat?.unreadCount &&
+    prev.chat?.lastMessage?.timestamp === next.chat?.lastMessage?.timestamp,
 );
