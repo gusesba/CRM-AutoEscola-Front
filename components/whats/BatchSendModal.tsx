@@ -259,16 +259,20 @@ export function BatchSendModal({ userId, onClose }: Props) {
     () =>
       groupRecipients.filter((conversa) => {
         const statusValue = normalizeStatus(conversa.venda?.status);
-        if (!statusValue) return matchesInitialDate(conversa);
         const serviceId = resolveServiceId(conversa);
         const sedeId = resolveSedeId(conversa);
-        const matchesStatus = enabledStatuses.has(statusValue);
         const matchesService =
           enabledServices.size === 0 || !serviceId
             ? true
             : enabledServices.has(serviceId);
         const matchesSede =
           enabledSedes.size === 0 || !sedeId ? true : enabledSedes.has(sedeId);
+
+        if (!statusValue) {
+          return matchesService && matchesSede && matchesInitialDate(conversa);
+        }
+
+        const matchesStatus = enabledStatuses.has(statusValue);
         return (
           matchesStatus &&
           matchesService &&
