@@ -40,6 +40,7 @@ export interface VendaChatVinculoDto {
 type VincularVendaWhatsPayload = {
   vendaId: number;
   whatsappChatId: string;
+  whatsappChatNumero?: string;
   whatsappUserId: string;
 };
 
@@ -166,7 +167,7 @@ export const BuscarDashboard = async (parametros: string) => {
 export async function getChatStatus(
   chatId: string,
   userId: string,
-  contato?: string | null,
+  contato?: string | null
 ): Promise<ChatStatusDto> {
   try {
     const params = new URLSearchParams({
@@ -175,6 +176,7 @@ export async function getChatStatus(
     });
     if (contato) {
       params.set("contato", contato);
+      params.set("whatsappChatNumero", contato);
     }
     return await apiFetch(
       `/venda/whatsapp?${params.toString()}`,

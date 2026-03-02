@@ -4,7 +4,7 @@ import { Message } from "@/types/messages";
 
 export type ConversaNumeroInput = {
   whatsappChatId: string;
-  numero: string;
+  whatsappChatNumero: string;
 };
 
 export type ConversaVinculoResumo = {

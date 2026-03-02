@@ -23,6 +23,11 @@ export type BatchSendTiming = {
   messagesUntilBigInterval?: number;
 };
 
+export type WhatsappContactByChatId = {
+  chatId: string;
+  phone: string | null;
+};
+
 function getWhatsappToken() {
   if (typeof window === "undefined") {
     return null;
@@ -36,7 +41,7 @@ function buildWhatsappUrl(path: string, params?: Record<string, string>) {
 
   if (params) {
     Object.entries(params).forEach(([key, value]) =>
-      url.searchParams.set(key, value)
+      url.searchParams.set(key, value),
     );
   }
 
@@ -48,13 +53,54 @@ function buildWhatsappUrl(path: string, params?: Record<string, string>) {
   return url.toString();
 }
 
+export async function getContactsByChatIds(
+  userId: string,
+  chatIds: string[],
+): Promise<WhatsappContactByChatId[]> {
+  const token = getWhatsappToken();
+  const res = await fetch(buildWhatsappUrl(`/${userId}/contacts/by-chat-ids`), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ chatIds, ...(token ? { token } : {}) }),
+  });
+
+  const payload = await res.json().catch(() => null);
+
+  if (!res.ok) {
+    throw new Error(payload?.error || "Erro ao buscar contatos por conversa");
+  }
+
+  const contacts = Array.isArray(payload?.contacts) ? payload.contacts : [];
+
+  return contacts
+    .map((contact: Record<string, unknown>) => {
+      const chatId = String(
+        contact?.chatId ?? contact?.id ?? contact?.whatsappChatId ?? "",
+      ).trim();
+      const phoneValue =
+        contact?.phone ??
+        contact?.number ??
+        contact?.telefone ??
+        contact?.nmr ??
+        null;
+
+      if (!chatId) return null;
+
+      return {
+        chatId,
+        phone:
+          typeof phoneValue === "string" && phoneValue.trim()
+            ? phoneValue.replace(/\D/g, "")
+            : null,
+      };
+    })
+    .filter((item: any): item is WhatsappContactByChatId => Boolean(item));
+}
+
 export async function getConversations(userId: string): Promise<Chat[]> {
-  const res = await fetch(
-    buildWhatsappUrl(`/${userId}/conversations`),
-    {
-      cache: "no-store",
-    }
-  );
+  const res = await fetch(buildWhatsappUrl(`/${userId}/conversations`), {
+    cache: "no-store",
+  });
 
   if (!res.ok) {
     throw new Error("Erro ao buscar conversas");
@@ -66,13 +112,13 @@ export async function getConversations(userId: string): Promise<Chat[]> {
 export async function fetchMessages(
   userId: string,
   chatId: string,
-  limit = 50
+  limit = 50,
 ): Promise<Message[]> {
   const res = await fetch(
     buildWhatsappUrl(`/${userId}/messages/${chatId}`, {
       limit: String(limit),
     }),
-    { cache: "no-store" }
+    { cache: "no-store" },
   );
 
   if (!res.ok) {
@@ -85,7 +131,7 @@ export async function fetchMessages(
 export async function sendMessage(
   userId: string,
   chatId: string,
-  message: string
+  message: string,
 ) {
   const token = getWhatsappToken();
 
@@ -99,7 +145,7 @@ export async function sendMessage(
 export async function replyToMessage(
   userId: string,
   messageId: string,
-  message: string
+  message: string,
 ) {
   const token = getWhatsappToken();
 
@@ -113,7 +159,7 @@ export async function replyToMessage(
 export async function forwardMessage(
   userId: string,
   messageId: string,
-  chatId: string
+  chatId: string,
 ) {
   const token = getWhatsappToken();
   const res = await fetch(
@@ -122,7 +168,7 @@ export async function forwardMessage(
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ chatId, ...(token ? { token } : {}) }),
-    }
+    },
   );
 
   const payload = await res.json().catch(() => null);
@@ -139,15 +185,18 @@ export async function forwardMessage(
 export async function editMessage(
   userId: string,
   messageId: string,
-  message: string
+  message: string,
 ) {
   const token = getWhatsappToken();
 
-  const res = await fetch(buildWhatsappUrl(`/${userId}/messages/${messageId}`), {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message, ...(token ? { token } : {}) }),
-  });
+  const res = await fetch(
+    buildWhatsappUrl(`/${userId}/messages/${messageId}`),
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message, ...(token ? { token } : {}) }),
+    },
+  );
 
   const payload = await res.json().catch(() => null);
 
@@ -163,7 +212,7 @@ export async function editMessage(
 export async function deleteMessage(
   userId: string,
   messageId: string,
-  forEveryone: boolean
+  forEveryone: boolean,
 ) {
   const res = await fetch(
     buildWhatsappUrl(`/${userId}/messages/${messageId}`, {
@@ -171,7 +220,7 @@ export async function deleteMessage(
     }),
     {
       method: "DELETE",
-    }
+    },
   );
 
   const payload = await res.json().catch(() => null);
@@ -194,7 +243,7 @@ export type SendNumberMessageResponse = {
 export async function sendMessageToNumber(
   userId: string,
   number: string,
-  message: string
+  message: string,
 ): Promise<SendNumberMessageResponse> {
   const token = getWhatsappToken();
   const res = await fetch(buildWhatsappUrl(`/${userId}/messages/number`), {
@@ -220,7 +269,7 @@ export async function sendMediaMessage(
   userId: string,
   chatId: string,
   file: File,
-  caption?: string
+  caption?: string,
 ) {
   const form = new FormData();
   form.append("file", file);
@@ -228,13 +277,10 @@ export async function sendMediaMessage(
   const token = getWhatsappToken();
   if (token) form.append("token", token);
 
-  await fetch(
-    buildWhatsappUrl(`/${userId}/messages/${chatId}/media`),
-    {
-      method: "POST",
-      body: form,
-    }
-  );
+  await fetch(buildWhatsappUrl(`/${userId}/messages/${chatId}/media`), {
+    method: "POST",
+    body: form,
+  });
 }
 
 export async function getWhatsLogin(userId: string) {
@@ -255,7 +301,7 @@ export async function sendBatchMessages(
   chatIds: string[],
   items: BatchMessageItem[],
   paramsByChatId?: Record<string, Record<string, string>>,
-  timing?: BatchSendTiming
+  timing?: BatchSendTiming,
 ) {
   const token = getWhatsappToken();
   const res = await fetch(buildWhatsappUrl(`/${userId}/messages/batch`), {
@@ -292,7 +338,7 @@ export async function removeWhatsSession(userId: string) {
 export async function toggleArchiveChat(
   userId: string,
   chatId: string,
-  arquivar: boolean
+  arquivar: boolean,
 ) {
   const token = getWhatsappToken();
   const res = await fetch(buildWhatsappUrl(`/${userId}/arquivar`), {
@@ -320,7 +366,7 @@ export type AddressBookContactPayload = {
 
 export async function upsertAddressBookContact(
   userId: string,
-  payload: AddressBookContactPayload
+  payload: AddressBookContactPayload,
 ) {
   const res = await fetch(buildWhatsappUrl(`/${userId}/addressbook/contact`), {
     method: "POST",
@@ -332,9 +378,7 @@ export async function upsertAddressBookContact(
 
   if (!res.ok) {
     const message =
-      data?.message ||
-      data?.error ||
-      "Erro ao salvar contato no catálogo.";
+      data?.message || data?.error || "Erro ao salvar contato no catálogo.";
     toast.error(message);
     throw new Error(message);
   }

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { Chat } from "@/types/chat";
-import { getConversations } from "@/services/whatsapp";
+import { getContactsByChatIds, getConversations } from "@/services/whatsapp";
 import { ChatList } from "@/components/whats/ChatList";
 import { ChatWindow } from "@/components/whats/ChatWindow";
 import { ConfirmModal } from "@/components/ConfirmModal";
@@ -161,7 +161,33 @@ export default function Home({ onDisconnect, disconnecting }: HomeProps) {
           try {
             const data = await getConversations(activeUserId);
             if (!mounted) return;
-            setChats(sanitizeChats(data));
+            const chatsSanitizados = sanitizeChats(data);
+            const chatIds = chatsSanitizados
+              .filter((chat) => !chat?.isGroup)
+              .map((chat) => chat?.id)
+              .filter(Boolean);
+
+            if (chatIds.length > 0) {
+              try {
+                const contacts = await getContactsByChatIds(activeUserId, chatIds);
+                const contactMap = new Map(
+                  contacts.map((contact) => [contact.chatId, contact.phone]),
+                );
+
+                setChats(
+                  chatsSanitizados.map((chat) => ({
+                    ...chat,
+                    nmr: contactMap.get(chat?.id) ?? chat?.nmr ?? null,
+                  })),
+                );
+              } catch (error) {
+                console.error(error);
+                setChats(chatsSanitizados);
+              }
+              return;
+            }
+
+            setChats(chatsSanitizados);
             return;
           } catch (error) {
             console.error(error);
@@ -405,7 +431,7 @@ export default function Home({ onDisconnect, disconnecting }: HomeProps) {
 
     const conversas = chats.map((chat) => ({
       whatsappChatId: chat?.id,
-      numero: normalizarContato(chat) ?? "",
+      whatsappChatNumero: normalizarContato(chat) ?? "",
     }));
 
     try {
