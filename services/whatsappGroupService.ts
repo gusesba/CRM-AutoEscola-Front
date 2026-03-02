@@ -105,6 +105,7 @@ export async function criarGrupoWhatsapp(data: {
   nome: string;
   usuarioId: number;
   status?: number;
+  servicoId?: number;
   dataInicialDe?: string;
   dataInicialAte?: string;
 }) {

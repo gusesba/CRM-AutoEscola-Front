@@ -17,6 +17,12 @@ import {
 } from "@/services/whatsappGroupService";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { StatusEnum } from "@/enums";
+import { BuscarServicos } from "@/services/servicoService";
+
+type ServicoOption = {
+  id: number;
+  nome: string;
+};
 
 const formatarConversa = (conversa: GrupoWhatsappConversa) => {
   return conversa.venda?.cliente ?? "Cliente nao informado";
@@ -32,6 +38,8 @@ export default function GruposWhatsappPage() {
 
   const [novoGrupoNome, setNovoGrupoNome] = useState("");
   const [statusSelecionado, setStatusSelecionado] = useState<number | "">("");
+  const [servicoSelecionado, setServicoSelecionado] = useState<number | "">("");
+  const [servicos, setServicos] = useState<ServicoOption[]>([]);
   const [dataInicialDe, setDataInicialDe] = useState("");
   const [dataInicialAte, setDataInicialAte] = useState("");
   const [criandoGrupo, setCriandoGrupo] = useState(false);
@@ -121,6 +129,19 @@ export default function GruposWhatsappPage() {
   }, [filtroId, user?.UserId]);
 
   useEffect(() => {
+    const carregarServicos = async () => {
+      try {
+        const response = await BuscarServicos("pageSize=1000");
+        setServicos(response?.items ?? []);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    carregarServicos();
+  }, []);
+
+  useEffect(() => {
     let ativo = true;
     const timer = setTimeout(async () => {
       try {
@@ -178,11 +199,14 @@ export default function GruposWhatsappPage() {
         usuarioId: Number(user.UserId),
         status:
           statusSelecionado === "" ? undefined : Number(statusSelecionado),
+        servicoId:
+          servicoSelecionado === "" ? undefined : Number(servicoSelecionado),
         dataInicialDe: temDataDe ? getInicioDia(dataInicialDe) : undefined,
         dataInicialAte: temDataAte ? getFimDia(dataInicialAte) : undefined,
       });
       setNovoGrupoNome("");
       setStatusSelecionado("");
+      setServicoSelecionado("");
       setDataInicialDe("");
       setDataInicialAte("");
       await carregarGrupos();
@@ -311,6 +335,25 @@ export default function GruposWhatsappPage() {
                 {statusOptions.map((status) => (
                   <option key={status.value} value={status.value}>
                     {status.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="text-sm text-muted-foreground">
+              Serviço (opcional)
+              <select
+                value={servicoSelecionado}
+                onChange={(event) =>
+                  setServicoSelecionado(
+                    event.target.value ? Number(event.target.value) : "",
+                  )
+                }
+                className="mt-2 w-full p-2 border rounded-lg bg-background text-sm focus:ring-2 focus:ring-primary outline-none transition"
+              >
+                <option value="">Todos os serviços</option>
+                {servicos.map((servico) => (
+                  <option key={servico.id} value={servico.id}>
+                    {servico.nome}
                   </option>
                 ))}
               </select>
