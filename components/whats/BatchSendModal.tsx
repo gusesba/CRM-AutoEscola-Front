@@ -11,6 +11,7 @@ import {
 } from "@/services/whatsappGroupService";
 import { sendBatchMessages } from "@/services/whatsapp";
 import { BuscarServicos } from "@/services/servicoService";
+import { BuscarSedes } from "@/services/sedeService";
 import { Message } from "@/types/messages";
 import { StatusEnum } from "@/enums";
 import { useAuth } from "@/hooks/useAuth";
@@ -75,6 +76,11 @@ type UserOption = {
   nome: string;
 };
 
+type SedeOption = {
+  id: number;
+  nome: string;
+};
+
 const defaultBatchSettings: BatchSendSettings = {
   intervalMs: "",
   bigIntervalMs: "",
@@ -122,9 +128,11 @@ export function BatchSendModal({ userId, onClose }: Props) {
   );
   const [statusMenuOpen, setStatusMenuOpen] = useState(false);
   const [serviceMenuOpen, setServiceMenuOpen] = useState(false);
+  const [sedeMenuOpen, setSedeMenuOpen] = useState(false);
   const [batchSettings, setBatchSettings] =
     useState<BatchSendSettings>(defaultBatchSettings);
   const [services, setServices] = useState<ServiceOption[]>([]);
+  const [sedes, setSedes] = useState<SedeOption[]>([]);
   const [vendors, setVendors] = useState<UserOption[]>([]);
   const [selectedVendorId, setSelectedVendorId] = useState("");
   const [dateFilterModalOpen, setDateFilterModalOpen] = useState(false);
@@ -142,6 +150,7 @@ export function BatchSendModal({ userId, onClose }: Props) {
   const [enabledServices, setEnabledServices] = useState<Set<number>>(
     () => new Set(),
   );
+  const [enabledSedes, setEnabledSedes] = useState<Set<number>>(() => new Set());
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const [allLinkedRecipients, setAllLinkedRecipients] = useState<
     GrupoWhatsappConversa[]
@@ -214,6 +223,14 @@ export function BatchSendModal({ userId, onClose }: Props) {
     );
   }, []);
 
+  const resolveSedeId = useCallback((conversa: GrupoWhatsappConversa) => {
+    return (
+      conversa.venda?.sedeId ??
+      conversa.venda?.sede?.id ??
+      null
+    );
+  }, []);
+
   const matchesInitialDate = useCallback(
     (conversa: GrupoWhatsappConversa) => {
       if (!initialDateStart && !initialDateEnd) return true;
@@ -244,20 +261,30 @@ export function BatchSendModal({ userId, onClose }: Props) {
         const statusValue = normalizeStatus(conversa.venda?.status);
         if (!statusValue) return matchesInitialDate(conversa);
         const serviceId = resolveServiceId(conversa);
+        const sedeId = resolveSedeId(conversa);
         const matchesStatus = enabledStatuses.has(statusValue);
         const matchesService =
           enabledServices.size === 0 || !serviceId
             ? true
             : enabledServices.has(serviceId);
-        return matchesStatus && matchesService && matchesInitialDate(conversa);
+        const matchesSede =
+          enabledSedes.size === 0 || !sedeId ? true : enabledSedes.has(sedeId);
+        return (
+          matchesStatus &&
+          matchesService &&
+          matchesSede &&
+          matchesInitialDate(conversa)
+        );
       }),
     [
       groupRecipients,
       enabledStatuses,
       enabledServices,
+      enabledSedes,
       matchesInitialDate,
       normalizeStatus,
       resolveServiceId,
+      resolveSedeId,
     ],
   );
 
@@ -343,6 +370,27 @@ export function BatchSendModal({ userId, onClose }: Props) {
   }, []);
 
   useEffect(() => {
+    let mounted = true;
+
+    BuscarSedes("pageSize=1000")
+      .then((data) => {
+        if (!mounted) return;
+        const items = data?.items ?? [];
+        setSedes(items);
+        setEnabledSedes(new Set(items.map((sede: SedeOption) => sede.id)));
+      })
+      .catch((err) => {
+        console.error(err);
+        if (!mounted) return;
+        setError("Não foi possível carregar as sedes.");
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [previewMessages]);
 
@@ -370,6 +418,7 @@ export function BatchSendModal({ userId, onClose }: Props) {
     if (!recipientsModalOpen) {
       setStatusMenuOpen(false);
       setServiceMenuOpen(false);
+      setSedeMenuOpen(false);
       setDateFilterModalOpen(false);
     }
   }, [recipientsModalOpen]);
@@ -417,12 +466,15 @@ export function BatchSendModal({ userId, onClose }: Props) {
       groupRecipients.forEach((conversa) => {
         const statusValue = normalizeStatus(conversa.venda?.status);
         const serviceId = resolveServiceId(conversa);
+        const sedeId = resolveSedeId(conversa);
         const matchesService =
           enabledServices.size === 0 || !serviceId
             ? true
             : enabledServices.has(serviceId);
+        const matchesSede =
+          enabledSedes.size === 0 || !sedeId ? true : enabledSedes.has(sedeId);
         if (!statusValue) {
-          if (matchesService && matchesInitialDate(conversa)) {
+          if (matchesService && matchesSede && matchesInitialDate(conversa)) {
             next.add(conversa.whatsappChatId);
           } else {
             next.delete(conversa.whatsappChatId);
@@ -432,6 +484,7 @@ export function BatchSendModal({ userId, onClose }: Props) {
         if (
           enabledStatuses.has(statusValue) &&
           matchesService &&
+          matchesSede &&
           matchesInitialDate(conversa)
         ) {
           next.add(conversa.whatsappChatId);
@@ -444,10 +497,12 @@ export function BatchSendModal({ userId, onClose }: Props) {
   }, [
     enabledStatuses,
     enabledServices,
+    enabledSedes,
     groupRecipients,
     matchesInitialDate,
     normalizeStatus,
     resolveServiceId,
+    resolveSedeId,
   ]);
 
   const handlePreviewSend = (file?: File) => {
@@ -551,6 +606,18 @@ export function BatchSendModal({ userId, onClose }: Props) {
         next.delete(serviceId);
       } else {
         next.add(serviceId);
+      }
+      return next;
+    });
+  };
+
+  const handleToggleSede = (sedeId: number) => {
+    setEnabledSedes((prev) => {
+      const next = new Set(prev);
+      if (next.has(sedeId)) {
+        next.delete(sedeId);
+      } else {
+        next.add(sedeId);
       }
       return next;
     });
@@ -882,7 +949,7 @@ export function BatchSendModal({ userId, onClose }: Props) {
 
       {recipientsModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-xl rounded-2xl bg-white shadow-xl">
+          <div className="w-full max-w-2xl rounded-2xl bg-white shadow-xl">
             <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
               <div>
                 <h3 className="text-base font-semibold text-gray-900">
@@ -953,6 +1020,44 @@ export function BatchSendModal({ userId, onClose }: Props) {
                               <span>{status.label}</span>
                             </label>
                           ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setSedeMenuOpen((prev) => !prev)}
+                      className="rounded-full border border-gray-200 px-3 py-1 text-xs text-gray-600 hover:bg-gray-50"
+                    >
+                      Sede
+                    </button>
+                    {sedeMenuOpen && (
+                      <div className="absolute left-0 z-10 mt-2 w-56 rounded-lg border border-gray-200 bg-white shadow-lg">
+                        <div className="border-b border-gray-100 px-3 py-2 text-[11px] text-gray-500">
+                          Filtrar participantes por sede.
+                        </div>
+                        <div className="max-h-48 space-y-2 overflow-y-auto px-3 py-2">
+                          {sedes.length === 0 ? (
+                            <span className="text-xs text-gray-500">
+                              Nenhuma sede disponível.
+                            </span>
+                          ) : (
+                            sedes.map((sede) => (
+                              <label
+                                key={sede.id}
+                                className="flex items-center gap-2 text-xs text-gray-700"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={enabledSedes.has(sede.id)}
+                                  onChange={() => handleToggleSede(sede.id)}
+                                  className="h-4 w-4 accent-[#25d366]"
+                                />
+                                <span>{sede.nome}</span>
+                              </label>
+                            ))
+                          )}
                         </div>
                       </div>
                     )}

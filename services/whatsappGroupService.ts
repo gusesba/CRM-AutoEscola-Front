@@ -10,7 +10,12 @@ export type GrupoWhatsappConversa = {
     dataInicial?: string;
     status: string | number;
     servicoId?: number;
+    sedeId?: number;
     servico?: {
+      id: number;
+      nome: string;
+    };
+    sede?: {
       id: number;
       nome: string;
     };
@@ -36,7 +41,12 @@ export type VendaWhatsappVinculo = {
     dataInicial?: string;
     status: string | number;
     servicoId?: number;
+    sedeId?: number;
     servico?: {
+      id: number;
+      nome: string;
+    };
+    sede?: {
       id: number;
       nome: string;
     };
