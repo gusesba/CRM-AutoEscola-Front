@@ -18,6 +18,7 @@ import {
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { StatusEnum } from "@/enums";
 import { BuscarServicos } from "@/services/servicoService";
+import { BuscarSedes } from "@/services/sedeService";
 
 type ServicoOption = {
   id: number;
@@ -33,6 +34,7 @@ export default function GruposWhatsappPage() {
   const { user } = useAuth();
   const [grupos, setGrupos] = useState<GrupoWhatsapp[]>([]);
   const [filtroId, setFiltroId] = useState("");
+  const [filtroSedeId, setFiltroSedeId] = useState<number | "">("");
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -40,6 +42,7 @@ export default function GruposWhatsappPage() {
   const [statusSelecionado, setStatusSelecionado] = useState<number | "">("");
   const [servicoSelecionado, setServicoSelecionado] = useState<number | "">("");
   const [servicos, setServicos] = useState<ServicoOption[]>([]);
+  const [sedes, setSedes] = useState<ServicoOption[]>([]);
   const [dataInicialDe, setDataInicialDe] = useState("");
   const [dataInicialAte, setDataInicialAte] = useState("");
   const [criandoGrupo, setCriandoGrupo] = useState(false);
@@ -113,6 +116,7 @@ export default function GruposWhatsappPage() {
       const data = await buscarGruposWhatsapp({
         id,
         usuarioId: Number(usuarioId),
+        sedeId: filtroSedeId === "" ? undefined : Number(filtroSedeId),
       });
       setGrupos(data ?? []);
     } catch (error) {
@@ -126,8 +130,21 @@ export default function GruposWhatsappPage() {
   useEffect(() => {
     if (!user?.UserId) return;
     carregarGrupos();
-  }, [filtroId, user?.UserId]);
+  }, [filtroId, filtroSedeId, user?.UserId]);
 
+
+  useEffect(() => {
+    const carregarSedes = async () => {
+      try {
+        const response = await BuscarSedes("pageSize=1000");
+        setSedes(response?.items ?? []);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    carregarSedes();
+  }, []);
   useEffect(() => {
     const carregarServicos = async () => {
       try {
@@ -466,11 +483,30 @@ export default function GruposWhatsappPage() {
               <input
                 value={filtroId}
                 onChange={(event) => setFiltroId(event.target.value)}
-                className="ml-2 mt-2 w-full sm:w-72 p-2 border rounded-lg bg-background text-sm focus:ring-2 focus:ring-primary outline-none transition"
+                className="mt-2 w-full sm:w-72 p-2 border rounded-lg bg-background text-sm focus:ring-2 focus:ring-primary outline-none transition"
                 placeholder="Digite o ID do grupo"
                 type="number"
                 min={1}
               />
+            </label>
+            <label className="text-sm text-muted-foreground">
+              Filtrar por sede
+              <select
+                value={filtroSedeId}
+                onChange={(event) =>
+                  setFiltroSedeId(
+                    event.target.value ? Number(event.target.value) : "",
+                  )
+                }
+                className="mt-2 w-full sm:w-72 p-2 border rounded-lg bg-background text-sm focus:ring-2 focus:ring-primary outline-none transition"
+              >
+                <option value="">Todas as sedes</option>
+                {sedes.map((sede) => (
+                  <option key={sede.id} value={sede.id}>
+                    {sede.nome}
+                  </option>
+                ))}
+              </select>
             </label>
             <button
               type="button"

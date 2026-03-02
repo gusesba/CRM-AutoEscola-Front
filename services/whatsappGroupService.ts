@@ -46,6 +46,7 @@ export type VendaWhatsappVinculo = {
 export type BuscarGruposWhatsappParams = {
   id?: number;
   usuarioId?: number;
+  sedeId?: number;
 };
 
 export async function buscarGruposWhatsapp(
@@ -55,6 +56,7 @@ export async function buscarGruposWhatsapp(
 
   if (params.id) query.append("id", String(params.id));
   if (params.usuarioId) query.append("usuarioId", String(params.usuarioId));
+  if (params.sedeId) query.append("sedeId", String(params.sedeId));
 
   const queryString = query.toString();
   const endpoint = queryString
