@@ -23,6 +23,12 @@ export type BatchSendTiming = {
   messagesUntilBigInterval?: number;
 };
 
+
+export type WhatsappContactByChatId = {
+  chatId: string;
+  phone: string | null;
+};
+
 function getWhatsappToken() {
   if (typeof window === "undefined") {
     return null;
@@ -46,6 +52,47 @@ function buildWhatsappUrl(path: string, params?: Record<string, string>) {
   }
 
   return url.toString();
+}
+
+
+export async function getContactsByChatIds(
+  userId: string,
+  chatIds: string[]
+): Promise<WhatsappContactByChatId[]> {
+  const token = getWhatsappToken();
+  const res = await fetch(buildWhatsappUrl(`/${userId}/contacts/by-chat-ids`), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ chatIds, ...(token ? { token } : {}) }),
+  });
+
+  const payload = await res.json().catch(() => null);
+
+  if (!res.ok) {
+    throw new Error(payload?.error || "Erro ao buscar contatos por conversa");
+  }
+
+  const contacts = Array.isArray(payload?.contacts) ? payload.contacts : [];
+
+  return contacts
+    .map((contact: Record<string, unknown>) => {
+      const chatId = String(
+        contact?.chatId ?? contact?.id ?? contact?.whatsappChatId ?? ""
+      ).trim();
+      const phoneValue =
+        contact?.phone ?? contact?.number ?? contact?.telefone ?? contact?.nmr ?? null;
+
+      if (!chatId) return null;
+
+      return {
+        chatId,
+        phone:
+          typeof phoneValue === "string" && phoneValue.trim()
+            ? phoneValue.replace(/\D/g, "")
+            : null,
+      };
+    })
+    .filter((item): item is WhatsappContactByChatId => Boolean(item));
 }
 
 export async function getConversations(userId: string): Promise<Chat[]> {

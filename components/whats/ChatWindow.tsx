@@ -186,6 +186,7 @@ export const ChatWindow = React.memo(function ChatWindow({
     const status = await vincularVendaWhats({
       vendaId,
       whatsappChatId: chat?.id || "",
+      whatsappChatNumero: normalizarContato(chat) ?? "",
       whatsappUserId,
     });
 
