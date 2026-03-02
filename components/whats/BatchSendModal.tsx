@@ -87,6 +87,19 @@ const defaultBatchSettings: BatchSendSettings = {
   messagesUntilBigInterval: "",
 };
 
+function normalizeOptionName(value?: string) {
+  return (value ?? "").trim().toLowerCase();
+}
+
+function resolveNumericId(value?: number | string | null) {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string") {
+    const numeric = Number(value);
+    if (Number.isFinite(numeric)) return numeric;
+  }
+  return null;
+}
+
 function getMessageTypeFromFile(file: File): Message["type"] {
   if (file.type.startsWith("image")) return "image";
   if (file.type.startsWith("video")) return "video";
@@ -215,21 +228,46 @@ export function BatchSendModal({ userId, onClose }: Props) {
     return null;
   }, []);
 
-  const resolveServiceId = useCallback((conversa: GrupoWhatsappConversa) => {
-    return (
-      conversa.venda?.servicoId ??
-      conversa.venda?.servico?.id ??
-      null
-    );
-  }, []);
+  const serviceOptionIdByName = useMemo(
+    () =>
+      new Map(
+        services.map((service) => [normalizeOptionName(service.nome), service.id]),
+      ),
+    [services],
+  );
 
-  const resolveSedeId = useCallback((conversa: GrupoWhatsappConversa) => {
-    return (
-      conversa.venda?.sedeId ??
-      conversa.venda?.sede?.id ??
-      null
-    );
-  }, []);
+  const sedeOptionIdByName = useMemo(
+    () => new Map(sedes.map((sede) => [normalizeOptionName(sede.nome), sede.id])),
+    [sedes],
+  );
+
+  const resolveServiceId = useCallback(
+    (conversa: GrupoWhatsappConversa) => {
+      const explicitId =
+        resolveNumericId(conversa.venda?.servicoId) ??
+        resolveNumericId(conversa.venda?.servico?.id);
+      if (explicitId) return explicitId;
+
+      const serviceName = normalizeOptionName(conversa.venda?.servico?.nome);
+      if (!serviceName) return null;
+      return serviceOptionIdByName.get(serviceName) ?? null;
+    },
+    [serviceOptionIdByName],
+  );
+
+  const resolveSedeId = useCallback(
+    (conversa: GrupoWhatsappConversa) => {
+      const explicitId =
+        resolveNumericId(conversa.venda?.sedeId) ??
+        resolveNumericId(conversa.venda?.sede?.id);
+      if (explicitId) return explicitId;
+
+      const sedeName = normalizeOptionName(conversa.venda?.sede?.nome);
+      if (!sedeName) return null;
+      return sedeOptionIdByName.get(sedeName) ?? null;
+    },
+    [sedeOptionIdByName],
+  );
 
   const matchesInitialDate = useCallback(
     (conversa: GrupoWhatsappConversa) => {

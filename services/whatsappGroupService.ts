@@ -9,14 +9,14 @@ export type GrupoWhatsappConversa = {
     contato: string;
     dataInicial?: string;
     status: string | number;
-    servicoId?: number;
-    sedeId?: number;
+    servicoId?: number | string;
+    sedeId?: number | string;
     servico?: {
-      id: number;
+      id: number | string;
       nome: string;
     };
     sede?: {
-      id: number;
+      id: number | string;
       nome: string;
     };
   };
@@ -40,14 +40,14 @@ export type VendaWhatsappVinculo = {
     contato: string;
     dataInicial?: string;
     status: string | number;
-    servicoId?: number;
-    sedeId?: number;
+    servicoId?: number | string;
+    sedeId?: number | string;
     servico?: {
-      id: number;
+      id: number | string;
       nome: string;
     };
     sede?: {
-      id: number;
+      id: number | string;
       nome: string;
     };
   };
@@ -115,7 +115,7 @@ export async function criarGrupoWhatsapp(data: {
   nome: string;
   usuarioId: number;
   status?: number;
-  servicoId?: number;
+  servicoId?: number | string;
   dataInicialDe?: string;
   dataInicialAte?: string;
 }) {
