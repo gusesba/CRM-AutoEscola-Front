@@ -11,6 +11,7 @@ import {
 } from "@/services/whatsappGroupService";
 import { sendBatchMessages } from "@/services/whatsapp";
 import { BuscarServicos } from "@/services/servicoService";
+import { BuscarSedes } from "@/services/sedeService";
 import { Message } from "@/types/messages";
 import { StatusEnum } from "@/enums";
 import { useAuth } from "@/hooks/useAuth";
@@ -75,6 +76,11 @@ type UserOption = {
   nome: string;
 };
 
+type BranchOption = {
+  id: number;
+  nome: string;
+};
+
 const NO_SERVICE_OPTION = "no-service";
 
 const defaultBatchSettings: BatchSendSettings = {
@@ -124,10 +130,12 @@ export function BatchSendModal({ userId, onClose }: Props) {
   );
   const [statusMenuOpen, setStatusMenuOpen] = useState(false);
   const [serviceMenuOpen, setServiceMenuOpen] = useState(false);
+  const [branchMenuOpen, setBranchMenuOpen] = useState(false);
   const [batchSettings, setBatchSettings] =
     useState<BatchSendSettings>(defaultBatchSettings);
   const [services, setServices] = useState<ServiceOption[]>([]);
   const [vendors, setVendors] = useState<UserOption[]>([]);
+  const [branches, setBranches] = useState<BranchOption[]>([]);
   const [selectedVendorId, setSelectedVendorId] = useState("");
   const [dateFilterModalOpen, setDateFilterModalOpen] = useState(false);
   const [initialDateStart, setInitialDateStart] = useState("");
@@ -142,6 +150,9 @@ export function BatchSendModal({ userId, onClose }: Props) {
       ),
   );
   const [enabledServices, setEnabledServices] = useState<Set<number>>(
+    () => new Set(),
+  );
+  const [enabledBranches, setEnabledBranches] = useState<Set<number>>(
     () => new Set(),
   );
   const [includeRecipientsWithoutService, setIncludeRecipientsWithoutService] =
@@ -222,6 +233,18 @@ export function BatchSendModal({ userId, onClose }: Props) {
     [enabledServices, includeRecipientsWithoutService],
   );
 
+  const resolveBranchId = useCallback((conversa: GrupoWhatsappConversa) => {
+    return conversa.venda?.sedeId ?? conversa.venda?.sede?.id ?? null;
+  }, []);
+
+  const matchesBranchFilter = useCallback(
+    (branchId: number | null) => {
+      if (!branchId) return true;
+      return enabledBranches.has(branchId);
+    },
+    [enabledBranches],
+  );
+
   const matchesInitialDate = useCallback(
     (conversa: GrupoWhatsappConversa) => {
       if (!initialDateStart && !initialDateEnd) return true;
@@ -250,18 +273,29 @@ export function BatchSendModal({ userId, onClose }: Props) {
     () =>
       groupRecipients.filter((conversa) => {
         const statusValue = normalizeStatus(conversa.venda?.status);
-        if (!statusValue) return matchesInitialDate(conversa);
+        const branchId = resolveBranchId(conversa);
+        if (!statusValue) {
+          return matchesBranchFilter(branchId) && matchesInitialDate(conversa);
+        }
         const serviceId = resolveServiceId(conversa);
         const matchesStatus = enabledStatuses.has(statusValue);
         const matchesService = matchesServiceFilter(serviceId);
-        return matchesStatus && matchesService && matchesInitialDate(conversa);
+        const matchesBranch = matchesBranchFilter(branchId);
+        return (
+          matchesStatus &&
+          matchesService &&
+          matchesBranch &&
+          matchesInitialDate(conversa)
+        );
       }),
     [
       groupRecipients,
       enabledStatuses,
       matchesServiceFilter,
+      matchesBranchFilter,
       matchesInitialDate,
       normalizeStatus,
+      resolveBranchId,
       resolveServiceId,
     ],
   );
@@ -349,6 +383,29 @@ export function BatchSendModal({ userId, onClose }: Props) {
   }, []);
 
   useEffect(() => {
+    let mounted = true;
+
+    BuscarSedes("pageSize=1000")
+      .then((data) => {
+        if (!mounted) return;
+        const items = data?.items ?? [];
+        setBranches(items);
+        setEnabledBranches(
+          new Set(items.map((branch: BranchOption) => branch.id)),
+        );
+      })
+      .catch((err) => {
+        console.error(err);
+        if (!mounted) return;
+        setError("Não foi possível carregar as sedes.");
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [previewMessages]);
 
@@ -376,6 +433,7 @@ export function BatchSendModal({ userId, onClose }: Props) {
     if (!recipientsModalOpen) {
       setStatusMenuOpen(false);
       setServiceMenuOpen(false);
+      setBranchMenuOpen(false);
       setDateFilterModalOpen(false);
     }
   }, [recipientsModalOpen]);
@@ -423,9 +481,11 @@ export function BatchSendModal({ userId, onClose }: Props) {
       groupRecipients.forEach((conversa) => {
         const statusValue = normalizeStatus(conversa.venda?.status);
         const serviceId = resolveServiceId(conversa);
+        const branchId = resolveBranchId(conversa);
         const matchesService = matchesServiceFilter(serviceId);
+        const matchesBranch = matchesBranchFilter(branchId);
         if (!statusValue) {
-          if (matchesService && matchesInitialDate(conversa)) {
+          if (matchesService && matchesBranch && matchesInitialDate(conversa)) {
             next.add(conversa.whatsappChatId);
           } else {
             next.delete(conversa.whatsappChatId);
@@ -435,6 +495,7 @@ export function BatchSendModal({ userId, onClose }: Props) {
         if (
           enabledStatuses.has(statusValue) &&
           matchesService &&
+          matchesBranch &&
           matchesInitialDate(conversa)
         ) {
           next.add(conversa.whatsappChatId);
@@ -449,8 +510,10 @@ export function BatchSendModal({ userId, onClose }: Props) {
     groupRecipients,
     includeRecipientsWithoutService,
     matchesServiceFilter,
+    matchesBranchFilter,
     matchesInitialDate,
     normalizeStatus,
+    resolveBranchId,
     resolveServiceId,
   ]);
 
@@ -555,6 +618,18 @@ export function BatchSendModal({ userId, onClose }: Props) {
         next.delete(serviceId);
       } else {
         next.add(serviceId);
+      }
+      return next;
+    });
+  };
+
+  const handleToggleBranch = (branchId: number) => {
+    setEnabledBranches((prev) => {
+      const next = new Set(prev);
+      if (next.has(branchId)) {
+        next.delete(branchId);
+      } else {
+        next.add(branchId);
       }
       return next;
     });
@@ -961,6 +1036,44 @@ export function BatchSendModal({ userId, onClose }: Props) {
                               <span>{status.label}</span>
                             </label>
                           ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setBranchMenuOpen((prev) => !prev)}
+                      className="rounded-full border border-gray-200 px-3 py-1 text-xs text-gray-600 hover:bg-gray-50"
+                    >
+                      Sede
+                    </button>
+                    {branchMenuOpen && (
+                      <div className="absolute left-0 z-10 mt-2 w-56 rounded-lg border border-gray-200 bg-white shadow-lg">
+                        <div className="border-b border-gray-100 px-3 py-2 text-[11px] text-gray-500">
+                          Filtrar participantes por sede.
+                        </div>
+                        <div className="max-h-48 space-y-2 overflow-y-auto px-3 py-2">
+                          {branches.length === 0 ? (
+                            <span className="text-xs text-gray-500">
+                              Nenhuma sede disponível.
+                            </span>
+                          ) : (
+                            branches.map((branch) => (
+                              <label
+                                key={branch.id}
+                                className="flex items-center gap-2 text-xs text-gray-700"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={enabledBranches.has(branch.id)}
+                                  onChange={() => handleToggleBranch(branch.id)}
+                                  className="h-4 w-4 accent-[#25d366]"
+                                />
+                                <span>{branch.nome}</span>
+                              </label>
+                            ))
+                          )}
                         </div>
                       </div>
                     )}
