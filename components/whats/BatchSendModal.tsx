@@ -81,6 +81,23 @@ type SedeOption = {
   nome: string;
 };
 
+type RecipientVendaData = {
+  cliente?: string;
+  contato?: string;
+  dataInicial?: string;
+  status?: string | number;
+  servicoId?: number | string;
+  servico?: {
+    id?: number | string;
+    nome?: string;
+  };
+  sedeId?: number | string;
+  sede?: {
+    id?: number | string;
+    nome?: string;
+  };
+};
+
 const defaultBatchSettings: BatchSendSettings = {
   intervalMs: "",
   bigIntervalMs: "",
@@ -98,6 +115,16 @@ function resolveNumericId(value?: number | string | null) {
     if (Number.isFinite(numeric)) return numeric;
   }
   return null;
+}
+
+function resolveVendaData(conversa: GrupoWhatsappConversa): RecipientVendaData {
+  const nestedContato = conversa as GrupoWhatsappConversa & {
+    contato?: {
+      venda?: RecipientVendaData;
+    };
+  };
+
+  return nestedContato.contato?.venda ?? (conversa.venda as RecipientVendaData) ?? {};
 }
 
 function getMessageTypeFromFile(file: File): Message["type"] {
@@ -243,12 +270,13 @@ export function BatchSendModal({ userId, onClose }: Props) {
 
   const resolveServiceId = useCallback(
     (conversa: GrupoWhatsappConversa) => {
+      const vendaData = resolveVendaData(conversa);
       const explicitId =
-        resolveNumericId(conversa.venda?.servicoId) ??
-        resolveNumericId(conversa.venda?.servico?.id);
+        resolveNumericId(vendaData.servicoId) ??
+        resolveNumericId(vendaData.servico?.id);
       if (explicitId) return explicitId;
 
-      const serviceName = normalizeOptionName(conversa.venda?.servico?.nome);
+      const serviceName = normalizeOptionName(vendaData.servico?.nome);
       if (!serviceName) return null;
       return serviceOptionIdByName.get(serviceName) ?? null;
     },
@@ -257,12 +285,13 @@ export function BatchSendModal({ userId, onClose }: Props) {
 
   const resolveSedeId = useCallback(
     (conversa: GrupoWhatsappConversa) => {
+      const vendaData = resolveVendaData(conversa);
       const explicitId =
-        resolveNumericId(conversa.venda?.sedeId) ??
-        resolveNumericId(conversa.venda?.sede?.id);
+        resolveNumericId(vendaData.sedeId) ??
+        resolveNumericId(vendaData.sede?.id);
       if (explicitId) return explicitId;
 
-      const sedeName = normalizeOptionName(conversa.venda?.sede?.nome);
+      const sedeName = normalizeOptionName(vendaData.sede?.nome);
       if (!sedeName) return null;
       return sedeOptionIdByName.get(sedeName) ?? null;
     },
@@ -272,7 +301,7 @@ export function BatchSendModal({ userId, onClose }: Props) {
   const matchesInitialDate = useCallback(
     (conversa: GrupoWhatsappConversa) => {
       if (!initialDateStart && !initialDateEnd) return true;
-      const leadDate = conversa.venda?.dataInicial;
+      const leadDate = resolveVendaData(conversa).dataInicial;
       if (!leadDate) return false;
       const parsedLeadDate = new Date(leadDate);
       if (Number.isNaN(parsedLeadDate.getTime())) return false;
@@ -296,7 +325,7 @@ export function BatchSendModal({ userId, onClose }: Props) {
   const filteredRecipients = useMemo(
     () =>
       groupRecipients.filter((conversa) => {
-        const statusValue = normalizeStatus(conversa.venda?.status);
+        const statusValue = normalizeStatus(resolveVendaData(conversa).status);
         const serviceId = resolveServiceId(conversa);
         const sedeId = resolveSedeId(conversa);
         const matchesService =
@@ -506,7 +535,7 @@ export function BatchSendModal({ userId, onClose }: Props) {
     setSelectedRecipients((prev) => {
       const next = new Set(prev);
       groupRecipients.forEach((conversa) => {
-        const statusValue = normalizeStatus(conversa.venda?.status);
+        const statusValue = normalizeStatus(resolveVendaData(conversa).status);
         const serviceId = resolveServiceId(conversa);
         const sedeId = resolveSedeId(conversa);
         const matchesService =
