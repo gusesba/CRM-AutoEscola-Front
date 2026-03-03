@@ -75,6 +75,8 @@ type UserOption = {
   nome: string;
 };
 
+const NO_SERVICE_OPTION = "no-service";
+
 const defaultBatchSettings: BatchSendSettings = {
   intervalMs: "",
   bigIntervalMs: "",
@@ -142,6 +144,8 @@ export function BatchSendModal({ userId, onClose }: Props) {
   const [enabledServices, setEnabledServices] = useState<Set<number>>(
     () => new Set(),
   );
+  const [includeRecipientsWithoutService, setIncludeRecipientsWithoutService] =
+    useState(true);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const [allLinkedRecipients, setAllLinkedRecipients] = useState<
     GrupoWhatsappConversa[]
@@ -207,12 +211,16 @@ export function BatchSendModal({ userId, onClose }: Props) {
   }, []);
 
   const resolveServiceId = useCallback((conversa: GrupoWhatsappConversa) => {
-    return (
-      conversa.venda?.servicoId ??
-      conversa.venda?.servico?.id ??
-      null
-    );
+    return conversa.venda?.servicoId ?? conversa.venda?.servico?.id ?? null;
   }, []);
+
+  const matchesServiceFilter = useCallback(
+    (serviceId: number | null) => {
+      if (!serviceId) return includeRecipientsWithoutService;
+      return enabledServices.has(serviceId);
+    },
+    [enabledServices, includeRecipientsWithoutService],
+  );
 
   const matchesInitialDate = useCallback(
     (conversa: GrupoWhatsappConversa) => {
@@ -245,16 +253,13 @@ export function BatchSendModal({ userId, onClose }: Props) {
         if (!statusValue) return matchesInitialDate(conversa);
         const serviceId = resolveServiceId(conversa);
         const matchesStatus = enabledStatuses.has(statusValue);
-        const matchesService =
-          enabledServices.size === 0 || !serviceId
-            ? true
-            : enabledServices.has(serviceId);
+        const matchesService = matchesServiceFilter(serviceId);
         return matchesStatus && matchesService && matchesInitialDate(conversa);
       }),
     [
       groupRecipients,
       enabledStatuses,
-      enabledServices,
+      matchesServiceFilter,
       matchesInitialDate,
       normalizeStatus,
       resolveServiceId,
@@ -330,6 +335,7 @@ export function BatchSendModal({ userId, onClose }: Props) {
         setEnabledServices(
           new Set(items.map((servico: ServiceOption) => servico.id)),
         );
+        setIncludeRecipientsWithoutService(true);
       })
       .catch((err) => {
         console.error(err);
@@ -417,10 +423,7 @@ export function BatchSendModal({ userId, onClose }: Props) {
       groupRecipients.forEach((conversa) => {
         const statusValue = normalizeStatus(conversa.venda?.status);
         const serviceId = resolveServiceId(conversa);
-        const matchesService =
-          enabledServices.size === 0 || !serviceId
-            ? true
-            : enabledServices.has(serviceId);
+        const matchesService = matchesServiceFilter(serviceId);
         if (!statusValue) {
           if (matchesService && matchesInitialDate(conversa)) {
             next.add(conversa.whatsappChatId);
@@ -443,8 +446,9 @@ export function BatchSendModal({ userId, onClose }: Props) {
     });
   }, [
     enabledStatuses,
-    enabledServices,
     groupRecipients,
+    includeRecipientsWithoutService,
+    matchesServiceFilter,
     matchesInitialDate,
     normalizeStatus,
     resolveServiceId,
@@ -554,6 +558,10 @@ export function BatchSendModal({ userId, onClose }: Props) {
       }
       return next;
     });
+  };
+
+  const handleToggleRecipientsWithoutService = () => {
+    setIncludeRecipientsWithoutService((prev) => !prev);
   };
 
   const handleToggleRecipient = (chatId: string) => {
@@ -971,6 +979,18 @@ export function BatchSendModal({ userId, onClose }: Props) {
                           Filtrar participantes por serviço.
                         </div>
                         <div className="max-h-48 space-y-2 overflow-y-auto px-3 py-2">
+                          <label
+                            key={NO_SERVICE_OPTION}
+                            className="flex items-center gap-2 text-xs text-gray-700"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={includeRecipientsWithoutService}
+                              onChange={handleToggleRecipientsWithoutService}
+                              className="h-4 w-4 accent-[#25d366]"
+                            />
+                            <span>Sem serviço</span>
+                          </label>
                           {services.length === 0 ? (
                             <span className="text-xs text-gray-500">
                               Nenhum serviço disponível.
