@@ -18,8 +18,14 @@ import {
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { StatusEnum } from "@/enums";
 import { BuscarServicos } from "@/services/servicoService";
+import { BuscarSedes } from "@/services/sedeService";
 
 type ServicoOption = {
+  id: number;
+  nome: string;
+};
+
+type SedeOption = {
   id: number;
   nome: string;
 };
@@ -40,6 +46,8 @@ export default function GruposWhatsappPage() {
   const [statusSelecionado, setStatusSelecionado] = useState<number | "">("");
   const [servicoSelecionado, setServicoSelecionado] = useState<number | "">("");
   const [servicos, setServicos] = useState<ServicoOption[]>([]);
+  const [sedes, setSedes] = useState<SedeOption[]>([]);
+  const [sedesSelecionadas, setSedesSelecionadas] = useState<number[]>([]);
   const [dataInicialDe, setDataInicialDe] = useState("");
   const [dataInicialAte, setDataInicialAte] = useState("");
   const [criandoGrupo, setCriandoGrupo] = useState(false);
@@ -82,6 +90,16 @@ export default function GruposWhatsappPage() {
     () => new Map(statusOptions.map((status) => [status.value, status.label])),
     [statusOptions],
   );
+
+  const vinculosFiltradosPorSede = useMemo(() => {
+    if (sedesSelecionadas.length === 0) return [];
+
+    return vinculos.filter((vinculo) => {
+      const sedeId = vinculo.venda?.sede?.id ?? vinculo.venda?.sedeId;
+      if (!sedeId) return true;
+      return sedesSelecionadas.includes(sedeId);
+    });
+  }, [sedesSelecionadas, vinculos]);
 
   const formatDateTime = (date: Date) => {
     const year = date.getFullYear();
@@ -142,6 +160,21 @@ export default function GruposWhatsappPage() {
   }, []);
 
   useEffect(() => {
+    const carregarSedes = async () => {
+      try {
+        const response = await BuscarSedes("pageSize=1000");
+        const listaSedes = response?.items ?? [];
+        setSedes(listaSedes);
+        setSedesSelecionadas(listaSedes.map((sede: SedeOption) => sede.id));
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    carregarSedes();
+  }, []);
+
+  useEffect(() => {
     let ativo = true;
     const timer = setTimeout(async () => {
       try {
@@ -168,6 +201,18 @@ export default function GruposWhatsappPage() {
       clearTimeout(timer);
     };
   }, [pesquisaVinculo]);
+
+  useEffect(() => {
+    if (!vendaWhatsappId.trim()) return;
+
+    const existeNoFiltro = vinculosFiltradosPorSede.some(
+      (vinculo) => vinculo.id === Number(vendaWhatsappId),
+    );
+
+    if (!existeNoFiltro) {
+      setVendaWhatsappId("");
+    }
+  }, [vendaWhatsappId, vinculosFiltradosPorSede]);
 
   const handleCriarGrupo = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -288,6 +333,14 @@ export default function GruposWhatsappPage() {
       ...prev,
       [grupoId]: !(prev[grupoId] ?? true),
     }));
+  };
+
+  const alternarSede = (sedeId: number) => {
+    setSedesSelecionadas((prev) =>
+      prev.includes(sedeId)
+        ? prev.filter((id) => id !== sedeId)
+        : [...prev, sedeId],
+    );
   };
 
   return (
@@ -416,6 +469,27 @@ export default function GruposWhatsappPage() {
             <label className="text-sm text-muted-foreground">
               Conversa (VendaWhatsapp)
               <div className="mt-2 space-y-2">
+                <div className="space-y-2 rounded-lg border border-border p-3">
+                  <span className="block text-xs font-medium text-foreground">
+                    Filtrar por sede
+                  </span>
+                  <div className="max-h-28 space-y-1 overflow-y-auto pr-1">
+                    {sedes.map((sede) => (
+                      <label
+                        key={sede.id}
+                        className="flex items-center gap-2 text-xs text-foreground"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={sedesSelecionadas.includes(sede.id)}
+                          onChange={() => alternarSede(sede.id)}
+                          className="h-4 w-4 rounded border-border"
+                        />
+                        <span>{sede.nome}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
                 <input
                   value={pesquisaVinculo}
                   onChange={(event) => setPesquisaVinculo(event.target.value)}
@@ -435,10 +509,13 @@ export default function GruposWhatsappPage() {
                     </option>
                   )}
                   {!carregandoVinculos &&
-                    vinculos.map((vinculo) => (
+                    vinculosFiltradosPorSede.map((vinculo) => (
                       <option key={vinculo.id} value={vinculo.id}>
                         {vinculo.venda?.cliente ?? "Cliente não informado"} -{" "}
                         {vinculo.venda?.contato ?? "Contato não informado"}
+                        {vinculo.venda?.sede?.nome
+                          ? ` (${vinculo.venda.sede.nome})`
+                          : ""}
                       </option>
                     ))}
                 </select>
