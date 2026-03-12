@@ -9,7 +9,7 @@ import {
   GrupoWhatsapp,
   GrupoWhatsappConversa,
 } from "@/services/whatsappGroupService";
-import { sendBatchMessages } from "@/services/whatsapp";
+import { cancelBatchMessages, sendBatchMessages } from "@/services/whatsapp";
 import { BuscarServicos } from "@/services/servicoService";
 import { BuscarSedes } from "@/services/sedeService";
 import { Message } from "@/types/messages";
@@ -123,6 +123,8 @@ export function BatchSendModal({ userId, onClose }: Props) {
   const [loadingGroups, setLoadingGroups] = useState(false);
   const [loadingAllLinked, setLoadingAllLinked] = useState(false);
   const [sending, setSending] = useState(false);
+  const [cancelingBatch, setCancelingBatch] = useState(false);
+  const [activeBatchId, setActiveBatchId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [recipientsModalOpen, setRecipientsModalOpen] = useState(false);
   const [selectedRecipients, setSelectedRecipients] = useState<Set<string>>(
@@ -665,6 +667,25 @@ export function BatchSendModal({ userId, onClose }: Props) {
     setText((prev) => (prev ? `${prev} ${template}` : template));
   };
 
+
+  const handleCancelBatch = async () => {
+    if (!sending) return;
+
+    setError(null);
+    setCancelingBatch(true);
+
+    try {
+      const response = await cancelBatchMessages(userId);
+      setActiveBatchId(response.batchId ?? activeBatchId);
+      setError("Cancelamento solicitado. Aguarde a finalização do lote.");
+    } catch (err) {
+      console.error(err);
+      setError(err instanceof Error ? err.message : "Não foi possível cancelar o envio em lote.");
+    } finally {
+      setCancelingBatch(false);
+    }
+  };
+
   const handleSendBatch = async () => {
     setError(null);
 
@@ -722,7 +743,7 @@ export function BatchSendModal({ userId, onClose }: Props) {
         batchSettings.messagesUntilBigInterval,
       );
 
-      await sendBatchMessages(
+      const response = await sendBatchMessages(
         userId,
         Array.from(selectedRecipients),
         items,
@@ -743,6 +764,14 @@ export function BatchSendModal({ userId, onClose }: Props) {
               : undefined,
         },
       );
+
+      setActiveBatchId(response.batchId ?? null);
+
+      if (response.cancelled) {
+        setError("Envio em lote cancelado.");
+        return;
+      }
+
       window.localStorage.setItem(
         BATCH_SETTINGS_STORAGE_KEY,
         JSON.stringify(batchSettings),
@@ -758,6 +787,8 @@ export function BatchSendModal({ userId, onClose }: Props) {
       setError("Não foi possível enviar as mensagens.");
     } finally {
       setSending(false);
+      setCancelingBatch(false);
+      setActiveBatchId(null);
     }
   };
 
@@ -951,6 +982,21 @@ export function BatchSendModal({ userId, onClose }: Props) {
             >
               {sending ? "Enviando..." : "Enviar mensagens em lote"}
             </button>
+
+            {sending && (
+              <button
+                type="button"
+                onClick={handleCancelBatch}
+                disabled={cancelingBatch}
+                className="w-full rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {cancelingBatch
+                  ? "Solicitando cancelamento..."
+                  : activeBatchId
+                    ? `Cancelar envio (${activeBatchId})`
+                    : "Cancelar envio"}
+              </button>
+            )}
 
             <button
               type="button"
@@ -1249,10 +1295,15 @@ export function BatchSendModal({ userId, onClose }: Props) {
             <div className="flex items-center justify-end gap-3 border-t border-gray-200 px-6 py-4">
               <button
                 type="button"
-                onClick={() => setRecipientsModalOpen(false)}
-                className="rounded-lg border border-gray-200 px-4 py-2 text-sm text-gray-600 hover:bg-gray-50"
+                onClick={sending ? handleCancelBatch : () => setRecipientsModalOpen(false)}
+                disabled={sending && cancelingBatch}
+                className="rounded-lg border border-gray-200 px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                Cancelar
+                {sending
+                  ? cancelingBatch
+                    ? "Solicitando cancelamento..."
+                    : "Cancelar envio"
+                  : "Cancelar"}
               </button>
               <button
                 type="button"

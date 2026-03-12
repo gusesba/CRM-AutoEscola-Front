@@ -23,6 +23,18 @@ export type BatchSendTiming = {
   messagesUntilBigInterval?: number;
 };
 
+export type BatchSendResponse = {
+  success: boolean;
+  cancelled?: boolean;
+  batchId?: string;
+  cancelRequestedAt?: string | null;
+  results?: Array<{
+    chatId: string;
+    sent: Array<{ index: number; type: "text" | "media"; messageId: string }>;
+    errors: string[];
+  }>;
+};
+
 export type WhatsappContactByChatId = {
   chatId: string;
   phone: string | null;
@@ -94,7 +106,7 @@ export async function getContactsByChatIds(
             : null,
       };
     })
-    .filter((item: any): item is WhatsappContactByChatId => Boolean(item));
+    .filter((item: unknown): item is WhatsappContactByChatId => Boolean(item));
 }
 
 export async function getConversations(userId: string): Promise<Chat[]> {
@@ -302,7 +314,7 @@ export async function sendBatchMessages(
   items: BatchMessageItem[],
   paramsByChatId?: Record<string, Record<string, string>>,
   timing?: BatchSendTiming,
-) {
+): Promise<BatchSendResponse> {
   const token = getWhatsappToken();
   const res = await fetch(buildWhatsappUrl(`/${userId}/messages/batch`), {
     method: "POST",
@@ -316,11 +328,34 @@ export async function sendBatchMessages(
     }),
   });
 
+  const payload = await res.json().catch(() => null);
+
   if (!res.ok) {
-    throw new Error("Erro ao enviar mensagens em lote");
+    throw new Error(payload?.error || "Erro ao enviar mensagens em lote");
   }
 
-  return res.json();
+  return payload;
+}
+
+export async function cancelBatchMessages(userId: string): Promise<{
+  success: boolean;
+  batchId?: string;
+  cancelRequestedAt?: string | null;
+}> {
+  const token = getWhatsappToken();
+  const res = await fetch(buildWhatsappUrl(`/${userId}/messages/batch/cancel`), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...(token ? { token } : {}) }),
+  });
+
+  const payload = await res.json().catch(() => null);
+
+  if (!res.ok) {
+    throw new Error(payload?.error || "Erro ao cancelar envio em lote");
+  }
+
+  return payload;
 }
 
 export async function removeWhatsSession(userId: string) {
