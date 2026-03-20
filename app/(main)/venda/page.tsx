@@ -100,6 +100,14 @@ type FiltroVenda = {
   orderDirection?: "asc" | "desc";
 };
 
+type ExportFiltro = {
+  dataInicial: string;
+  dataFinal: string;
+  status: string;
+  sedeId: string;
+  vendedorAtualId: string;
+};
+
 /* ======================================================
    API
 ====================================================== */
@@ -138,7 +146,11 @@ const formatarContato = (valor?: string) => {
   return valor;
 };
 
-async function buscarVendas(filtro: FiltroVenda): Promise<PagedResult<Venda>> {
+function buildVendaParams(
+  filtro: FiltroVenda,
+  exportFiltro?: Partial<ExportFiltro>,
+  paginacao?: { page?: number; pageSize?: number }
+) {
   const params = new URLSearchParams();
 
   if (filtro.cliente) params.append("cliente", filtro.cliente);
@@ -146,14 +158,32 @@ async function buscarVendas(filtro: FiltroVenda): Promise<PagedResult<Venda>> {
     params.append("vendedorAtual", filtro.vendedorAtual);
   if (filtro.contato) params.append("contato", filtro.contato);
 
-  params.append("page", filtro.page.toString());
-  params.append("pageSize", filtro.pageSize.toString());
+  if (exportFiltro?.dataInicial) {
+    params.append("dataInicialDe", `${exportFiltro.dataInicial}T00:00:00`);
+  }
+
+  if (exportFiltro?.dataFinal) {
+    params.append("dataInicialAte", `${exportFiltro.dataFinal}T23:59:59.999`);
+  }
+
+  if (exportFiltro?.status) params.append("status", exportFiltro.status);
+  if (exportFiltro?.sedeId) params.append("sedeId", exportFiltro.sedeId);
+  if (exportFiltro?.vendedorAtualId) {
+    params.append("vendedorAtualId", exportFiltro.vendedorAtualId);
+  }
+
+  params.append("page", String(paginacao?.page ?? filtro.page));
+  params.append("pageSize", String(paginacao?.pageSize ?? filtro.pageSize));
 
   if (filtro.orderBy) params.append("orderBy", filtro.orderBy);
   if (filtro.orderDirection)
     params.append("orderDirection", filtro.orderDirection);
 
-  return await BuscarVendas(params.toString());
+  return params;
+}
+
+async function buscarVendas(filtro: FiltroVenda): Promise<PagedResult<Venda>> {
+  return await BuscarVendas(buildVendaParams(filtro).toString());
 }
 
 /* ======================================================
@@ -174,7 +204,7 @@ export default function ListaVendasPage() {
   const [sedes, setSedes] = useState<Sede[]>([]);
   const [vendedores, setVendedores] = useState<Usuario[]>([]);
 
-  const [exportFiltro, setExportFiltro] = useState({
+  const [exportFiltro, setExportFiltro] = useState<ExportFiltro>({
     dataInicial: "",
     dataFinal: "",
     status: "",
@@ -189,20 +219,10 @@ export default function ListaVendasPage() {
 
   const exportarExcel = async () => {
     try {
-      const params = new URLSearchParams();
-
-      if (exportFiltro.dataInicial)
-        params.append("dataInicial", exportFiltro.dataInicial);
-      if (exportFiltro.dataFinal)
-        params.append("dataFinal", exportFiltro.dataFinal);
-      if (exportFiltro.status) params.append("status", exportFiltro.status);
-      if (exportFiltro.sedeId) params.append("sedeId", exportFiltro.sedeId);
-      if (exportFiltro.vendedorAtualId)
-        params.append("vendedorAtualId", exportFiltro.vendedorAtualId);
-
-      params.append("page", "1");
-      params.append("pageSize", "10000");
-
+      const params = buildVendaParams(filtro, exportFiltro, {
+        page: 1,
+        pageSize: 10000,
+      });
       const data = await BuscarVendas(params.toString());
 
       const rows = data.items.map((v: any) => ({
