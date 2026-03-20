@@ -132,7 +132,7 @@ export default function EditarVenda() {
         if (venda) {
           reset({
             sedeId: venda.sedeId,
-            vendedorId: venda.vendedorId,
+            vendedorId: venda.vendedorAtualId ?? venda.vendedorId,
             cliente: venda.cliente,
             genero: venda.genero,
             origem: venda.origem,
