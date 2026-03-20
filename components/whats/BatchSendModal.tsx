@@ -781,7 +781,6 @@ export function BatchSendModal({ userId, onClose }: Props) {
       setSelectedGroupId("");
       setRecipientsModalOpen(false);
       setSelectedRecipients(new Set());
-      onClose();
     } catch (err) {
       console.error(err);
       setError("Não foi possível enviar as mensagens.");
