@@ -209,6 +209,13 @@ export function BatchSendModal({ userId, onClose }: Props) {
     [],
   );
 
+  const allServicesSelected = useMemo(
+    () =>
+      services.length > 0 &&
+      services.every((service) => enabledServices.has(service.id)),
+    [enabledServices, services],
+  );
+
   const normalizeStatus = useCallback((status?: string | number) => {
     if (typeof status === "number") return status;
     if (typeof status === "string") {
@@ -623,6 +630,14 @@ export function BatchSendModal({ userId, onClose }: Props) {
       }
       return next;
     });
+  };
+
+  const handleToggleAllServices = () => {
+    setEnabledServices(
+      allServicesSelected
+        ? new Set()
+        : new Set(services.map((service) => service.id)),
+    );
   };
 
   const handleToggleBranch = (branchId: number) => {
@@ -1136,6 +1151,19 @@ export function BatchSendModal({ userId, onClose }: Props) {
                         <div className="border-b border-gray-100 px-3 py-2 text-[11px] text-gray-500">
                           Filtrar participantes por serviço.
                         </div>
+                        {services.length > 0 && (
+                          <div className="border-b border-gray-100 px-3 py-2">
+                            <button
+                              type="button"
+                              onClick={handleToggleAllServices}
+                              className="text-[11px] font-medium text-[#25d366] hover:underline"
+                            >
+                              {allServicesSelected
+                                ? "Desmarcar todos"
+                                : "Marcar todos"}
+                            </button>
+                          </div>
+                        )}
                         <div className="max-h-48 space-y-2 overflow-y-auto px-3 py-2">
                           <label
                             key={NO_SERVICE_OPTION}
