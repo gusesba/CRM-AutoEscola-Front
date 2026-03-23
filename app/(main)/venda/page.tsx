@@ -108,6 +108,8 @@ type ExportFiltro = {
   vendedorAtualId: string;
 };
 
+const TODOS_VENDEDORES_VALUE = "__TODOS__";
+
 /* ======================================================
    API
 ====================================================== */
@@ -168,7 +170,10 @@ function buildVendaParams(
 
   if (exportFiltro?.status) params.append("status", exportFiltro.status);
   if (exportFiltro?.sedeId) params.append("sedeId", exportFiltro.sedeId);
-  if (exportFiltro?.vendedorAtualId) {
+  if (
+    exportFiltro?.vendedorAtualId &&
+    exportFiltro.vendedorAtualId !== TODOS_VENDEDORES_VALUE
+  ) {
     params.append("vendedorAtualId", exportFiltro.vendedorAtualId);
   }
 
@@ -209,7 +214,7 @@ export default function ListaVendasPage() {
     dataFinal: "",
     status: "",
     sedeId: "",
-    vendedorAtualId: "",
+    vendedorAtualId: TODOS_VENDEDORES_VALUE,
   });
 
   const [totalPaginas, setTotalPaginas] = useState(1);
@@ -525,7 +530,7 @@ export default function ListaVendasPage() {
                   }))
                 }
               >
-                <option value="">Vendedor Atual</option>
+                <option value={TODOS_VENDEDORES_VALUE}>Todos</option>
                 {vendedores.map((v) => (
                   <option key={v.id} value={v.id}>
                     {v.nome}
