@@ -113,6 +113,37 @@ function normalizeBase64(dataUrl: string) {
   return split.length > 1 ? split[1] : dataUrl;
 }
 
+function normalizeContatoDigits(value?: string | null) {
+  if (!value) return null;
+  const digits = value.replace(/\D/g, "");
+  return digits.length > 0 ? digits : null;
+}
+
+function removeCountryCode(digits?: string | null) {
+  if (!digits) return null;
+  return digits.startsWith("55") ? digits.slice(2) : digits;
+}
+
+function removeNinthDigitAfterDDD(digits?: string | null) {
+  if (!digits) return null;
+  const local = removeCountryCode(digits);
+  if (local && local.length >= 11 && local[2] === "9") {
+    return `${local.slice(0, 2)}${local.slice(3)}`;
+  }
+  return local;
+}
+
+function buildRecipientComparisonKey(conversa: GrupoWhatsappConversa) {
+  const contato = normalizeContatoDigits(conversa.venda?.contato);
+  const contatoKey = removeNinthDigitAfterDDD(contato);
+
+  if (contatoKey) {
+    return contatoKey;
+  }
+
+  return conversa.whatsappChatId;
+}
+
 export function BatchSendModal({ userId, onClose }: Props) {
   const [groups, setGroups] = useState<GrupoWhatsapp[]>([]);
   const [selectedGroupId, setSelectedGroupId] = useState<
@@ -181,13 +212,23 @@ export function BatchSendModal({ userId, onClose }: Props) {
       ? allLinkedRecipients
       : selectedGroup?.conversas ?? [];
     if (source.length === 0) return [];
-    const unique = new Map<string, GrupoWhatsappConversa>();
+    const uniqueRecipients: GrupoWhatsappConversa[] = [];
+    const seenKeys = new Set<string>();
     source.forEach((conversa) => {
-      if (conversa.whatsappChatId) {
-        unique.set(conversa.whatsappChatId, conversa);
+      if (!conversa.whatsappChatId) {
+        return;
       }
+
+      const comparisonKey = buildRecipientComparisonKey(conversa);
+      if (seenKeys.has(comparisonKey)) {
+        return;
+      }
+
+      seenKeys.add(comparisonKey);
+      uniqueRecipients.push(conversa);
     });
-    return Array.from(unique.values());
+
+    return uniqueRecipients;
   }, [allLinkedRecipients, isAllLinkedSelected, selectedGroup]);
 
   const groupRecipientsByChatId = useMemo(() => {
@@ -798,7 +839,11 @@ export function BatchSendModal({ userId, onClose }: Props) {
       setSelectedRecipients(new Set());
     } catch (err) {
       console.error(err);
-      setError("Não foi possível enviar as mensagens.");
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Não foi possível enviar as mensagens.",
+      );
     } finally {
       setSending(false);
       setCancelingBatch(false);
